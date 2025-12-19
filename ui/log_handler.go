@@ -50,3 +50,25 @@ func (h *LogHandler) SaveLog(id *int64, gameID int64, logType log.LogType, descr
 
 	return l, nil
 }
+
+// Delete deletes a log entry by ID
+func (h *LogHandler) Delete(id int64) error {
+	_, err := h.logRepo.Delete(id)
+	return err
+}
+
+func (h *LogHandler) GetByID(id int64) (*log.Log, error) {
+	return h.logRepo.GetByID(id)
+}
+
+func (h *LogHandler) GetAllForGame(gameID int64) ([]*log.Log, error) {
+	return h.logRepo.GetAllForGame(gameID)
+}
+
+func (h *LogHandler) GetLogsForSession(gameID int64, sessionDate string) ([]*log.Log, error) {
+	return h.logRepo.GetLogsForSession(gameID, sessionDate)
+}
+
+func (h *LogHandler) GetSessionsForGame(gameID int64) ([]*log.Session, error) {
+	return h.logRepo.GetSessionsForGame(gameID)
+}

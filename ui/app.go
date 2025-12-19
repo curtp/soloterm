@@ -11,6 +11,14 @@ import (
 	"github.com/rivo/tview"
 )
 
+const (
+	GAME_MODAL_ID    string = "gameModal"
+	LOG_MODAL_ID     string = "logModal"
+	CONFIRM_MODAL_ID string = "confirm"
+	MAIN_PAGE_ID     string = "main"
+	HELP_MODAL_ID    string = "help"
+)
+
 type App struct {
 	*tview.Application
 
@@ -30,16 +38,16 @@ type App struct {
 	notificationFlex *tview.Flex // Container for notification banner
 
 	// UI Components
-	gameTree        *tview.TreeView
-	logView         *tview.TextView
-	helpModal       *tview.Modal
-	confirmModal    *ConfirmationModal
-	footer          *tview.TextView
-	newGameModal    *tview.Flex
-	newGameForm     *GameForm
-	newLogModal     *tview.Flex
-	newLogForm      *LogForm
-	notification    *Notification
+	gameTree     *tview.TreeView
+	logView      *tview.TextView
+	helpModal    *tview.Modal
+	confirmModal *ConfirmationModal
+	footer       *tview.TextView
+	gameModal    *tview.Flex
+	gameForm     *GameForm
+	logModal     *tview.Flex
+	logForm      *LogForm
+	notification *Notification
 }
 
 func NewApp(db *sqlx.DB) *App {
@@ -128,25 +136,25 @@ func (a *App) setupUI() {
 			"Space       - Expand/collapse tree nodes").
 		AddButtons([]string{"Close"}).
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-			a.pages.HidePage("help")
+			a.pages.HidePage(HELP_MODAL_ID)
 		})
 
 	// New game modal
-	a.setupNewGameModal()
+	a.setupGameModal()
 
 	// New Log Modal
-	a.setupNewLogModal()
+	a.setupLogModal()
 
 	// Create confirmation modal
 	a.confirmModal = NewConfirmationModal()
 
 	// Pages for modal overlay (must be created BEFORE notification setup)
 	a.pages = tview.NewPages().
-		AddPage("main", mainContent, true, true).
-		AddPage("help", a.helpModal, true, false).
-		AddPage("newGame", a.newGameModal, true, false).
-		AddPage("newLog", a.newLogModal, true, false).
-		AddPage("confirm", a.confirmModal, true, false)
+		AddPage(MAIN_PAGE_ID, mainContent, true, true).
+		AddPage(HELP_MODAL_ID, a.helpModal, true, false).
+		AddPage(GAME_MODAL_ID, a.gameModal, true, false).
+		AddPage(LOG_MODAL_ID, a.logModal, true, false).
+		AddPage(CONFIRM_MODAL_ID, a.confirmModal, true, false)
 	a.pages.SetBackgroundColor(tcell.ColorDefault)
 
 	// Create notification flex (initially hidden - just shows pages)
@@ -176,7 +184,7 @@ func (a *App) setupKeyBindings() {
 			a.showHelp()
 			return nil
 		case tcell.KeyCtrlG:
-			a.showNewGameModal()
+			a.showGameModal()
 			return nil
 		case tcell.KeyCtrlB:
 			a.togglePane(a.gameTree)
@@ -186,7 +194,7 @@ func (a *App) setupKeyBindings() {
 				a.notification.ShowError("Please select a game first")
 				return nil
 			}
-			a.showNewLogModal()
+			a.showLogModal()
 			return nil
 		case tcell.KeyCtrlE:
 			if a.selectedGame == nil {
@@ -200,44 +208,44 @@ func (a *App) setupKeyBindings() {
 	})
 }
 
-func (a *App) setupNewGameModal() {
+func (a *App) setupGameModal() {
 	// Create the form
-	a.newGameForm = NewGameForm(
+	a.gameForm = NewGameForm(
 		a.handleGameSave,
 		a.handleGameCancel,
 	)
 
 	// Center the modal on screen
-	a.newGameModal = tview.NewFlex().
+	a.gameModal = tview.NewFlex().
 		AddItem(nil, 0, 1, false).
 		AddItem(
 			tview.NewFlex().
 				SetDirection(tview.FlexRow).
 				AddItem(nil, 0, 1, false).
-				AddItem(a.newGameForm, 12, 1, true). // Dynamic height: expands to fit content
+				AddItem(a.gameForm, 12, 1, true). // Dynamic height: expands to fit content
 				AddItem(nil, 0, 1, false),
 			60, 1, true, // Dynamic width: expands to fit content (up to screen width)
 		).
 		AddItem(nil, 0, 1, false)
-	a.newGameModal.SetBackgroundColor(tcell.ColorBlack)
+	a.gameModal.SetBackgroundColor(tcell.ColorBlack)
 }
 
-func (a *App) setupNewLogModal() {
+func (a *App) setupLogModal() {
 	// Create the form
-	a.newLogForm = NewLogForm(
+	a.logForm = NewLogForm(
 		a.handleLogSave,
 		a.handleLogCancel,
 		a.handleLogDelete,
 	)
 
 	// Center the modal on screen
-	a.newLogModal = tview.NewFlex().
+	a.logModal = tview.NewFlex().
 		AddItem(nil, 0, 1, false).
 		AddItem(
 			tview.NewFlex().
 				SetDirection(tview.FlexRow).
 				AddItem(nil, 0, 1, false).
-				AddItem(a.newLogForm, 20, 1, true). // Dynamic height: expands to fit content
+				AddItem(a.logForm, 20, 1, true). // Dynamic height: expands to fit content
 				AddItem(nil, 0, 1, false),
 			60, 1, true, // Dynamic width: expands to fit content (up to screen width)
 		).
@@ -245,25 +253,25 @@ func (a *App) setupNewLogModal() {
 }
 
 func (a *App) showHelp() {
-	a.pages.ShowPage("help")
+	a.pages.ShowPage(HELP_MODAL_ID)
 }
 
-func (a *App) showNewGameModal() {
-	a.newGameForm.Reset()
-	a.pages.ShowPage("newGame")
-	a.SetFocus(a.newGameForm)
+func (a *App) showGameModal() {
+	a.gameForm.Reset()
+	a.pages.ShowPage(GAME_MODAL_ID)
+	a.SetFocus(a.gameForm)
 }
 
-func (a *App) showNewLogModal() {
-	a.newLogForm.Reset()
-	a.pages.ShowPage("newLog")
-	a.SetFocus(a.newLogForm)
+func (a *App) showLogModal() {
+	a.logForm.Reset()
+	a.pages.ShowPage(LOG_MODAL_ID)
+	a.SetFocus(a.logForm)
 }
 
 func (a *App) showEditGameModal(game *game.Game) {
-	a.newGameForm.PopulateForEdit(game)
-	a.pages.ShowPage("newGame")
-	a.SetFocus(a.newGameForm)
+	a.gameForm.PopulateForEdit(game)
+	a.pages.ShowPage(GAME_MODAL_ID)
+	a.SetFocus(a.gameForm)
 }
 
 func (a *App) handleGameSave(id *int64, name string, description string) {
@@ -279,7 +287,7 @@ func (a *App) handleGameSave(id *int64, name string, description string) {
 			}
 
 			// Set all errors at once and update labels
-			a.newGameForm.SetFieldErrors(fieldErrors)
+			a.gameForm.SetFieldErrors(fieldErrors)
 			return
 		}
 		// Other error - could show a generic error modal
@@ -288,7 +296,7 @@ func (a *App) handleGameSave(id *int64, name string, description string) {
 
 	// Success! Update state and refresh the tree
 	a.selectedGame = game
-	a.pages.HidePage("newGame")
+	a.pages.HidePage(GAME_MODAL_ID)
 	a.refreshGameTree()
 	a.SetFocus(a.gameTree)
 
@@ -305,8 +313,8 @@ func (a *App) handleGameSave(id *int64, name string, description string) {
 }
 
 func (a *App) handleGameCancel() {
-	a.pages.HidePage("newGame")
-	a.pages.SwitchToPage("main")
+	a.pages.HidePage(GAME_MODAL_ID)
+	a.pages.SwitchToPage(MAIN_PAGE_ID)
 	a.SetFocus(a.gameTree)
 }
 
@@ -331,7 +339,7 @@ func (a *App) handleLogSave(id *int64, logType log.LogType, description string, 
 			}
 
 			// Set all errors at once and update labels
-			a.newLogForm.SetFieldErrors(fieldErrors)
+			a.logForm.SetFieldErrors(fieldErrors)
 			return
 		}
 		// Other error - could show a generic error modal
@@ -356,8 +364,8 @@ func (a *App) handleLogSave(id *int64, logType log.LogType, description string, 
 	}
 
 	// Close the modal and refresh
-	a.pages.HidePage("newGame")
-	a.pages.SwitchToPage("main")
+	a.pages.HidePage(GAME_MODAL_ID)
+	a.pages.SwitchToPage(MAIN_PAGE_ID)
 	a.SetFocus(a.logView)
 
 	a.notification.ShowSuccess("Log entry saved successfully")
@@ -387,26 +395,26 @@ func (a *App) loadLogsForSelectedGameEntry() {
 }
 
 func (a *App) handleLogCancel() {
-	a.pages.HidePage("newLog")
-	a.pages.SwitchToPage("main")
+	a.pages.HidePage(LOG_MODAL_ID)
+	a.pages.SwitchToPage(MAIN_PAGE_ID)
 	a.SetFocus(a.logView)
 	a.logView.Highlight() // Clear highlight so next click will always trigger
 }
 
 func (a *App) handleLogEdit(logID int64) {
 	// Load the log entry from the database
-	logEntry, err := a.logHandler.logRepo.GetByID(logID)
+	logEntry, err := a.logHandler.GetByID(logID)
 	if err != nil {
 		a.notification.ShowError("Error loading log entry: " + err.Error())
 		return
 	}
 
 	// Populate the form with the existing log data
-	a.newLogForm.PopulateForEdit(logEntry)
+	a.logForm.PopulateForEdit(logEntry)
 
 	// Show the modal
-	a.pages.ShowPage("newLog")
-	a.SetFocus(a.newLogForm)
+	a.pages.ShowPage(LOG_MODAL_ID)
+	a.SetFocus(a.logForm)
 }
 
 func (a *App) handleLogDelete(logID int64) {
@@ -415,17 +423,17 @@ func (a *App) handleLogDelete(logID int64) {
 		"Are you sure you want to delete this log entry?\n\nThis action cannot be undone.",
 		func() {
 			// Delete the log entry
-			_, err := a.logHandler.logRepo.Delete(logID)
+			err := a.logHandler.Delete(logID)
 			if err != nil {
-				a.pages.HidePage("confirm")
+				a.pages.HidePage(CONFIRM_MODAL_ID)
 				a.notification.ShowError("Error deleting log entry: " + err.Error())
 				return
 			}
 
 			// Close modals
-			a.pages.HidePage("confirm")
-			a.pages.HidePage("newLog")
-			a.pages.SwitchToPage("main")
+			a.pages.HidePage(CONFIRM_MODAL_ID)
+			a.pages.HidePage(LOG_MODAL_ID)
+			a.pages.SwitchToPage(MAIN_PAGE_ID)
 
 			// Refresh the UI
 			a.refreshGameTree()
@@ -437,10 +445,10 @@ func (a *App) handleLogDelete(logID int64) {
 		},
 		func() {
 			// Cancel - just hide the confirmation modal
-			a.pages.HidePage("confirm")
+			a.pages.HidePage(CONFIRM_MODAL_ID)
 		},
 	)
-	a.pages.ShowPage("confirm")
+	a.pages.ShowPage(CONFIRM_MODAL_ID)
 }
 
 func (a *App) handleGameEdit(gameID int64) {
@@ -452,11 +460,11 @@ func (a *App) handleGameEdit(gameID int64) {
 	}
 
 	// Populate the form with the existing game data
-	a.newGameForm.PopulateForEdit(game)
+	a.gameForm.PopulateForEdit(game)
 
 	// Show the modal
-	a.pages.ShowPage("newGame")
-	a.SetFocus(a.newGameForm)
+	a.pages.ShowPage(GAME_MODAL_ID)
+	a.SetFocus(a.gameForm)
 }
 
 func (a *App) loadLogsForGame(gameID int64) {
@@ -465,7 +473,7 @@ func (a *App) loadLogsForGame(gameID int64) {
 	a.logView.Clear()
 
 	// Load logs from database
-	logs, err := a.logHandler.logRepo.GetAllForGame(gameID)
+	logs, err := a.logHandler.GetAllForGame(gameID)
 	if err != nil {
 		a.logView.SetText("[red]Error loading logs: " + err.Error())
 		return
@@ -484,14 +492,9 @@ func (a *App) loadLogsForSession(gameID int64, sessionDate string) {
 	a.logView.Clear()
 
 	// Load logs for this session from database
-	logs, err := a.logHandler.logRepo.GetLogsForSession(gameID, sessionDate)
+	logs, err := a.logHandler.GetLogsForSession(gameID, sessionDate)
 	if err != nil {
 		a.logView.SetText("[red]Error loading session logs: " + err.Error())
-		return
-	}
-
-	if len(logs) == 0 {
-		a.logView.SetText("[gray]No logs for this session.")
 		return
 	}
 
@@ -565,7 +568,7 @@ func (a *App) refreshGameTree() {
 
 	if len(games) == 0 {
 		// No games yet
-		placeholder := tview.NewTreeNode("(No games yet - press Ctrl+N to create one)").
+		placeholder := tview.NewTreeNode("(No games yet - press Ctrl+G to create one)").
 			SetColor(tcell.ColorGray)
 		root.AddChild(placeholder)
 		return
@@ -587,7 +590,7 @@ func (a *App) refreshGameTree() {
 		}
 
 		// Load sessions for this game
-		sessions, err := a.logHandler.logRepo.GetSessionsForGame(g.Id)
+		sessions, err := a.logHandler.GetSessionsForGame(g.Id)
 		if err != nil || len(sessions) == 0 {
 			sessionPlaceholder := tview.NewTreeNode("(No sessions yet)").
 				SetColor(tcell.ColorGray).
@@ -642,13 +645,4 @@ func (a *App) togglePane(pane tview.Primitive) {
 		a.mainFlex.AddItem(a.gameTree, 0, 1, false).
 			AddItem(a.logView, 0, 2, true)
 	}
-}
-
-
-func (a *App) showSelectGameModal() {
-	a.notification.ShowWarning("Please select a game first")
-}
-
-func (a *App) Run() error {
-	return a.Application.Run()
 }
