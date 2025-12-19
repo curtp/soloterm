@@ -146,20 +146,14 @@ func (lf *LogForm) PopulateForEdit(logEntry *log.Log) {
 	lf.SetFocus(0)
 }
 
-// SetFieldError highlights a field and shows an error message
-func (lf *LogForm) SetFieldError(field string, message string) {
-	// Store the error for this field
-	lf.fieldErrors[field] = message
-}
-
 // SetFieldErrors sets multiple field errors at once and updates labels
 func (lf *LogForm) SetFieldErrors(errors map[string]string) {
 	lf.fieldErrors = errors
-	lf.UpdateFieldLabels()
+	lf.updateFieldLabels()
 }
 
 // updateFieldLabels updates field labels to show errors
-func (lf *LogForm) UpdateFieldLabels() {
+func (lf *LogForm) updateFieldLabels() {
 
 	// Update log type field label
 	if _, hasError := lf.fieldErrors["log_type"]; hasError {
@@ -194,5 +188,5 @@ func (lf *LogForm) UpdateFieldLabels() {
 // ClearFieldErrors removes all error highlights
 func (lf *LogForm) ClearFieldErrors() {
 	lf.fieldErrors = make(map[string]string)
-	lf.UpdateFieldLabels()
+	lf.updateFieldLabels()
 }

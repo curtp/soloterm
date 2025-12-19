@@ -53,7 +53,13 @@ func NewGameForm(onSave func(id *int64, name string, description string), onCanc
 // Fill the fields with the data from the game passed in
 func (gf *GameForm) PopulateForEdit(game *game.Game) {
 	gf.game_id = &game.Id
-	gf.descriptionField.SetText(*game.Description, false)
+
+	// Handle optional description field
+	description := ""
+	if game.Description != nil {
+		description = *game.Description
+	}
+	gf.descriptionField.SetText(description, false)
 	gf.nameField.SetText(game.Name)
 
 	// Add delete button for edit mode (insert at the beginning)
@@ -110,20 +116,14 @@ func (gf *GameForm) Reset() {
 	gf.SetFocus(0)
 }
 
-// SetFieldError highlights a field and shows an error message
-func (gf *GameForm) SetFieldError(field string, message string) {
-	// Store the error for this field
-	gf.fieldErrors[field] = message
-}
-
 // SetFieldErrors sets multiple field errors at once and updates labels
 func (gf *GameForm) SetFieldErrors(errors map[string]string) {
 	gf.fieldErrors = errors
-	gf.UpdateFieldLabels()
+	gf.updateFieldLabels()
 }
 
 // updateFieldLabels updates field labels to show errors
-func (gf *GameForm) UpdateFieldLabels() {
+func (gf *GameForm) updateFieldLabels() {
 
 	// Update name field label
 	if _, hasError := gf.fieldErrors["name"]; hasError {
@@ -143,5 +143,5 @@ func (gf *GameForm) UpdateFieldLabels() {
 // ClearFieldErrors removes all error highlights
 func (gf *GameForm) ClearFieldErrors() {
 	gf.fieldErrors = make(map[string]string)
-	gf.UpdateFieldLabels()
+	gf.updateFieldLabels()
 }

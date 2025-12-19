@@ -65,7 +65,7 @@ func (a *App) setupUI() {
 	// Left pane: Game/Session tree
 	a.gameTree = tview.NewTreeView()
 	a.gameTree.SetBorder(true).
-		SetTitle(" Games & Sessions (Ctrl+E Edit)").
+		SetTitle(" Games & Sessions (Ctrl+E Edit) ").
 		SetTitleAlign(tview.AlignLeft)
 
 	// Placeholder root node
@@ -280,15 +280,7 @@ func (a *App) handleGameSave(id *int64, name string, description string) {
 	game, err := a.gameHandler.SaveGame(id, name, description)
 	if err != nil {
 		// Check if it's a validation error
-		if valErr, ok := err.(*ValidationError); ok {
-			// Build field errors map from validator
-			fieldErrors := make(map[string]string)
-			for _, fieldErr := range valErr.Validator.Errors {
-				fieldErrors[fieldErr.Field] = fieldErr.FormattedErrorMessage()
-			}
-
-			// Set all errors at once and update labels
-			a.gameForm.SetFieldErrors(fieldErrors)
+		if handleValidationError(err, a.gameForm) {
 			return
 		}
 		// Other error - could show a generic error modal
@@ -331,19 +323,8 @@ func (a *App) handleLogSave(id *int64, logType log.LogType, description string, 
 	// Save the log
 	logEntry, err := a.logHandler.SaveLog(id, a.selectedGame.Id, logType, description, result, narrative)
 	if err != nil {
-		// Check if it's a validation error
-		if valErr, ok := err.(*ValidationError); ok {
-			// Build field errors map from validator
-			fieldErrors := make(map[string]string)
-			for _, fieldErr := range valErr.Validator.Errors {
-				fieldErrors[fieldErr.Field] = fieldErr.FormattedErrorMessage()
-			}
-
-			// Set all errors at once and update labels
-			a.logForm.SetFieldErrors(fieldErrors)
-			return
-		}
-		// Other error - could show a generic error modal
+		// Handle the validation error
+		handleValidationError(err, a.logForm)
 		return
 	}
 
