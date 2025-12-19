@@ -1,0 +1,288 @@
+@startuml SoloTerm Architecture
+
+!define DOMAIN_COLOR #E8F5E9
+!define UI_COLOR #E3F2FD
+!define SHARED_COLOR #FFF9C4
+!define DB_COLOR #FCE4EC
+
+skinparam packageStyle rectangle
+skinparam linetype ortho
+
+' ==================== DOMAIN LAYER ====================
+package "domain/game" <<Rectangle>> DOMAIN_COLOR {
+    class Game {
+        + Id: int64
+        + Name: string
+        + Description: *string
+        + CreatedAt: time.Time
+        + UpdatedAt: time.Time
+        --
+        + NewGame(name: string): (*Game, error)
+        + Validate(): *Validator
+    }
+
+    class GameRepository {
+        - db: *sqlx.DB
+        --
+        + NewRepository(db: *sqlx.DB): *Repository
+        + Save(game: *Game): error
+        + Delete(id: int64): (int64, error)
+        + GetByID(id: int64): (*Game, error)
+        + GetAll(): ([]*Game, error)
+        - insert(game: *Game): error
+        - update(game: *Game): error
+    }
+
+    note right of Game
+        Validation Rules:
+        - Name: 1-50 chars (required)
+        - Description: 3-100 chars (optional)
+    end note
+}
+
+package "domain/log" <<Rectangle>> DOMAIN_COLOR {
+    enum LogType {
+        CHARACTER_ACTION
+        ORACLE_QUESTION
+        MECHANICS
+    }
+
+    class Log {
+        + ID: int64
+        + GameID: int64
+        + LogType: LogType
+        + Description: string
+        + Narrative: string
+        + Result: string
+        + CreatedAt: time.Time
+        + UpdatedAt: time.Time
+        --
+        + NewLog(game_id: int64): (*Log, error)
+        + Validate(): *Validator
+    }
+
+    class LogRepository {
+        - db: *sqlx.DB
+        --
+        + NewRepository(db: *sqlx.DB): *Repository
+        + Save(log: *Log): error
+        + Delete(id: int64): (int64, error)
+        + DeleteAllForGame(game_id: int64): (int64, error)
+        + GetByID(id: int64): (*Log, error)
+        + GetAllForGame(game_id: int64): ([]*Log, error)
+        - insert(log: *Log): error
+        - update(log: *Log): error
+    }
+}
+
+' ==================== UI LAYER ====================
+package "ui" <<Rectangle>> UI_COLOR {
+    class App {
+        + *tview.Application
+        --
+        - db: *sqlx.DB
+        - handlers: *GameHandlers
+        --
+        - mainFlex: *tview.Flex
+        - rightFlex: *tview.Flex
+        - pages: *tview.Pages
+        --
+        - gameTree: *tview.TreeView
+        - logView: *tview.TextView
+        - inputArea: *tview.TextArea
+        - helpModal: *tview.Modal
+        - footer: *tview.TextView
+        - newGameModal: *tview.Flex
+        - newGameForm: *GameForm
+        - newLogModal: *tview.Flex
+        - newLogForm: *LogForm
+        --
+        + NewApp(db: *sqlx.DB): *App
+        + Run(): error
+        - setupUI()
+        - setupKeyBindings()
+        - setupNewGameModal()
+        - setupNewLogModal()
+        - showHelp()
+        - showNewGameModal()
+        - handleGameSave(id: *int64, name: string, description: string)
+        - handleGameCancel()
+        - handleLogSave(id: *int64, logType: LogType, description: string, result: string, narrative: string)
+        - handleLogCancel()
+        - refreshGameTree()
+        - togglePane(pane: tview.Primitive)
+    }
+
+    class GameHandlers {
+        - db: *sqlx.DB
+        - gameRepo: *GameRepository
+        --
+        + NewGameHandlers(db: *sqlx.DB): *GameHandlers
+        + SaveGame(id: *int64, name: string, description: string): (*Game, error)
+        + SaveLog(id: *int64, logType: LogType, description: string, result: string, narrative: string): (*Log, error)
+    }
+
+    class ValidationError {
+        + Validator: *Validator
+        --
+        + Error(): string
+    }
+
+    class GameForm {
+        + *tview.Form
+        --
+        - game_id: *int64
+        - nameField: *tview.InputField
+        - descriptionField: *tview.TextArea
+        - errorMessage: *tview.TextView
+        - fieldErrors: map[string]string
+        - onSave: func(...)
+        - onCancel: func()
+        --
+        + NewGameForm(onSave: func(...), onCancel: func()): *GameForm
+        + Populate(game: *Game)
+        + Reset()
+        + SetFieldError(field: string, message: string)
+        + SetFieldErrors(errors: map[string]string)
+        + UpdateFieldLabels()
+        + ClearFieldErrors()
+        - setupForm()
+    }
+
+    class LogForm {
+        + *tview.Form
+        --
+        - id: *int64
+        - logTypeField: *tview.DropDown
+        - resultField: *tview.InputField
+        - narrativeField: *tview.TextArea
+        - descriptionField: *tview.InputField
+        - errorMessage: *tview.TextView
+        - fieldErrors: map[string]string
+        - onSave: func(...)
+        - onCancel: func()
+        --
+        + NewLogForm(onSave: func(...), onCancel: func()): *LogForm
+        + Reset()
+        + SetFieldError(field: string, message: string)
+        + SetFieldErrors(errors: map[string]string)
+        + UpdateFieldLabels()
+        + ClearFieldErrors()
+        - setupForm()
+    }
+
+    note right of App
+        Main TUI Application
+        Keyboard Shortcuts:
+        - F1: Help
+        - Ctrl+N: New Game
+        - Ctrl+B: Toggle Sidebar
+        - Ctrl+S: Save Entry
+        - Ctrl+C: Quit
+    end note
+}
+
+' ==================== SHARED LAYER ====================
+package "shared/validation" <<Rectangle>> SHARED_COLOR {
+    class Validator {
+        + Errors: []ValidationError
+        --
+        + NewValidator(): *Validator
+        + Check(identifier: string, checkResult: bool, errMsg: string, args: ...any)
+        + IsInError(identifier: string): bool
+        + HasErrors(): bool
+        + GetError(identifier: string): *ValidationError
+        + GetErrorMessagesFor(identifier: string): string
+        + GetAllErrorMessages(): string
+    }
+
+    class ValidationFieldError {
+        + Field: string
+        + Messages: []string
+        --
+        + FormattedErrorMessage(): string
+    }
+}
+
+' ==================== DATABASE LAYER ====================
+package "database" <<Rectangle>> DB_COLOR {
+    class Database {
+        {static} + Setup(): (*sqlx.DB, error)
+        {static} + Connect(): (*sqlx.DB, error)
+        {static} + ConnectWithPath(dbPath: string): (*sqlx.DB, error)
+        {static} + RegisterMigration(fn: MigrationFunc)
+        {static} + AddColumn(db: *sqlx.DB, tableName: string, column: string, columnType: string, notnull: bool, defaultValue: *string): error
+        {static} - columnExists(db: *sqlx.DB, table: string, column: string): (bool, error)
+    }
+
+    interface MigrationFunc {
+        + (db: *sqlx.DB): error
+    }
+}
+
+' ==================== EXTERNAL DEPENDENCIES ====================
+package "External Libraries" <<Rectangle>> #F5F5F5 {
+    class "sqlx.DB" as sqlxDB {
+        Database connection pool
+    }
+
+    class "tview" as tview {
+        Terminal UI framework
+    }
+}
+
+' ==================== RELATIONSHIPS ====================
+
+' Domain relationships
+Game "1" -- "0..*" Log : has
+Log --> LogType : uses
+
+' Repository dependencies
+GameRepository --> sqlxDB : uses
+LogRepository --> sqlxDB : uses
+GameRepository ..> Game : manages
+LogRepository ..> Log : manages
+
+' UI dependencies
+App *-- GameHandlers : contains
+App *-- GameForm : contains
+App *-- LogForm : contains
+App --> sqlxDB : uses
+App --|> tview : extends
+
+GameHandlers --> GameRepository : uses
+GameHandlers --> LogRepository : uses
+GameHandlers --> sqlxDB : uses
+GameHandlers ..> Game : creates
+GameHandlers ..> Log : creates
+GameHandlers ..> ValidationError : throws
+
+GameForm --|> tview : extends
+GameForm ..> Game : populates
+LogForm --|> tview : extends
+LogForm ..> LogType : uses
+
+' Validation relationships
+Game ..> Validator : validates with
+Log ..> Validator : validates with
+Validator *-- ValidationFieldError : contains
+ValidationError --> Validator : wraps
+GameForm ..> ValidationError : displays
+LogForm ..> ValidationError : displays
+
+' Database relationships
+Database ..> sqlxDB : creates
+Database ..> MigrationFunc : executes
+
+' Main entry point (not shown in detail)
+note as MainNote
+    <b>main.go</b>
+    1. database.Setup() → *sqlx.DB
+    2. ui.NewApp(db) → *App
+    3. app.Run() → event loop
+end note
+
+MainNote .. Database
+MainNote .. App
+
+@enduml

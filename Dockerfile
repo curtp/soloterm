@@ -7,7 +7,8 @@ RUN apt-get update && apt-get install -y \
     curl \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && apt install sqlite3 libsqlite3-dev
 
 # Set the working directory inside the container
 WORKDIR /app
