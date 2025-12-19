@@ -32,7 +32,8 @@ func createTable(db *sqlx.DB) error {
 			result STRING NOT NULL,
 			narrative STRING NOT NULL,
 			created_at DATETIME NOT NULL,
-			updated_at DATETIME NOT NULL
+			updated_at DATETIME NOT NULL,
+			FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE
 		);
 
 		CREATE INDEX IF NOT EXISTS idx_logs_by_game_id ON logs (game_id);

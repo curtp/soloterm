@@ -17,14 +17,16 @@ type GameForm struct {
 	fieldErrors      map[string]string // Track which fields have errors
 	onSave           func(id *int64, name string, description string)
 	onCancel         func()
+	onDelete         func(id int64)
 }
 
 // NewGameForm creates a new game form
-func NewGameForm(onSave func(id *int64, name string, description string), onCancel func()) *GameForm {
+func NewGameForm(onSave func(id *int64, name string, description string), onCancel func(), onDelete func(id int64)) *GameForm {
 	gf := &GameForm{
 		Form:        tview.NewForm(),
 		onSave:      onSave,
 		onCancel:    onCancel,
+		onDelete:    onDelete,
 		fieldErrors: make(map[string]string),
 	}
 
@@ -53,6 +55,16 @@ func (gf *GameForm) PopulateForEdit(game *game.Game) {
 	gf.game_id = &game.Id
 	gf.descriptionField.SetText(*game.Description, false)
 	gf.nameField.SetText(game.Name)
+
+	// Add delete button for edit mode (insert at the beginning)
+	if gf.GetButtonCount() == 2 { // Only Save and Cancel exist
+		gf.AddButton("Delete", func() {
+			if gf.onDelete != nil && gf.game_id != nil {
+				gf.onDelete(*gf.game_id)
+			}
+		})
+	}
+
 	gf.SetFocus(0)
 	gf.SetTitle(" Edit Game ")
 }

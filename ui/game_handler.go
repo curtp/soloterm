@@ -53,3 +53,17 @@ func (h *GameHandler) SaveGame(id *int64, name string, description string) (*gam
 
 	return g, nil
 }
+
+func (h *GameHandler) GetAll() ([]*game.Game, error) {
+	return h.gameRepo.GetAll()
+}
+
+func (h *GameHandler) GetByID(id int64) (*game.Game, error) {
+	return h.gameRepo.GetByID(id)
+}
+
+// Delete deletes a game by ID
+func (h *GameHandler) Delete(id int64) error {
+	_, err := h.gameRepo.Delete(id)
+	return err
+}

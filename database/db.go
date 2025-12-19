@@ -29,6 +29,12 @@ func ConnectWithPath(dbPath string) (*sqlx.DB, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		_, err = db.Exec("PRAGMA foreign_keys = ON")
+		if err != nil {
+			return nil, err
+		}
+
 	}
 
 	return db, nil

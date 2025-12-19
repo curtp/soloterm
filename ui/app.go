@@ -213,6 +213,7 @@ func (a *App) setupGameModal() {
 	a.gameForm = NewGameForm(
 		a.handleGameSave,
 		a.handleGameCancel,
+		a.handleGameDelete,
 	)
 
 	// Center the modal on screen
@@ -465,6 +466,40 @@ func (a *App) handleGameEdit(gameID int64) {
 	// Show the modal
 	a.pages.ShowPage(GAME_MODAL_ID)
 	a.SetFocus(a.gameForm)
+}
+
+func (a *App) handleGameDelete(gameID int64) {
+	// Show confirmation modal
+	a.confirmModal.Show(
+		"Are you sure you want to delete this game and all associated log entries?\n\nThis action cannot be undone.",
+		func() {
+			// Delete the game
+			err := a.gameHandler.Delete(gameID)
+			if err != nil {
+				a.pages.HidePage(CONFIRM_MODAL_ID)
+				a.notification.ShowError("Error deleting game: " + err.Error())
+				return
+			}
+
+			// Close modals
+			a.pages.HidePage(CONFIRM_MODAL_ID)
+			a.pages.HidePage(GAME_MODAL_ID)
+			a.pages.SwitchToPage(MAIN_PAGE_ID)
+
+			// Refresh the UI
+			a.logView.Clear()
+			a.refreshGameTree()
+			a.SetFocus(a.gameTree)
+
+			// Show success notification
+			a.notification.ShowSuccess("Game deleted successfully")
+		},
+		func() {
+			// Cancel - just hide the confirmation modal
+			a.pages.HidePage(CONFIRM_MODAL_ID)
+		},
+	)
+	a.pages.ShowPage(CONFIRM_MODAL_ID)
 }
 
 func (a *App) loadLogsForGame(gameID int64) {
