@@ -1,7 +1,6 @@
 package ui
 
 import (
-	stdlog "log"
 	"soloterm/domain/log"
 
 	"github.com/rivo/tview"
@@ -19,14 +18,16 @@ type LogForm struct {
 	fieldErrors      map[string]string // Track which fields have errors
 	onSave           func(id *int64, logType log.LogType, description string, result string, narrative string)
 	onCancel         func()
+	onDelete         func(id int64)
 }
 
 // NewLogForm creates a new log form
-func NewLogForm(onSave func(id *int64, logType log.LogType, description string, result string, narrative string), onCancel func()) *LogForm {
+func NewLogForm(onSave func(id *int64, logType log.LogType, description string, result string, narrative string), onCancel func(), onDelete func(id int64)) *LogForm {
 	lf := &LogForm{
 		Form:        tview.NewForm(),
 		onSave:      onSave,
 		onCancel:    onCancel,
+		onDelete:    onDelete,
 		fieldErrors: make(map[string]string),
 	}
 
@@ -67,19 +68,15 @@ func (lf *LogForm) setupForm() {
 
 	// Add buttons
 	lf.AddButton("Save", func() {
-		stdlog.Println("Log form Save button clicked")
 		id := lf.id
 		_, selected := lf.logTypeField.GetCurrentOption()
 		logType := log.LogTypeFor(selected)
 		description := lf.descriptionField.GetText()
 		result := lf.resultField.GetText()
 		narrative := lf.narrativeField.GetText()
-		stdlog.Printf("Form data: logType=%s, desc=%s, result=%s, narrative=%s", logType, description, result, narrative)
+
 		if lf.onSave != nil {
-			stdlog.Println("Calling onSave callback")
 			lf.onSave(id, logType, description, result, narrative)
-		} else {
-			stdlog.Println("WARNING: onSave callback is nil!")
 		}
 	})
 
@@ -106,8 +103,15 @@ func (lf *LogForm) Reset() {
 	lf.narrativeField.SetText("", false)
 	lf.resultField.SetText("")
 	lf.descriptionField.SetText("")
+
+	// Remove delete button if it exists (going back to create mode)
+	if lf.GetButtonCount() == 3 { // Save, Cancel, and Delete
+		lf.RemoveButton(2) // Remove the Delete button (index 2)
+	}
+
 	lf.ClearFieldErrors()
 	lf.SetTitle(" New Log ")
+	lf.SetFocus(0)
 }
 
 // PopulateForEdit fills the form with existing log data for editing
@@ -128,8 +132,18 @@ func (lf *LogForm) PopulateForEdit(logEntry *log.Log) {
 	lf.resultField.SetText(logEntry.Result)
 	lf.narrativeField.SetText(logEntry.Narrative, false)
 
+	// Add delete button for edit mode (insert at the beginning)
+	if lf.GetButtonCount() == 2 { // Only Save and Cancel exist
+		lf.AddButton("Delete", func() {
+			if lf.onDelete != nil && lf.id != nil {
+				lf.onDelete(*lf.id)
+			}
+		})
+	}
+
 	lf.ClearFieldErrors()
 	lf.SetTitle(" Edit Log ")
+	lf.SetFocus(0)
 }
 
 // SetFieldError highlights a field and shows an error message

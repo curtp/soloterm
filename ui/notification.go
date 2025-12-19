@@ -19,17 +19,21 @@ const (
 // Notification represents a temporary message banner
 type Notification struct {
 	*tview.TextView
-	app      *App
-	duration time.Duration
-	timer    *time.Timer
+	container *tview.Flex
+	pages     *tview.Pages
+	app       *tview.Application
+	duration  time.Duration
+	timer     *time.Timer
 }
 
 // NewNotification creates a new notification banner
-func NewNotification(app *App) *Notification {
+func NewNotification(container *tview.Flex, pages *tview.Pages, app *tview.Application) *Notification {
 	n := &Notification{
-		TextView: tview.NewTextView(),
-		app:      app,
-		duration: 3 * time.Second, // Default 3 seconds
+		TextView:  tview.NewTextView(),
+		container: container,
+		pages:     pages,
+		app:       app,
+		duration:  3 * time.Second, // Default 3 seconds
 	}
 
 	n.SetDynamicColors(true).
@@ -59,15 +63,29 @@ func (n *Notification) Show(notifType NotificationType, message string) {
 
 	n.SetText(coloredMessage)
 
-	// Make the notification visible by adding it to the layout
-	n.app.showNotification()
+	// Make the notification visible
+	n.show()
 
 	// Auto-hide after duration
 	n.timer = time.AfterFunc(n.duration, func() {
-		n.app.Application.QueueUpdateDraw(func() {
-			n.app.hideNotification()
+		n.app.QueueUpdateDraw(func() {
+			n.hide()
 		})
 	})
+}
+
+// show makes the notification visible by adding it to the layout
+func (n *Notification) show() {
+	n.container.Clear()
+	n.container.
+		AddItem(n.TextView, 1, 0, false).
+		AddItem(n.pages, 0, 1, true)
+}
+
+// hide removes the notification from the layout
+func (n *Notification) hide() {
+	n.container.Clear()
+	n.container.AddItem(n.pages, 0, 1, true)
 }
 
 // ShowInfo shows an info notification

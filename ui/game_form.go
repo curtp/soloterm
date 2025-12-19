@@ -53,6 +53,8 @@ func (gf *GameForm) PopulateForEdit(game *game.Game) {
 	gf.game_id = &game.Id
 	gf.descriptionField.SetText(*game.Description, false)
 	gf.nameField.SetText(game.Name)
+	gf.SetFocus(0)
+	gf.SetTitle(" Edit Game ")
 }
 
 func (gf *GameForm) setupForm() {
@@ -93,6 +95,7 @@ func (gf *GameForm) Reset() {
 	gf.nameField.SetText("")
 	gf.descriptionField.SetText("", false)
 	gf.ClearFieldErrors()
+	gf.SetFocus(0)
 }
 
 // SetFieldError highlights a field and shows an error message

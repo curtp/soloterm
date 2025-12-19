@@ -1,7 +1,6 @@
 package ui
 
 import (
-	stdlog "log"
 	"soloterm/domain/game"
 	"soloterm/domain/log"
 	"strconv"
@@ -31,16 +30,16 @@ type App struct {
 	notificationFlex *tview.Flex // Container for notification banner
 
 	// UI Components
-	gameTree     *tview.TreeView
-	logView      *tview.TextView
-	helpModal    *tview.Modal
-	footer       *tview.TextView
-	newGameModal *tview.Flex
-	newGameForm  *GameForm
-	newLogModal  *tview.Flex
-	newLogForm   *LogForm
-	notification *Notification
-	isNotifShown bool // Track if notification is currently visible
+	gameTree        *tview.TreeView
+	logView         *tview.TextView
+	helpModal       *tview.Modal
+	confirmModal    *ConfirmationModal
+	footer          *tview.TextView
+	newGameModal    *tview.Flex
+	newGameForm     *GameForm
+	newLogModal     *tview.Flex
+	newLogForm      *LogForm
+	notification    *Notification
 }
 
 func NewApp(db *sqlx.DB) *App {
@@ -138,21 +137,25 @@ func (a *App) setupUI() {
 	// New Log Modal
 	a.setupNewLogModal()
 
+	// Create confirmation modal
+	a.confirmModal = NewConfirmationModal()
+
 	// Pages for modal overlay (must be created BEFORE notification setup)
 	a.pages = tview.NewPages().
 		AddPage("main", mainContent, true, true).
 		AddPage("help", a.helpModal, true, false).
 		AddPage("newGame", a.newGameModal, true, false).
-		AddPage("newLog", a.newLogModal, true, false)
+		AddPage("newLog", a.newLogModal, true, false).
+		AddPage("confirm", a.confirmModal, true, false)
 	a.pages.SetBackgroundColor(tcell.ColorDefault)
-
-	// Create notification system
-	a.notification = NewNotification(a)
 
 	// Create notification flex (initially hidden - just shows pages)
 	a.notificationFlex = tview.NewFlex().
 		SetDirection(tview.FlexRow).
 		AddItem(a.pages, 0, 1, true)
+
+	// Create notification system (after notificationFlex and pages are created)
+	a.notification = NewNotification(a.notificationFlex, a.pages, a.Application)
 
 	// Root flex that can show/hide notification
 	a.rootFlex = tview.NewFlex().
@@ -224,6 +227,7 @@ func (a *App) setupNewLogModal() {
 	a.newLogForm = NewLogForm(
 		a.handleLogSave,
 		a.handleLogCancel,
+		a.handleLogDelete,
 	)
 
 	// Center the modal on screen
@@ -291,7 +295,6 @@ func (a *App) handleGameSave(id *int64, name string, description string) {
 	// Clear logs view for the new game
 	a.loadLogsForGame(game.Id)
 
-	stdlog.Printf("id: %d", id)
 	// Set the success message based on update vs. create
 	message := "Game created successfuly"
 	if id == nil {
@@ -406,6 +409,40 @@ func (a *App) handleLogEdit(logID int64) {
 	a.SetFocus(a.newLogForm)
 }
 
+func (a *App) handleLogDelete(logID int64) {
+	// Show confirmation modal
+	a.confirmModal.Show(
+		"Are you sure you want to delete this log entry?\n\nThis action cannot be undone.",
+		func() {
+			// Delete the log entry
+			_, err := a.logHandler.logRepo.Delete(logID)
+			if err != nil {
+				a.pages.HidePage("confirm")
+				a.notification.ShowError("Error deleting log entry: " + err.Error())
+				return
+			}
+
+			// Close modals
+			a.pages.HidePage("confirm")
+			a.pages.HidePage("newLog")
+			a.pages.SwitchToPage("main")
+
+			// Refresh the UI
+			a.refreshGameTree()
+			a.loadLogsForSelectedGameEntry()
+			a.SetFocus(a.logView)
+
+			// Show success notification
+			a.notification.ShowSuccess("Log entry deleted successfully")
+		},
+		func() {
+			// Cancel - just hide the confirmation modal
+			a.pages.HidePage("confirm")
+		},
+	)
+	a.pages.ShowPage("confirm")
+}
+
 func (a *App) handleGameEdit(gameID int64) {
 	// Load the game from the database
 	game, err := a.gameHandler.gameRepo.GetByID(gameID)
@@ -423,7 +460,6 @@ func (a *App) handleGameEdit(gameID int64) {
 }
 
 func (a *App) loadLogsForGame(gameID int64) {
-	stdlog.Printf("loading logs for game %d", gameID)
 
 	// Clear the log view
 	a.logView.Clear()
@@ -444,7 +480,6 @@ func (a *App) loadLogsForGame(gameID int64) {
 }
 
 func (a *App) loadLogsForSession(gameID int64, sessionDate string) {
-	stdlog.Printf("Loading Sesssion Logs: %d, %s", gameID, sessionDate)
 	// Clear the log view
 	a.logView.Clear()
 
@@ -609,23 +644,6 @@ func (a *App) togglePane(pane tview.Primitive) {
 	}
 }
 
-func (a *App) showNotification() {
-	if !a.isNotifShown {
-		a.notificationFlex.Clear()
-		a.notificationFlex.
-			AddItem(a.notification, 1, 0, false).
-			AddItem(a.pages, 0, 1, true)
-		a.isNotifShown = true
-	}
-}
-
-func (a *App) hideNotification() {
-	if a.isNotifShown {
-		a.notificationFlex.Clear()
-		a.notificationFlex.AddItem(a.pages, 0, 1, true)
-		a.isNotifShown = false
-	}
-}
 
 func (a *App) showSelectGameModal() {
 	a.notification.ShowWarning("Please select a game first")
