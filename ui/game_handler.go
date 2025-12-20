@@ -41,8 +41,8 @@ func (h *GameHandler) SaveGame(id *int64, name string, description string) (*gam
 	// Validate the data
 	validator := g.Validate()
 	if validator.HasErrors() {
-		// Return validation error (we'll handle this specially)
-		return nil, &ValidationError{Validator: validator}
+		// Return validation error (validator implements error interface)
+		return nil, validator
 	}
 
 	// Save to database

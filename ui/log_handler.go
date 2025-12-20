@@ -38,8 +38,8 @@ func (h *LogHandler) SaveLog(id *int64, gameID int64, logType log.LogType, descr
 	// Validate the data
 	validator := l.Validate()
 	if validator.HasErrors() {
-		// Return validation error (we'll handle this specially)
-		return nil, &ValidationError{Validator: validator}
+		// Return validation error (validator implements error interface)
+		return nil, validator
 	}
 
 	// Save to database

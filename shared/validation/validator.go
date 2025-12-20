@@ -84,6 +84,11 @@ func (v *Validator) GetAllErrorMessages() string {
 	return strings.Join(errMsgs, "; ")
 }
 
+// Error implements the error interface for Validator
+func (v *Validator) Error() string {
+	return v.GetAllErrorMessages()
+}
+
 // Creates a new ValidationError
 func newValidationError(field string, message string) ValidationError {
 	return ValidationError{Field: field, Messages: []string{message}}
