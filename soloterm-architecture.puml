@@ -61,6 +61,12 @@ package "domain/log" <<Rectangle>> DOMAIN_COLOR {
         + Validate(): *Validator
     }
 
+    class Session {
+        + GameID: int64
+        + Date: string
+        + LogCount: int
+    }
+
     class LogRepository {
         - db: *sqlx.DB
         --
@@ -70,9 +76,16 @@ package "domain/log" <<Rectangle>> DOMAIN_COLOR {
         + DeleteAllForGame(game_id: int64): (int64, error)
         + GetByID(id: int64): (*Log, error)
         + GetAllForGame(game_id: int64): ([]*Log, error)
+        + GetSessionsForGame(game_id: int64): ([]*Session, error)
+        + GetLogsForSession(game_id: int64, session_date: string): ([]*Log, error)
         - insert(log: *Log): error
         - update(log: *Log): error
     }
+
+    note right of Session
+        Virtual grouping of logs by date
+        Used for organizing logs in UI tree
+    end note
 }
 
 ' ==================== UI LAYER ====================
@@ -81,51 +94,76 @@ package "ui" <<Rectangle>> UI_COLOR {
         + *tview.Application
         --
         - db: *sqlx.DB
-        - handlers: *GameHandlers
+        - gameHandler: *GameHandler
+        - logHandler: *LogHandler
         --
+        - selectedGame: *Game
+        - selectedLog: *Log
+        --
+        - rootFlex: *tview.Flex
         - mainFlex: *tview.Flex
-        - rightFlex: *tview.Flex
         - pages: *tview.Pages
+        - notificationFlex: *tview.Flex
         --
         - gameTree: *tview.TreeView
         - logView: *tview.TextView
-        - inputArea: *tview.TextArea
         - helpModal: *tview.Modal
+        - confirmModal: *ConfirmationModal
         - footer: *tview.TextView
-        - newGameModal: *tview.Flex
-        - newGameForm: *GameForm
-        - newLogModal: *tview.Flex
-        - newLogForm: *LogForm
+        - gameModal: *tview.Flex
+        - gameForm: *GameForm
+        - logModal: *tview.Flex
+        - logForm: *LogForm
+        - notification: *Notification
         --
         + NewApp(db: *sqlx.DB): *App
         + Run(): error
         - setupUI()
         - setupKeyBindings()
-        - setupNewGameModal()
-        - setupNewLogModal()
-        - showHelp()
-        - showNewGameModal()
+        - refreshGameTree()
+        - loadLogsForGame(gameID: int64)
+        - loadLogsForSession(gameID: int64, sessionDate: string)
+        - displayLogs(logs: []*Log)
         - handleGameSave(id: *int64, name: string, description: string)
         - handleGameCancel()
+        - handleGameEdit()
+        - handleGameDelete()
         - handleLogSave(id: *int64, logType: LogType, description: string, result: string, narrative: string)
         - handleLogCancel()
-        - refreshGameTree()
+        - handleLogEdit()
+        - handleLogDelete()
         - togglePane(pane: tview.Primitive)
     }
 
-    class GameHandlers {
+    class GameHandler {
         - db: *sqlx.DB
         - gameRepo: *GameRepository
         --
-        + NewGameHandlers(db: *sqlx.DB): *GameHandlers
+        + NewGameHandler(db: *sqlx.DB): *GameHandler
         + SaveGame(id: *int64, name: string, description: string): (*Game, error)
-        + SaveLog(id: *int64, logType: LogType, description: string, result: string, narrative: string): (*Log, error)
+        + Delete(id: int64): error
+        + GetByID(id: int64): (*Game, error)
+        + GetAll(): ([]*Game, error)
     }
 
-    class ValidationError {
-        + Validator: *Validator
+    class LogHandler {
+        - db: *sqlx.DB
+        - logRepo: *LogRepository
         --
-        + Error(): string
+        + NewLogHandler(db: *sqlx.DB): *LogHandler
+        + SaveLog(id: *int64, gameID: int64, logType: LogType, description: string, result: string, narrative: string): (*Log, error)
+        + Delete(id: int64): error
+        + GetByID(id: int64): (*Log, error)
+        + GetAllForGame(gameID: int64): ([]*Log, error)
+        + GetSessionsForGame(gameID: int64): ([]*Session, error)
+        + GetLogsForSession(gameID: int64, sessionDate: string): ([]*Log, error)
+    }
+
+    interface ValidatableForm {
+        + SetFieldError(field: string, message: string)
+        + SetFieldErrors(errors: map[string]string)
+        + UpdateFieldLabels()
+        + ClearFieldErrors()
     }
 
     class GameForm {
@@ -140,7 +178,7 @@ package "ui" <<Rectangle>> UI_COLOR {
         - onCancel: func()
         --
         + NewGameForm(onSave: func(...), onCancel: func()): *GameForm
-        + Populate(game: *Game)
+        + PopulateForEdit(game: *Game)
         + Reset()
         + SetFieldError(field: string, message: string)
         + SetFieldErrors(errors: map[string]string)
@@ -163,6 +201,7 @@ package "ui" <<Rectangle>> UI_COLOR {
         - onCancel: func()
         --
         + NewLogForm(onSave: func(...), onCancel: func()): *LogForm
+        + PopulateForEdit(log: *Log)
         + Reset()
         + SetFieldError(field: string, message: string)
         + SetFieldErrors(errors: map[string]string)
@@ -171,13 +210,49 @@ package "ui" <<Rectangle>> UI_COLOR {
         - setupForm()
     }
 
+    class ConfirmationModal {
+        + *tview.Modal
+        --
+        - message: string
+        - onConfirm: func()
+        - onCancel: func()
+        --
+        + NewConfirmationModal(message: string, onConfirm: func(), onCancel: func()): *ConfirmationModal
+        + Show(pages: *tview.Pages)
+        + Hide(pages: *tview.Pages)
+    }
+
+    enum NotificationType {
+        INFO
+        SUCCESS
+        WARNING
+        ERROR
+    }
+
+    class Notification {
+        + *tview.TextView
+        --
+        - notificationType: NotificationType
+        - duration: time.Duration
+        - hideFunc: func()
+        --
+        + NewNotification(hideFunc: func()): *Notification
+        + ShowInfo(message: string)
+        + ShowSuccess(message: string)
+        + ShowWarning(message: string)
+        + ShowError(message: string)
+        - show(message: string, notificationType: NotificationType)
+        - hide()
+    }
+
     note right of App
         Main TUI Application
         Keyboard Shortcuts:
         - F1: Help
-        - Ctrl+N: New Game
+        - Ctrl+G: New Game
+        - Ctrl+L: New Log Entry
+        - Ctrl+E: Edit Selected
         - Ctrl+B: Toggle Sidebar
-        - Ctrl+S: Save Entry
         - Ctrl+C: Quit
     end note
 }
@@ -236,6 +311,7 @@ package "External Libraries" <<Rectangle>> #F5F5F5 {
 ' Domain relationships
 Game "1" -- "0..*" Log : has
 Log --> LogType : uses
+LogRepository ..> Session : returns
 
 ' Repository dependencies
 GameRepository --> sqlxDB : uses
@@ -244,31 +320,41 @@ GameRepository ..> Game : manages
 LogRepository ..> Log : manages
 
 ' UI dependencies
-App *-- GameHandlers : contains
+App *-- GameHandler : contains
+App *-- LogHandler : contains
 App *-- GameForm : contains
 App *-- LogForm : contains
+App *-- ConfirmationModal : contains
+App *-- Notification : contains
 App --> sqlxDB : uses
 App --|> tview : extends
 
-GameHandlers --> GameRepository : uses
-GameHandlers --> LogRepository : uses
-GameHandlers --> sqlxDB : uses
-GameHandlers ..> Game : creates
-GameHandlers ..> Log : creates
-GameHandlers ..> ValidationError : throws
+GameHandler --> GameRepository : uses
+GameHandler --> sqlxDB : uses
+GameHandler ..> Game : creates
 
+LogHandler --> LogRepository : uses
+LogHandler --> sqlxDB : uses
+LogHandler ..> Log : creates
+LogHandler ..> Session : returns
+
+GameForm ..|> ValidatableForm : implements
 GameForm --|> tview : extends
 GameForm ..> Game : populates
+LogForm ..|> ValidatableForm : implements
 LogForm --|> tview : extends
 LogForm ..> LogType : uses
+LogForm ..> Log : populates
+
+ConfirmationModal --|> tview : extends
+Notification --|> tview : extends
+Notification --> NotificationType : uses
 
 ' Validation relationships
 Game ..> Validator : validates with
 Log ..> Validator : validates with
 Validator *-- ValidationFieldError : contains
-ValidationError --> Validator : wraps
-GameForm ..> ValidationError : displays
-LogForm ..> ValidationError : displays
+ValidatableForm ..> ValidationFieldError : displays
 
 ' Database relationships
 Database ..> sqlxDB : creates
