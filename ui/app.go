@@ -534,18 +534,20 @@ func (a *App) displayLogs(logs []*log.Log) {
 			if lastBlockLabel != "" {
 				output += "\n" // Add spacing between blocks
 			}
-			output += "[lime::b]" + blockLabel + "[-::-]\n"
-			output += "[gray]─────[-]\n"
+			output += "[lime::b]===  " + blockLabel + "  ===[-::-]\n\n"
 			lastBlockLabel = blockLabel
 		}
 
 		// Print the log entry
 		timestamp := localTime.Format("15:04")
 		output += "[\"" + strconv.FormatInt(l.ID, 10) + "\"][::i][aqua::b]" + timestamp + "[-::-] "
-		output += "[::i][yellow::b]" + string(l.LogType) + "[-::-]\n"
+		output += "[::i][yellow::b]" + l.LogType.DisplayName() + "[-::-]\n"
 		output += "[::i][yellow::b]Description:[-::-] " + l.Description + "\n"
 		output += "[::i][yellow::b]Result:[-::-] " + l.Result + "\n"
-		output += "[::i][yellow::b]Narrative:[-::-] " + l.Narrative + "[\"\"]\n\n"
+		if len(l.Narrative) > 0 {
+			output += "[::i][yellow::b]Narrative:[-::-] " + l.Narrative + "[\"\"]\n"
+		}
+		output += "\n"
 	}
 
 	a.logView.SetText(output)

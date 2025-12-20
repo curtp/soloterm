@@ -13,6 +13,20 @@ const (
 	MECHANICS        LogType = "mechanics"
 )
 
+// DisplayName returns the user-friendly display name for the log type
+func (lt LogType) DisplayName() string {
+	switch lt {
+	case CHARACTER_ACTION:
+		return "Character Action"
+	case ORACLE_QUESTION:
+		return "Oracle Question"
+	case MECHANICS:
+		return "Mechanics"
+	default:
+		return string(lt)
+	}
+}
+
 // Game represents a game in the system
 type Log struct {
 	ID          int64     `db:"id"`
@@ -67,6 +81,8 @@ func (l *Log) Validate() *validation.Validator {
 	v.Check("log_type", l.LogType == MECHANICS || l.LogType == CHARACTER_ACTION || l.LogType == ORACLE_QUESTION, "%s type is unknown", l.LogType)
 	v.Check("description", len(l.Description) > 0, "cannot be blank")
 	v.Check("result", len(l.Result) > 0, "cannot be blank")
-	v.Check("narrative", len(l.Narrative) > 0, "cannot be blank")
+	if l.LogType == CHARACTER_ACTION {
+		v.Check("narrative", len(l.Narrative) > 0, "cannot be blank")
+	}
 	return v
 }

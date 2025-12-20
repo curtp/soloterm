@@ -35,10 +35,14 @@ func NewLogForm(onSave func(id *int64, logType log.LogType, description string, 
 		SetLabel("").
 		SetText("")
 
-	// Log Type field
+	// Log Type field (using display names)
 	lf.logTypeField = tview.NewDropDown().
 		SetLabel("Log Type").
-		SetOptions([]string{string(log.CHARACTER_ACTION), string(log.MECHANICS), string(log.ORACLE_QUESTION)}, nil)
+		SetOptions([]string{
+			log.CHARACTER_ACTION.DisplayName(),
+			log.MECHANICS.DisplayName(),
+			log.ORACLE_QUESTION.DisplayName(),
+		}, nil)
 
 	// Narrative field
 	lf.narrativeField = tview.NewTextArea().
@@ -69,8 +73,16 @@ func (lf *LogForm) setupForm() {
 	// Add buttons
 	lf.AddButton("Save", func() {
 		id := lf.id
-		_, selected := lf.logTypeField.GetCurrentOption()
-		logType := log.LogTypeFor(selected)
+		index, _ := lf.logTypeField.GetCurrentOption()
+
+		// Map dropdown index to LogType
+		logTypes := []log.LogType{
+			log.CHARACTER_ACTION,
+			log.MECHANICS,
+			log.ORACLE_QUESTION,
+		}
+		logType := logTypes[index]
+
 		description := lf.descriptionField.GetText()
 		result := lf.resultField.GetText()
 		narrative := lf.narrativeField.GetText()
@@ -118,10 +130,14 @@ func (lf *LogForm) Reset() {
 func (lf *LogForm) PopulateForEdit(logEntry *log.Log) {
 	lf.id = &logEntry.ID
 
-	// Set the log type dropdown
-	options := []string{string(log.CHARACTER_ACTION), string(log.MECHANICS), string(log.ORACLE_QUESTION)}
-	for i, opt := range options {
-		if opt == string(logEntry.LogType) {
+	// Set the log type dropdown by matching LogType to index
+	logTypes := []log.LogType{
+		log.CHARACTER_ACTION,
+		log.MECHANICS,
+		log.ORACLE_QUESTION,
+	}
+	for i, lt := range logTypes {
+		if lt == logEntry.LogType {
 			lf.logTypeField.SetCurrentOption(i)
 			break
 		}
