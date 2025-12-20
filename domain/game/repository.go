@@ -8,7 +8,7 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// Repository handles database operations for the K/V store
+// Repository handles database operations for games
 type Repository struct {
 	db *sqlx.DB
 }
@@ -59,7 +59,7 @@ func (r *Repository) Delete(id int64) (int64, error) {
 	return rows, nil
 }
 
-// GetByID retrieves an account by ID
+// GetByID retrieves a game by ID
 func (r *Repository) GetByID(id int64) (*Game, error) {
 	if id == 0 {
 		return nil, errors.New("id cannot be zero")
@@ -69,7 +69,7 @@ func (r *Repository) GetByID(id int64) (*Game, error) {
 	err := r.db.Get(&game, "SELECT * FROM games WHERE id = ?", id)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, errors.New("gamd not found")
+			return nil, errors.New("game not found")
 		}
 		return nil, err
 	}
@@ -87,7 +87,7 @@ func (r *Repository) GetAll() ([]*Game, error) {
 	return games, nil
 }
 
-// Inserts a enw record
+// Inserts a new record
 func (r *Repository) insert(game *Game) error {
 	query := `
 		INSERT INTO games (name, description, created_at, updated_at)
@@ -95,7 +95,7 @@ func (r *Repository) insert(game *Game) error {
 		RETURNING id, created_at, updated_at
 	`
 
-	// Execute and scan the returned values back into account
+	// Execute and scan the returned values back into game
 	err := r.db.QueryRowx(query,
 		game.Name,
 		game.Description,

@@ -8,7 +8,7 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// Repository handles database operations for the K/V store
+// Repository handles database operations for logs
 type Repository struct {
 	db *sqlx.DB
 }
@@ -59,14 +59,14 @@ func (r *Repository) Delete(id int64) (int64, error) {
 	return rows, nil
 }
 
-func (r *Repository) DeleteAllForGame(game_id int64) (int64, error) {
-	if game_id == 0 {
-		return 0, errors.New("game_id cannot be empty")
+func (r *Repository) DeleteAllForGame(gameID int64) (int64, error) {
+	if gameID == 0 {
+		return 0, errors.New("gameID cannot be empty")
 	}
 
 	query := `DELETE FROM logs WHERE game_id = ?`
 
-	result, err := r.db.Exec(query, game_id)
+	result, err := r.db.Exec(query, gameID)
 
 	if err != nil {
 		return 0, err
@@ -79,7 +79,7 @@ func (r *Repository) DeleteAllForGame(game_id int64) (int64, error) {
 	}
 
 	if rows == 0 {
-		return 0, fmt.Errorf("id '%d' not found", game_id)
+		return 0, fmt.Errorf("id '%d' not found", gameID)
 	}
 
 	return rows, nil
@@ -105,9 +105,9 @@ func (r *Repository) GetByID(id int64) (*Log, error) {
 }
 
 // GetAllForGame retrieves all logs for the game ordered by created_at
-func (r *Repository) GetAllForGame(game_id int64) ([]*Log, error) {
+func (r *Repository) GetAllForGame(gameID int64) ([]*Log, error) {
 	var logs []*Log
-	err := r.db.Select(&logs, "SELECT * FROM logs WHERE game_id = ? ORDER BY created_at ASC", game_id)
+	err := r.db.Select(&logs, "SELECT * FROM logs WHERE game_id = ? ORDER BY created_at ASC", gameID)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +123,7 @@ type Session struct {
 
 // GetSessionsForGame retrieves all unique session dates for a game
 // Sessions are grouped by date (excluding time)
-func (r *Repository) GetSessionsForGame(game_id int64) ([]*Session, error) {
+func (r *Repository) GetSessionsForGame(gameID int64) ([]*Session, error) {
 	query := `
 		SELECT
 			DATE(created_at, 'localtime') as session_date,
@@ -135,21 +135,21 @@ func (r *Repository) GetSessionsForGame(game_id int64) ([]*Session, error) {
 	`
 
 	var sessions []*Session
-	err := r.db.Select(&sessions, query, game_id)
+	err := r.db.Select(&sessions, query, gameID)
 	if err != nil {
 		return nil, err
 	}
 
 	// Populate the GameID for each session
 	for _, session := range sessions {
-		session.GameID = game_id
+		session.GameID = gameID
 	}
 
 	return sessions, nil
 }
 
 // GetLogsForSession retrieves all logs for a specific session date
-func (r *Repository) GetLogsForSession(game_id int64, sessionDate string) ([]*Log, error) {
+func (r *Repository) GetLogsForSession(gameID int64, sessionDate string) ([]*Log, error) {
 	query := `
 		SELECT * FROM logs
 		WHERE game_id = ?
@@ -157,14 +157,14 @@ func (r *Repository) GetLogsForSession(game_id int64, sessionDate string) ([]*Lo
 		ORDER BY created_at ASC
 	`
 	var logs []*Log
-	err := r.db.Select(&logs, query, game_id, sessionDate)
+	err := r.db.Select(&logs, query, gameID, sessionDate)
 	if err != nil {
 		return nil, err
 	}
 	return logs, nil
 }
 
-// Inserts a enw record
+// Inserts a new record
 func (r *Repository) insert(log *Log) error {
 	query := `
 		INSERT INTO logs (game_id, log_type, description, result, narrative, created_at, updated_at)
@@ -172,7 +172,7 @@ func (r *Repository) insert(log *Log) error {
 		RETURNING id, created_at, updated_at
 	`
 
-	// Execute and scan the returned values back into account
+	// Execute and scan the returned values back into log
 	err := r.db.QueryRowx(query,
 		log.GameID,
 		log.LogType,
@@ -192,7 +192,7 @@ func (r *Repository) update(log *Log) error {
 		RETURNING created_at, updated_at
 	`
 
-	// Execute and scan the returned values back into game
+	// Execute and scan the returned values back into log
 	err := r.db.QueryRowx(query,
 		log.GameID,
 		log.LogType,

@@ -1,7 +1,8 @@
-package validation
-
+// Package validation provides field-level validation support for domain entities.
+// It collects validation errors and provides methods to query and format them.
 // Inspired by this StackOverflow answer: https://stackoverflow.com/a/36652225
-// Other inspiration from Rails ActiveModel validations
+// and Rails ActiveModel validations.
+package validation
 
 import (
 	"fmt"

@@ -7,31 +7,31 @@ import (
 func TestLog_LogTypeValidation(t *testing.T) {
 	testCases := []struct {
 		testName    string
-		log_type    LogType
+		logType     LogType
 		shouldPass  bool
 		description string
 	}{
 		{
 			testName:    "character action",
-			log_type:    CHARACTER_ACTION,
+			logType:     CHARACTER_ACTION,
 			shouldPass:  true,
 			description: "character_action should pass",
 		},
 		{
 			testName:    "oracle question",
-			log_type:    ORACLE_QUESTION,
+			logType:     ORACLE_QUESTION,
 			shouldPass:  true,
 			description: "oracle_question should pass",
 		},
 		{
 			testName:    "mechanics",
-			log_type:    MECHANICS,
+			logType:     MECHANICS,
 			shouldPass:  true,
 			description: "mechanics should pass",
 		},
 		{
 			testName:    "invalid",
-			log_type:    "FOOBAR",
+			logType:     "FOOBAR",
 			shouldPass:  false,
 			description: "invalid should fail",
 		},
@@ -40,14 +40,14 @@ func TestLog_LogTypeValidation(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
 			log := &Log{
-				LogType: tc.log_type,
+				LogType: tc.logType,
 			}
 
 			v := log.Validate()
 
 			if tc.shouldPass {
 				if v.IsInError("log_type") {
-					t.Errorf("%s: Expected no validation error, got: %s", tc.description, v.GetErrorMessagesFor("name"))
+					t.Errorf("%s: Expected no validation error, got: %s", tc.description, v.GetErrorMessagesFor("log_type"))
 				}
 			} else {
 				if !v.IsInError("log_type") {
@@ -60,56 +60,56 @@ func TestLog_LogTypeValidation(t *testing.T) {
 
 func TestLog_RequiredFieldValidation(t *testing.T) {
 	testCases := []struct {
-		testName         string
-		log_type         LogType
-		description      string
-		result           string
-		narrative        string
-		shouldPass       bool
-		test_description string
+		testName        string
+		logType         LogType
+		description     string
+		result          string
+		narrative       string
+		shouldPass      bool
+		testDescription string
 	}{
 		{
-			testName:         "all fields",
-			log_type:         CHARACTER_ACTION,
-			description:      "foobar",
-			result:           "barfoo",
-			narrative:        "barfoo",
-			shouldPass:       true,
-			test_description: "should pass",
+			testName:        "all fields",
+			logType:         CHARACTER_ACTION,
+			description:     "foobar",
+			result:          "barfoo",
+			narrative:       "barfoo",
+			shouldPass:      true,
+			testDescription: "should pass",
 		},
 		{
-			testName:         "description",
-			log_type:         CHARACTER_ACTION,
-			description:      "",
-			result:           "barfoo",
-			narrative:        "barfoo",
-			shouldPass:       false,
-			test_description: "description is required",
+			testName:        "description",
+			logType:         CHARACTER_ACTION,
+			description:     "",
+			result:          "barfoo",
+			narrative:       "barfoo",
+			shouldPass:      false,
+			testDescription: "description is required",
 		},
 		{
-			testName:         "result",
-			log_type:         CHARACTER_ACTION,
-			description:      "foobar",
-			result:           "",
-			narrative:        "barfoo",
-			shouldPass:       false,
-			test_description: "result is required",
+			testName:        "result",
+			logType:         CHARACTER_ACTION,
+			description:     "foobar",
+			result:          "",
+			narrative:       "barfoo",
+			shouldPass:      false,
+			testDescription: "result is required",
 		},
 		{
-			testName:         "narrative",
-			log_type:         CHARACTER_ACTION,
-			description:      "foobar",
-			result:           "barfoo",
-			narrative:        "",
-			shouldPass:       false,
-			test_description: "narrative is required",
+			testName:        "narrative",
+			logType:         CHARACTER_ACTION,
+			description:     "foobar",
+			result:          "barfoo",
+			narrative:       "",
+			shouldPass:      false,
+			testDescription: "narrative is required",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
 			log := &Log{
-				LogType:     tc.log_type,
+				LogType:     tc.logType,
 				Description: tc.description,
 				Result:      tc.result,
 				Narrative:   tc.narrative,

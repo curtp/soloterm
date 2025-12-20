@@ -1,3 +1,6 @@
+// Package log provides log entry domain logic for tracking game events.
+// It supports multiple log types (character actions, oracle questions, mechanics)
+// and manages log persistence and session grouping.
 package log
 
 import (
@@ -67,10 +70,10 @@ func LogTypeLabelFor(val string) *string {
 	return &label
 }
 
-func NewLog(game_id int64) (*Log, error) {
+func NewLog(gameID int64) (*Log, error) {
 	log := &Log{
 		ID:     0,
-		GameID: game_id,
+		GameID: gameID,
 	}
 
 	return log, nil

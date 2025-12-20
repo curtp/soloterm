@@ -10,7 +10,7 @@ import (
 // GameForm represents a form for creating/editing games
 type GameForm struct {
 	*tview.Form
-	game_id          *int64
+	gameID           *int64
 	nameField        *tview.InputField
 	descriptionField *tview.TextArea
 	errorMessage     *tview.TextView
@@ -52,7 +52,7 @@ func NewGameForm(onSave func(id *int64, name string, description string), onCanc
 
 // Fill the fields with the data from the game passed in
 func (gf *GameForm) PopulateForEdit(game *game.Game) {
-	gf.game_id = &game.Id
+	gf.gameID = &game.Id
 
 	// Handle optional description field
 	description := ""
@@ -65,8 +65,8 @@ func (gf *GameForm) PopulateForEdit(game *game.Game) {
 	// Add delete button for edit mode (insert at the beginning)
 	if gf.GetButtonCount() == 2 { // Only Save and Cancel exist
 		gf.AddButton("Delete", func() {
-			if gf.onDelete != nil && gf.game_id != nil {
-				gf.onDelete(*gf.game_id)
+			if gf.onDelete != nil && gf.gameID != nil {
+				gf.onDelete(*gf.gameID)
 			}
 		})
 	}
@@ -87,7 +87,7 @@ func (gf *GameForm) setupForm() {
 		// name := gf.nameField.GetText()
 		// description := gf.descriptionField.GetText()
 		if gf.onSave != nil {
-			gf.onSave(gf.game_id, gf.nameField.GetText(), gf.descriptionField.GetText())
+			gf.onSave(gf.gameID, gf.nameField.GetText(), gf.descriptionField.GetText())
 		}
 	})
 
@@ -109,7 +109,7 @@ func (gf *GameForm) setupForm() {
 
 // Reset clears all form fields
 func (gf *GameForm) Reset() {
-	gf.game_id = nil
+	gf.gameID = nil
 	gf.nameField.SetText("")
 	gf.descriptionField.SetText("", false)
 	gf.ClearFieldErrors()

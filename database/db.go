@@ -1,3 +1,5 @@
+// Package database provides database connection management and migration support.
+// It handles SQLite database initialization, connection pooling, and schema migrations.
 package database
 
 import (

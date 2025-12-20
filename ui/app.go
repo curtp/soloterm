@@ -1,3 +1,5 @@
+// Package ui provides the terminal user interface for soloterm.
+// It implements a TUI using tview and tcell for managing games and log entries.
 package ui
 
 import (

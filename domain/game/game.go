@@ -1,3 +1,5 @@
+// Package game provides core game domain logic, validation, and persistence.
+// It defines the Game entity and its associated repository for database operations.
 package game
 
 import (
