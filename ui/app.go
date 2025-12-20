@@ -296,7 +296,7 @@ func (a *App) handleGameSave(id *int64, name string, description string) {
 	a.SetFocus(a.gameTree)
 
 	// Clear logs view for the new game
-	a.loadLogsForGame(game.Id)
+	a.loadLogsForGame(game.ID)
 
 	// Set the success message based on update vs. create
 	message := "Game created successfuly"
@@ -323,7 +323,7 @@ func (a *App) handleLogSave(id *int64, logType log.LogType, description string, 
 	}
 
 	// Save the log
-	logEntry, err := a.logHandler.SaveLog(id, a.selectedGame.Id, logType, description, result, narrative)
+	logEntry, err := a.logHandler.SaveLog(id, a.selectedGame.ID, logType, description, result, narrative)
 	if err != nil {
 		// Handle the validation error
 		handleValidationError(err, a.logForm)
@@ -364,7 +364,7 @@ func (a *App) loadLogsForSelectedGameEntry() {
 			a.selectedGame = g
 
 			// Load all logs for this game
-			a.loadLogsForGame(g.Id)
+			a.loadLogsForGame(g.ID)
 		} else if s, ok := ref.(*log.Session); ok {
 			// It's a session - load the game from repository using session's GameID
 			g, err := a.gameHandler.gameRepo.GetByID(s.GameID)
@@ -565,7 +565,7 @@ func (a *App) refreshGameTree() {
 	if currentNode := a.gameTree.GetCurrentNode(); currentNode != nil {
 		if ref := currentNode.GetReference(); ref != nil {
 			if g, ok := ref.(*game.Game); ok {
-				selectedGameID = &g.Id
+				selectedGameID = &g.ID
 			} else if s, ok := ref.(*log.Session); ok {
 				selectedSessionGameID = &s.GameID
 				selectedSessionDate = &s.Date
@@ -605,12 +605,12 @@ func (a *App) refreshGameTree() {
 		root.AddChild(gameNode)
 
 		// Check if this game was previously selected
-		if selectedGameID != nil && g.Id == *selectedGameID {
+		if selectedGameID != nil && g.ID == *selectedGameID {
 			nodeToSelect = gameNode
 		}
 
 		// Load sessions for this game
-		sessions, err := a.logHandler.GetSessionsForGame(g.Id)
+		sessions, err := a.logHandler.GetSessionsForGame(g.ID)
 		if err != nil || len(sessions) == 0 {
 			sessionPlaceholder := tview.NewTreeNode("(No sessions yet)").
 				SetColor(tcell.ColorGray).

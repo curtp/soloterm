@@ -16,7 +16,7 @@ const (
 
 // Game represents a game in the system
 type Game struct {
-	Id          int64     `db:"id"`
+	ID          int64     `db:"id"`
 	Name        string    `db:"name"`
 	Description *string   `db:"description"` // May be nil
 	CreatedAt   time.Time `db:"created_at"`
@@ -25,7 +25,7 @@ type Game struct {
 
 func NewGame(name string) (*Game, error) {
 	game := &Game{
-		Id:   0,
+		ID:   0,
 		Name: name,
 	}
 

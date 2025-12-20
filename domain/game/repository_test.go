@@ -26,8 +26,8 @@ func TestRepository_Save(t *testing.T) {
 		}
 
 		// Verify: Database managed fields are set after insert
-		if game.Id == 0 {
-			t.Errorf("Expected ID to be set after insert, got %d", game.Id)
+		if game.ID == 0 {
+			t.Errorf("Expected ID to be set after insert, got %d", game.ID)
 		}
 		if game.CreatedAt.IsZero() {
 			t.Error("Expected CreatedAt to be set after insert")
@@ -46,7 +46,7 @@ func TestRepository_Save(t *testing.T) {
 		}
 
 		// Verify the DB managed fields are set
-		if game.CreatedAt.IsZero() || game.UpdatedAt.IsZero() || game.Id == 0 {
+		if game.CreatedAt.IsZero() || game.UpdatedAt.IsZero() || game.ID == 0 {
 			t.Fatalf("Game was not saved with DB managed fields: %+v", game)
 		}
 
@@ -92,7 +92,7 @@ func TestRepository_GetByID(t *testing.T) {
 		t.Fatalf("Save() failed: %v", err)
 	}
 
-	gameId := game.Id
+	gameId := game.ID
 
 	t.Run("get existing", func(t *testing.T) {
 		// Test: Get existing game by ID
@@ -102,8 +102,8 @@ func TestRepository_GetByID(t *testing.T) {
 		}
 
 		// Verify: Retrieved game matches
-		if retrieved.Id != gameId {
-			t.Errorf("Expected ID %q, got %q", gameId, retrieved.Id)
+		if retrieved.ID != gameId {
+			t.Errorf("Expected ID %q, got %q", gameId, retrieved.ID)
 		}
 		if retrieved.Name != "Test Game" {
 			t.Errorf("Expected name 'Test Game', got %q", retrieved.Name)
@@ -141,7 +141,7 @@ func TestRepository_Delete(t *testing.T) {
 
 	t.Run("delete existing", func(t *testing.T) {
 		// Now delete it
-		count, err := repo.Delete(game.Id)
+		count, err := repo.Delete(game.ID)
 		if err != nil {
 			t.Fatalf("Delete() failed: %v", err)
 		}
@@ -151,7 +151,7 @@ func TestRepository_Delete(t *testing.T) {
 		}
 
 		// Verify it was deleted
-		_, err = repo.GetByID(game.Id)
+		_, err = repo.GetByID(game.ID)
 		if err == nil {
 			t.Error("Expected error for deleted entry, got nil")
 		}

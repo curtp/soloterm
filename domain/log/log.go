@@ -14,6 +14,7 @@ const (
 	CHARACTER_ACTION LogType = "character_action"
 	ORACLE_QUESTION  LogType = "oracle_question"
 	MECHANICS        LogType = "mechanics"
+	STORY            LogType = "story"
 )
 
 // DisplayName returns the user-friendly display name for the log type
@@ -25,6 +26,8 @@ func (lt LogType) DisplayName() string {
 		return "Oracle Question"
 	case MECHANICS:
 		return "Mechanics"
+	case STORY:
+		return "Story"
 	default:
 		return string(lt)
 	}
@@ -52,6 +55,8 @@ func LogTypeFor(val string) LogType {
 		logType = ORACLE_QUESTION
 	case string(MECHANICS):
 		logType = MECHANICS
+	case string(STORY):
+		logType = STORY
 	}
 	return logType
 }
@@ -66,6 +71,8 @@ func LogTypeLabelFor(val string) *string {
 		label = "Oracle Question"
 	case string(MECHANICS):
 		label = "Mechanics"
+	case string(STORY):
+		label = "Story"
 	}
 	return &label
 }
@@ -81,10 +88,12 @@ func NewLog(gameID int64) (*Log, error) {
 
 func (l *Log) Validate() *validation.Validator {
 	v := validation.NewValidator()
-	v.Check("log_type", l.LogType == MECHANICS || l.LogType == CHARACTER_ACTION || l.LogType == ORACLE_QUESTION, "%s type is unknown", l.LogType)
-	v.Check("description", len(l.Description) > 0, "cannot be blank")
-	v.Check("result", len(l.Result) > 0, "cannot be blank")
-	if l.LogType == CHARACTER_ACTION {
+	v.Check("log_type", l.LogType == MECHANICS || l.LogType == CHARACTER_ACTION || l.LogType == ORACLE_QUESTION || l.LogType == STORY, "%s type is unknown", l.LogType)
+	if l.LogType != STORY {
+		v.Check("description", len(l.Description) > 0, "cannot be blank")
+		v.Check("result", len(l.Result) > 0, "cannot be blank")
+	}
+	if l.LogType == CHARACTER_ACTION || l.LogType == STORY {
 		v.Check("narrative", len(l.Narrative) > 0, "cannot be blank")
 	}
 	return v

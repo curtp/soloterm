@@ -35,7 +35,7 @@ func (h *GameHandler) SaveGame(id *int64, name string, description string) (*gam
 
 	// If an ID was provided, then set it on the game. That means it's an update
 	if id != nil {
-		g.Id = *id
+		g.ID = *id
 	}
 
 	// Validate the data

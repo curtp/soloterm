@@ -22,7 +22,7 @@ func NewRepository(db *sqlx.DB) *Repository {
 // Automatically manages created_at, and updated_at
 // The game pointer is updated with the current values after save
 func (r *Repository) Save(game *Game) error {
-	if game.Id == 0 {
+	if game.ID == 0 {
 		// INSERT - new game
 		return r.insert(game)
 	} else {
@@ -99,7 +99,7 @@ func (r *Repository) insert(game *Game) error {
 	err := r.db.QueryRowx(query,
 		game.Name,
 		game.Description,
-	).Scan(&game.Id, &game.CreatedAt, &game.UpdatedAt)
+	).Scan(&game.ID, &game.CreatedAt, &game.UpdatedAt)
 
 	return err
 }
@@ -116,7 +116,7 @@ func (r *Repository) update(game *Game) error {
 	err := r.db.QueryRowx(query,
 		game.Name,
 		game.Description,
-		game.Id,
+		game.ID,
 	).Scan(&game.CreatedAt, &game.UpdatedAt)
 
 	return err

@@ -52,7 +52,7 @@ func NewGameForm(onSave func(id *int64, name string, description string), onCanc
 
 // Fill the fields with the data from the game passed in
 func (gf *GameForm) PopulateForEdit(game *game.Game) {
-	gf.gameID = &game.Id
+	gf.gameID = &game.ID
 
 	// Handle optional description field
 	description := ""

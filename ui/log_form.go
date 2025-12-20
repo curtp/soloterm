@@ -42,6 +42,7 @@ func NewLogForm(onSave func(id *int64, logType log.LogType, description string, 
 			log.CHARACTER_ACTION.DisplayName(),
 			log.MECHANICS.DisplayName(),
 			log.ORACLE_QUESTION.DisplayName(),
+			log.STORY.DisplayName(),
 		}, nil)
 
 	// Narrative field
@@ -80,6 +81,7 @@ func (lf *LogForm) setupForm() {
 			log.CHARACTER_ACTION,
 			log.MECHANICS,
 			log.ORACLE_QUESTION,
+			log.STORY,
 		}
 		logType := logTypes[index]
 
