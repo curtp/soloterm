@@ -33,6 +33,16 @@ package "domain/game" <<Rectangle>> DOMAIN_COLOR {
         - update(game: *Game): error
     }
 
+    class GameService {
+        - repo: *GameRepository
+        --
+        + NewService(repo: *Repository): *Service
+        + Save(game: *Game): (*Game, error)
+        + Delete(id: int64): error
+        + GetByID(id: int64): (*Game, error)
+        + GetAll(): ([]*Game, error)
+    }
+
     note right of Game
         Validation Rules:
         - Name: 1-50 chars (required)
@@ -82,6 +92,18 @@ package "domain/log" <<Rectangle>> DOMAIN_COLOR {
         - update(log: *Log): error
     }
 
+    class LogService {
+        - repo: *LogRepository
+        --
+        + NewService(repo: *Repository): *Service
+        + Save(log: *Log): (*Log, error)
+        + Delete(id: int64): error
+        + GetByID(id: int64): (*Log, error)
+        + GetAllForGame(gameID: int64): ([]*Log, error)
+        + GetSessionsForGame(gameID: int64): ([]*Session, error)
+        + GetLogsForSession(gameID: int64, sessionDate: string): ([]*Log, error)
+    }
+
     note right of Session
         Virtual grouping of logs by date
         Used for organizing logs in UI tree
@@ -94,8 +116,8 @@ package "ui" <<Rectangle>> UI_COLOR {
         + *tview.Application
         --
         - db: *sqlx.DB
-        - gameHandler: *GameHandler
-        - logHandler: *LogHandler
+        - gameService: *game.Service
+        - logService: *log.Service
         --
         - selectedGame: *Game
         - selectedLog: *Log
@@ -124,39 +146,15 @@ package "ui" <<Rectangle>> UI_COLOR {
         - loadLogsForGame(gameID: int64)
         - loadLogsForSession(gameID: int64, sessionDate: string)
         - displayLogs(logs: []*Log)
-        - handleGameSave(id: *int64, name: string, description: string)
+        - handleGameSave()
         - handleGameCancel()
         - handleGameEdit()
         - handleGameDelete()
-        - handleLogSave(id: *int64, logType: LogType, description: string, result: string, narrative: string)
+        - handleLogSave()
         - handleLogCancel()
         - handleLogEdit()
         - handleLogDelete()
         - togglePane(pane: tview.Primitive)
-    }
-
-    class GameHandler {
-        - db: *sqlx.DB
-        - gameRepo: *GameRepository
-        --
-        + NewGameHandler(db: *sqlx.DB): *GameHandler
-        + SaveGame(id: *int64, name: string, description: string): (*Game, error)
-        + Delete(id: int64): error
-        + GetByID(id: int64): (*Game, error)
-        + GetAll(): ([]*Game, error)
-    }
-
-    class LogHandler {
-        - db: *sqlx.DB
-        - logRepo: *LogRepository
-        --
-        + NewLogHandler(db: *sqlx.DB): *LogHandler
-        + SaveLog(id: *int64, gameID: int64, logType: LogType, description: string, result: string, narrative: string): (*Log, error)
-        + Delete(id: int64): error
-        + GetByID(id: int64): (*Log, error)
-        + GetAllForGame(gameID: int64): ([]*Log, error)
-        + GetSessionsForGame(gameID: int64): ([]*Session, error)
-        + GetLogsForSession(gameID: int64, sessionDate: string): ([]*Log, error)
     }
 
     interface ValidatableForm {
@@ -169,15 +167,19 @@ package "ui" <<Rectangle>> UI_COLOR {
     class GameForm {
         + *tview.Form
         --
-        - game_id: *int64
+        - gameID: *int64
         - nameField: *tview.InputField
         - descriptionField: *tview.TextArea
         - errorMessage: *tview.TextView
         - fieldErrors: map[string]string
-        - onSave: func(...)
+        - onSave: func()
         - onCancel: func()
+        - onDelete: func()
         --
-        + NewGameForm(onSave: func(...), onCancel: func()): *GameForm
+        + NewGameForm(): *GameForm
+        + BuildDomain(): *Game
+        + GetValues(): (id: *int64, name: string, description: string)
+        + SetupHandlers(onSave: func(), onCancel: func(), onDelete: func())
         + PopulateForEdit(game: *Game)
         + Reset()
         + SetFieldError(field: string, message: string)
@@ -191,18 +193,23 @@ package "ui" <<Rectangle>> UI_COLOR {
         + *tview.Form
         --
         - id: *int64
+        - gameID: int64
         - logTypeField: *tview.DropDown
         - resultField: *tview.InputField
         - narrativeField: *tview.TextArea
         - descriptionField: *tview.InputField
         - errorMessage: *tview.TextView
         - fieldErrors: map[string]string
-        - onSave: func(...)
+        - onSave: func()
         - onCancel: func()
+        - onDelete: func()
         --
-        + NewLogForm(onSave: func(...), onCancel: func()): *LogForm
+        + NewLogForm(): *LogForm
+        + BuildDomain(): *Log
+        + GetValues(): (id: *int64, logType: LogType, description: string, result: string, narrative: string)
+        + SetupHandlers(onSave: func(), onCancel: func(), onDelete: func())
         + PopulateForEdit(log: *Log)
-        + Reset()
+        + Reset(gameID: int64)
         + SetFieldError(field: string, message: string)
         + SetFieldErrors(errors: map[string]string)
         + UpdateFieldLabels()
@@ -319,24 +326,22 @@ LogRepository --> sqlxDB : uses
 GameRepository ..> Game : manages
 LogRepository ..> Log : manages
 
+' Service dependencies
+GameService --> GameRepository : uses
+GameService ..> Game : creates
+LogService --> LogRepository : uses
+LogService ..> Log : creates
+LogService ..> Session : returns
+
 ' UI dependencies
-App *-- GameHandler : contains
-App *-- LogHandler : contains
 App *-- GameForm : contains
 App *-- LogForm : contains
 App *-- ConfirmationModal : contains
 App *-- Notification : contains
 App --> sqlxDB : uses
+App --> GameService : uses
+App --> LogService : uses
 App --|> tview : extends
-
-GameHandler --> GameRepository : uses
-GameHandler --> sqlxDB : uses
-GameHandler ..> Game : creates
-
-LogHandler --> LogRepository : uses
-LogHandler --> sqlxDB : uses
-LogHandler ..> Log : creates
-LogHandler ..> Session : returns
 
 GameForm ..|> ValidatableForm : implements
 GameForm --|> tview : extends

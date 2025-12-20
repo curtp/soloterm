@@ -6,28 +6,26 @@ import (
 	"github.com/rivo/tview"
 )
 
-// GameForm represents a form for creating/editing log entries
+// LogForm represents a form for creating/editing log entries
 type LogForm struct {
 	*tview.Form
 	id               *int64
+	gameID           int64
 	logTypeField     *tview.DropDown
 	resultField      *tview.InputField
 	narrativeField   *tview.TextArea
 	descriptionField *tview.InputField
 	errorMessage     *tview.TextView
 	fieldErrors      map[string]string // Track which fields have errors
-	onSave           func(id *int64, logType log.LogType, description string, result string, narrative string)
+	onSave           func()
 	onCancel         func()
-	onDelete         func(id int64)
+	onDelete         func()
 }
 
 // NewLogForm creates a new log form
-func NewLogForm(onSave func(id *int64, logType log.LogType, description string, result string, narrative string), onCancel func(), onDelete func(id int64)) *LogForm {
+func NewLogForm() *LogForm {
 	lf := &LogForm{
 		Form:        tview.NewForm(),
-		onSave:      onSave,
-		onCancel:    onCancel,
-		onDelete:    onDelete,
 		fieldErrors: make(map[string]string),
 	}
 
@@ -39,10 +37,10 @@ func NewLogForm(onSave func(id *int64, logType log.LogType, description string, 
 	lf.logTypeField = tview.NewDropDown().
 		SetLabel("Log Type").
 		SetOptions([]string{
-			log.CHARACTER_ACTION.DisplayName(),
-			log.MECHANICS.DisplayName(),
-			log.ORACLE_QUESTION.DisplayName(),
-			log.STORY.DisplayName(),
+			log.CHARACTER_ACTION.LogTypeDisplayName(),
+			log.MECHANICS.LogTypeDisplayName(),
+			log.ORACLE_QUESTION.LogTypeDisplayName(),
+			log.STORY.LogTypeDisplayName(),
 		}, nil)
 
 	// Narrative field
@@ -65,41 +63,12 @@ func NewLogForm(onSave func(id *int64, logType log.LogType, description string, 
 func (lf *LogForm) setupForm() {
 	lf.Clear(true)
 
-	// gf.AddFormItem(gf.errorMessage)
 	lf.AddFormItem(lf.logTypeField)
 	lf.AddFormItem(lf.descriptionField)
 	lf.AddFormItem(lf.resultField)
 	lf.AddFormItem(lf.narrativeField)
 
-	// Add buttons
-	lf.AddButton("Save", func() {
-		id := lf.id
-		index, _ := lf.logTypeField.GetCurrentOption()
-
-		// Map dropdown index to LogType
-		logTypes := []log.LogType{
-			log.CHARACTER_ACTION,
-			log.MECHANICS,
-			log.ORACLE_QUESTION,
-			log.STORY,
-		}
-		logType := logTypes[index]
-
-		description := lf.descriptionField.GetText()
-		result := lf.resultField.GetText()
-		narrative := lf.narrativeField.GetText()
-
-		if lf.onSave != nil {
-			lf.onSave(id, logType, description, result, narrative)
-		}
-	})
-
-	lf.AddButton("Cancel", func() {
-		if lf.onCancel != nil {
-			lf.onCancel()
-		}
-	})
-
+	// Buttons will be set up when handlers are attached
 	lf.SetBorder(true).
 		SetTitle(" New Log ").
 		SetTitleAlign(tview.AlignLeft)
@@ -110,9 +79,10 @@ func (lf *LogForm) setupForm() {
 	lf.SetItemPadding(1)
 }
 
-// Reset clears all form fields
-func (lf *LogForm) Reset() {
+// Reset clears all form fields and sets the game ID for new log entry
+func (lf *LogForm) Reset(gameID int64) {
 	lf.id = nil
+	lf.gameID = gameID
 	lf.logTypeField.SetCurrentOption(-1)
 	lf.narrativeField.SetText("", false)
 	lf.resultField.SetText("")
@@ -131,14 +101,10 @@ func (lf *LogForm) Reset() {
 // PopulateForEdit fills the form with existing log data for editing
 func (lf *LogForm) PopulateForEdit(logEntry *log.Log) {
 	lf.id = &logEntry.ID
+	lf.gameID = logEntry.GameID
 
 	// Set the log type dropdown by matching LogType to index
-	logTypes := []log.LogType{
-		log.CHARACTER_ACTION,
-		log.MECHANICS,
-		log.ORACLE_QUESTION,
-		log.STORY,
-	}
+	logTypes := log.LogTypes()
 	for i, lt := range logTypes {
 		if lt == logEntry.LogType {
 			lf.logTypeField.SetCurrentOption(i)
@@ -154,8 +120,8 @@ func (lf *LogForm) PopulateForEdit(logEntry *log.Log) {
 	// Add delete button for edit mode (insert at the beginning)
 	if lf.GetButtonCount() == 2 { // Only Save and Cancel exist
 		lf.AddButton("Delete", func() {
-			if lf.onDelete != nil && lf.id != nil {
-				lf.onDelete(*lf.id)
+			if lf.onDelete != nil {
+				lf.onDelete()
 			}
 		})
 	}
@@ -208,4 +174,54 @@ func (lf *LogForm) updateFieldLabels() {
 func (lf *LogForm) ClearFieldErrors() {
 	lf.fieldErrors = make(map[string]string)
 	lf.updateFieldLabels()
+}
+
+// BuildDomain constructs a Log entity from the form data
+func (lf *LogForm) BuildDomain() *log.Log {
+	index, _ := lf.logTypeField.GetCurrentOption()
+
+	// Map dropdown index to LogType
+	logTypes := log.LogTypes()
+
+	var logType log.LogType
+	if index >= 0 && index < len(logTypes) {
+		logType = logTypes[index]
+	}
+
+	l := &log.Log{
+		GameID:      lf.gameID,
+		LogType:     logType,
+		Description: lf.descriptionField.GetText(),
+		Result:      lf.resultField.GetText(),
+		Narrative:   lf.narrativeField.GetText(),
+	}
+
+	// If editing an existing log, set the ID
+	if lf.id != nil {
+		l.ID = *lf.id
+	}
+
+	return l
+}
+
+// SetupHandlers configures all form button handlers
+func (lf *LogForm) SetupHandlers(onSave, onCancel, onDelete func()) {
+	lf.onSave = onSave
+	lf.onCancel = onCancel
+	lf.onDelete = onDelete
+
+	// Clear and re-add buttons
+	lf.ClearButtons()
+
+	lf.AddButton("Save", func() {
+		if lf.onSave != nil {
+			lf.onSave()
+		}
+	})
+
+	lf.AddButton("Cancel", func() {
+		if lf.onCancel != nil {
+			lf.onCancel()
+		}
+	})
 }

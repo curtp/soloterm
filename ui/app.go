@@ -27,8 +27,8 @@ type App struct {
 
 	// Dependencies
 	db          *sqlx.DB
-	gameHandler *GameHandler
-	logHandler  *LogHandler
+	gameService *game.Service
+	logService  *log.Service
 
 	// Application State
 	selectedGame *game.Game // Currently selected/active game
@@ -57,8 +57,8 @@ func NewApp(db *sqlx.DB) *App {
 	app := &App{
 		Application: tview.NewApplication(),
 		db:          db,
-		gameHandler: NewGameHandler(db),
-		logHandler:  NewLogHandler(db),
+		gameService: game.NewService(game.NewRepository(db)),
+		logService:  log.NewService(log.NewRepository(db)),
 	}
 	app.setupUI()
 	return app
@@ -213,7 +213,10 @@ func (a *App) setupKeyBindings() {
 
 func (a *App) setupGameModal() {
 	// Create the form
-	a.gameForm = NewGameForm(
+	a.gameForm = NewGameForm()
+
+	// Set up handlers
+	a.gameForm.SetupHandlers(
 		a.handleGameSave,
 		a.handleGameCancel,
 		a.handleGameDelete,
@@ -236,7 +239,10 @@ func (a *App) setupGameModal() {
 
 func (a *App) setupLogModal() {
 	// Create the form
-	a.logForm = NewLogForm(
+	a.logForm = NewLogForm()
+
+	// Set up handlers
+	a.logForm.SetupHandlers(
 		a.handleLogSave,
 		a.handleLogCancel,
 		a.handleLogDelete,
@@ -267,7 +273,13 @@ func (a *App) showGameModal() {
 }
 
 func (a *App) showLogModal() {
-	a.logForm.Reset()
+	// Check if we have a selected game
+	if a.selectedGame == nil {
+		a.notification.ShowError("Please select a game first")
+		return
+	}
+
+	a.logForm.Reset(a.selectedGame.ID)
 	a.pages.ShowPage(LOG_MODAL_ID)
 	a.SetFocus(a.logForm)
 }
@@ -278,31 +290,35 @@ func (a *App) showEditGameModal(game *game.Game) {
 	a.SetFocus(a.gameForm)
 }
 
-func (a *App) handleGameSave(id *int64, name string, description string) {
-	// Create the game
-	game, err := a.gameHandler.SaveGame(id, name, description)
+func (a *App) handleGameSave() {
+	// Build domain entity from form
+	game := a.gameForm.BuildDomain()
+
+	// Save via service
+	savedGame, err := a.gameService.Save(game)
 	if err != nil {
 		// Check if it's a validation error
 		if handleValidationError(err, a.gameForm) {
 			return
 		}
-		// Other error - could show a generic error modal
+		// Other error - show error notification
+		a.notification.ShowError("Error saving game: " + err.Error())
 		return
 	}
 
 	// Success! Update state and refresh the tree
-	a.selectedGame = game
+	a.selectedGame = savedGame
 	a.pages.HidePage(GAME_MODAL_ID)
 	a.refreshGameTree()
 	a.SetFocus(a.gameTree)
 
 	// Clear logs view for the new game
-	a.loadLogsForGame(game.ID)
+	a.loadLogsForGame(savedGame.ID)
 
 	// Set the success message based on update vs. create
-	message := "Game created successfuly"
-	if id == nil {
-		message = "Game saved successfuly"
+	message := "Game created successfully"
+	if game.ID != 0 {
+		message = "Game saved successfully"
 	}
 	// Show success notification
 	a.notification.ShowSuccess(message)
@@ -314,20 +330,18 @@ func (a *App) handleGameCancel() {
 	a.SetFocus(a.gameTree)
 }
 
-func (a *App) handleLogSave(id *int64, logType log.LogType, description string, result string, narrative string) {
+func (a *App) handleLogSave() {
+	// Build domain entity from form
+	logEntry := a.logForm.BuildDomain()
 
-	// Check if we have a selected game
-	if a.selectedGame == nil {
-		// Show error notification
-		a.notification.ShowError("Please select a game first")
-		return
-	}
-
-	// Save the log
-	logEntry, err := a.logHandler.SaveLog(id, a.selectedGame.ID, logType, description, result, narrative)
+	// Save via service
+	savedLog, err := a.logService.Save(logEntry)
 	if err != nil {
 		// Handle the validation error
-		handleValidationError(err, a.logForm)
+		if handleValidationError(err, a.logForm) {
+			return
+		}
+		a.notification.ShowError("Error saving log: " + err.Error())
 		return
 	}
 
@@ -338,18 +352,18 @@ func (a *App) handleLogSave(id *int64, logType log.LogType, description string, 
 	a.loadLogsForSelectedGameEntry()
 
 	// Scroll based on whether this was a new log or an update
-	if id == nil {
+	if logEntry.ID == 0 {
 		// New log - scroll to the end
 		a.logView.ScrollToEnd()
 	} else {
 		// Updated log - scroll to and highlight the specific entry
-		a.logView.Highlight(strconv.FormatInt(logEntry.ID, 10))
+		a.logView.Highlight(strconv.FormatInt(savedLog.ID, 10))
 		a.logView.ScrollToHighlight()
 		a.logView.Highlight() // Clear highlight so next click will always trigger
 	}
 
 	// Close the modal and refresh
-	a.pages.HidePage(GAME_MODAL_ID)
+	a.pages.HidePage(LOG_MODAL_ID)
 	a.pages.SwitchToPage(MAIN_PAGE_ID)
 	a.SetFocus(a.logView)
 
@@ -367,8 +381,8 @@ func (a *App) loadLogsForSelectedGameEntry() {
 			// Load all logs for this game
 			a.loadLogsForGame(g.ID)
 		} else if s, ok := ref.(*log.Session); ok {
-			// It's a session - load the game from repository using session's GameID
-			g, err := a.gameHandler.gameRepo.GetByID(s.GameID)
+			// It's a session - load the game from service using session's GameID
+			g, err := a.gameService.GetByID(s.GameID)
 			if err == nil {
 				a.selectedGame = g
 			}
@@ -388,7 +402,7 @@ func (a *App) handleLogCancel() {
 
 func (a *App) handleLogEdit(logID int64) {
 	// Load the log entry from the database
-	logEntry, err := a.logHandler.GetByID(logID)
+	logEntry, err := a.logService.GetByID(logID)
 	if err != nil {
 		a.notification.ShowError("Error loading log entry: " + err.Error())
 		return
@@ -402,13 +416,16 @@ func (a *App) handleLogEdit(logID int64) {
 	a.SetFocus(a.logForm)
 }
 
-func (a *App) handleLogDelete(logID int64) {
+func (a *App) handleLogDelete() {
+	// Get ID from form
+	logEntry := a.logForm.BuildDomain()
+
 	// Show confirmation modal
 	a.confirmModal.Show(
 		"Are you sure you want to delete this log entry?\n\nThis action cannot be undone.",
 		func() {
 			// Delete the log entry
-			err := a.logHandler.Delete(logID)
+			err := a.logService.Delete(logEntry.ID)
 			if err != nil {
 				a.pages.HidePage(CONFIRM_MODAL_ID)
 				a.notification.ShowError("Error deleting log entry: " + err.Error())
@@ -438,7 +455,7 @@ func (a *App) handleLogDelete(logID int64) {
 
 func (a *App) handleGameEdit(gameID int64) {
 	// Load the game from the database
-	game, err := a.gameHandler.gameRepo.GetByID(gameID)
+	game, err := a.gameService.GetByID(gameID)
 	if err != nil {
 		a.notification.ShowError("Error loading game: " + err.Error())
 		return
@@ -452,13 +469,16 @@ func (a *App) handleGameEdit(gameID int64) {
 	a.SetFocus(a.gameForm)
 }
 
-func (a *App) handleGameDelete(gameID int64) {
+func (a *App) handleGameDelete() {
+	// Get ID from form
+	game := a.gameForm.BuildDomain()
+
 	// Show confirmation modal
 	a.confirmModal.Show(
 		"Are you sure you want to delete this game and all associated log entries?\n\nThis action cannot be undone.",
 		func() {
 			// Delete the game
-			err := a.gameHandler.Delete(gameID)
+			err := a.gameService.Delete(game.ID)
 			if err != nil {
 				a.pages.HidePage(CONFIRM_MODAL_ID)
 				a.notification.ShowError("Error deleting game: " + err.Error())
@@ -474,6 +494,7 @@ func (a *App) handleGameDelete(gameID int64) {
 			a.logView.Clear()
 			a.refreshGameTree()
 			a.SetFocus(a.gameTree)
+			a.selectedGame = nil
 
 			// Show success notification
 			a.notification.ShowSuccess("Game deleted successfully")
@@ -492,7 +513,7 @@ func (a *App) loadLogsForGame(gameID int64) {
 	a.logView.Clear()
 
 	// Load logs from database
-	logs, err := a.logHandler.GetAllForGame(gameID)
+	logs, err := a.logService.GetAllForGame(gameID)
 	if err != nil {
 		a.logView.SetText("[red]Error loading logs: " + err.Error())
 		return
@@ -511,7 +532,7 @@ func (a *App) loadLogsForSession(gameID int64, sessionDate string) {
 	a.logView.Clear()
 
 	// Load logs for this session from database
-	logs, err := a.logHandler.GetLogsForSession(gameID, sessionDate)
+	logs, err := a.logService.GetLogsForSession(gameID, sessionDate)
 	if err != nil {
 		a.logView.SetText("[red]Error loading session logs: " + err.Error())
 		return
@@ -541,7 +562,7 @@ func (a *App) displayLogs(logs []*log.Log) {
 		// Print the log entry
 		timestamp := localTime.Format("03:04 PM")
 		output += "[\"" + strconv.FormatInt(l.ID, 10) + "\"][::i][aqua::b]" + timestamp + "[-::-] "
-		output += "[::i][yellow::b]" + l.LogType.DisplayName() + "[-::-]\n"
+		output += "[::i][yellow::b]" + l.LogType.LogTypeDisplayName() + "[-::-]\n"
 		if len(l.Description) > 0 {
 			output += "[::i][yellow::b]Description:[-::-] " + l.Description + "\n"
 		}
@@ -581,7 +602,7 @@ func (a *App) refreshGameTree() {
 	root.ClearChildren()
 
 	// Load all games from database
-	games, err := a.gameHandler.gameRepo.GetAll()
+	games, err := a.gameService.GetAll()
 	if err != nil {
 		// Show error in tree
 		errorNode := tview.NewTreeNode("Error loading games: " + err.Error()).
@@ -614,7 +635,7 @@ func (a *App) refreshGameTree() {
 		}
 
 		// Load sessions for this game
-		sessions, err := a.logHandler.GetSessionsForGame(g.ID)
+		sessions, err := a.logService.GetSessionsForGame(g.ID)
 		if err != nil || len(sessions) == 0 {
 			sessionPlaceholder := tview.NewTreeNode("(No sessions yet)").
 				SetColor(tcell.ColorGray).

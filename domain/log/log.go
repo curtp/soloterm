@@ -17,8 +17,8 @@ const (
 	STORY            LogType = "story"
 )
 
-// DisplayName returns the user-friendly display name for the log type
-func (lt LogType) DisplayName() string {
+// LogTypeDisplayName returns the user-friendly display name for the log type
+func (lt LogType) LogTypeDisplayName() string {
 	switch lt {
 	case CHARACTER_ACTION:
 		return "Character Action"
@@ -45,36 +45,15 @@ type Log struct {
 	UpdatedAt   time.Time `db:"updated_at"`
 }
 
-func LogTypeFor(val string) LogType {
-	var logType LogType
-
-	switch val {
-	case string(CHARACTER_ACTION):
-		logType = CHARACTER_ACTION
-	case string(ORACLE_QUESTION):
-		logType = ORACLE_QUESTION
-	case string(MECHANICS):
-		logType = MECHANICS
-	case string(STORY):
-		logType = STORY
+// Returns an array of LogTypes
+func LogTypes() []LogType {
+	logTypes := []LogType{
+		CHARACTER_ACTION,
+		MECHANICS,
+		ORACLE_QUESTION,
+		STORY,
 	}
-	return logType
-}
-
-func LogTypeLabelFor(val string) *string {
-	var label string
-
-	switch val {
-	case string(CHARACTER_ACTION):
-		label = "Character Action"
-	case string(ORACLE_QUESTION):
-		label = "Oracle Question"
-	case string(MECHANICS):
-		label = "Mechanics"
-	case string(STORY):
-		label = "Story"
-	}
-	return &label
+	return logTypes
 }
 
 func NewLog(gameID int64) (*Log, error) {
@@ -89,10 +68,14 @@ func NewLog(gameID int64) (*Log, error) {
 func (l *Log) Validate() *validation.Validator {
 	v := validation.NewValidator()
 	v.Check("log_type", l.LogType == MECHANICS || l.LogType == CHARACTER_ACTION || l.LogType == ORACLE_QUESTION || l.LogType == STORY, "%s type is unknown", l.LogType)
+
+	// Require description and result for everything other than story logs
 	if l.LogType != STORY {
 		v.Check("description", len(l.Description) > 0, "cannot be blank")
 		v.Check("result", len(l.Result) > 0, "cannot be blank")
 	}
+
+	// Narrative is only required for character actions or story logs
 	if l.LogType == CHARACTER_ACTION || l.LogType == STORY {
 		v.Check("narrative", len(l.Narrative) > 0, "cannot be blank")
 	}

@@ -15,18 +15,15 @@ type GameForm struct {
 	descriptionField *tview.TextArea
 	errorMessage     *tview.TextView
 	fieldErrors      map[string]string // Track which fields have errors
-	onSave           func(id *int64, name string, description string)
+	onSave           func()
 	onCancel         func()
-	onDelete         func(id int64)
+	onDelete         func()
 }
 
 // NewGameForm creates a new game form
-func NewGameForm(onSave func(id *int64, name string, description string), onCancel func(), onDelete func(id int64)) *GameForm {
+func NewGameForm() *GameForm {
 	gf := &GameForm{
 		Form:        tview.NewForm(),
-		onSave:      onSave,
-		onCancel:    onCancel,
-		onDelete:    onDelete,
 		fieldErrors: make(map[string]string),
 	}
 
@@ -65,8 +62,8 @@ func (gf *GameForm) PopulateForEdit(game *game.Game) {
 	// Add delete button for edit mode (insert at the beginning)
 	if gf.GetButtonCount() == 2 { // Only Save and Cancel exist
 		gf.AddButton("Delete", func() {
-			if gf.onDelete != nil && gf.gameID != nil {
-				gf.onDelete(*gf.gameID)
+			if gf.onDelete != nil {
+				gf.onDelete()
 			}
 		})
 	}
@@ -78,25 +75,10 @@ func (gf *GameForm) PopulateForEdit(game *game.Game) {
 func (gf *GameForm) setupForm() {
 	gf.Clear(true)
 
-	// gf.AddFormItem(gf.errorMessage)
 	gf.AddFormItem(gf.nameField)
 	gf.AddFormItem(gf.descriptionField)
 
-	// Add buttons
-	gf.AddButton("Save", func() {
-		// name := gf.nameField.GetText()
-		// description := gf.descriptionField.GetText()
-		if gf.onSave != nil {
-			gf.onSave(gf.gameID, gf.nameField.GetText(), gf.descriptionField.GetText())
-		}
-	})
-
-	gf.AddButton("Cancel", func() {
-		if gf.onCancel != nil {
-			gf.onCancel()
-		}
-	})
-
+	// Buttons will be set up when handlers are attached
 	gf.SetBorder(true).
 		SetTitle(" New Game ").
 		SetTitleAlign(tview.AlignLeft)
@@ -144,4 +126,47 @@ func (gf *GameForm) updateFieldLabels() {
 func (gf *GameForm) ClearFieldErrors() {
 	gf.fieldErrors = make(map[string]string)
 	gf.updateFieldLabels()
+}
+
+// BuildDomain constructs a Game entity from the form data
+func (gf *GameForm) BuildDomain() *game.Game {
+	var desc *string
+	descriptionText := gf.descriptionField.GetText()
+	if descriptionText != "" {
+		desc = &descriptionText
+	}
+
+	g := &game.Game{
+		Name:        gf.nameField.GetText(),
+		Description: desc,
+	}
+
+	// If editing an existing game, set the ID
+	if gf.gameID != nil {
+		g.ID = *gf.gameID
+	}
+
+	return g
+}
+
+// SetupHandlers configures all form button handlers
+func (gf *GameForm) SetupHandlers(onSave, onCancel, onDelete func()) {
+	gf.onSave = onSave
+	gf.onCancel = onCancel
+	gf.onDelete = onDelete
+
+	// Clear and re-add buttons
+	gf.ClearButtons()
+
+	gf.AddButton("Save", func() {
+		if gf.onSave != nil {
+			gf.onSave()
+		}
+	})
+
+	gf.AddButton("Cancel", func() {
+		if gf.onCancel != nil {
+			gf.onCancel()
+		}
+	})
 }
