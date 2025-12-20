@@ -137,6 +137,7 @@ func (lf *LogForm) PopulateForEdit(logEntry *log.Log) {
 		log.CHARACTER_ACTION,
 		log.MECHANICS,
 		log.ORACLE_QUESTION,
+		log.STORY,
 	}
 	for i, lt := range logTypes {
 		if lt == logEntry.LogType {

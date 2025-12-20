@@ -544,8 +544,12 @@ func (a *App) displayLogs(logs []*log.Log) {
 		timestamp := localTime.Format("15:04")
 		output += "[\"" + strconv.FormatInt(l.ID, 10) + "\"][::i][aqua::b]" + timestamp + "[-::-] "
 		output += "[::i][yellow::b]" + l.LogType.DisplayName() + "[-::-]\n"
-		output += "[::i][yellow::b]Description:[-::-] " + l.Description + "\n"
-		output += "[::i][yellow::b]Result:[-::-] " + l.Result + "\n"
+		if len(l.Description) > 0 {
+			output += "[::i][yellow::b]Description:[-::-] " + l.Description + "\n"
+		}
+		if len(l.Result) > 0 {
+			output += "[::i][yellow::b]Result:[-::-] " + l.Result + "\n"
+		}
 		if len(l.Narrative) > 0 {
 			output += "[::i][yellow::b]Narrative:[-::-] " + l.Narrative + "[\"\"]\n"
 		}
