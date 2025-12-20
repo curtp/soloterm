@@ -6,6 +6,7 @@ import (
 	"soloterm/domain/game"
 	"soloterm/domain/log"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -533,15 +534,12 @@ func (a *App) displayLogs(logs []*log.Log) {
 
 		// Print time block header if it changed
 		if blockLabel != lastBlockLabel {
-			if lastBlockLabel != "" {
-				output += "\n" // Add spacing between blocks
-			}
 			output += "[lime::b]===  " + blockLabel + "  ===[-::-]\n\n"
 			lastBlockLabel = blockLabel
 		}
 
 		// Print the log entry
-		timestamp := localTime.Format("15:04")
+		timestamp := localTime.Format("03:04 PM")
 		output += "[\"" + strconv.FormatInt(l.ID, 10) + "\"][::i][aqua::b]" + timestamp + "[-::-] "
 		output += "[::i][yellow::b]" + l.LogType.DisplayName() + "[-::-]\n"
 		if len(l.Description) > 0 {
@@ -551,9 +549,11 @@ func (a *App) displayLogs(logs []*log.Log) {
 			output += "[::i][yellow::b]Result:[-::-] " + l.Result + "\n"
 		}
 		if len(l.Narrative) > 0 {
-			output += "[::i][yellow::b]Narrative:[-::-] " + l.Narrative + "[\"\"]\n"
+			output += "[::i][yellow::b]Narrative:[-::-]\n" + l.Narrative + "[\"\"]\n"
 		}
-		output += "\n"
+		output += "[-::-][\"\"]\n"
+		_, _, w, _ := a.logView.GetInnerRect()
+		output += strings.Repeat("─", w) + "\n\n"
 	}
 
 	a.logView.SetText(output)

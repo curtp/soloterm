@@ -21,3 +21,6 @@ data
 
 # Tmp files
 tmp
+
+# Compiled files
+bin
