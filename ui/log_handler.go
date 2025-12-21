@@ -46,6 +46,7 @@ func (lh *LogHandler) HandleSave() {
 	lh.app.pages.HidePage(LOG_MODAL_ID)
 	lh.app.SetFocus(lh.app.gameTree)
 	lh.LoadLogsForGame(lh.app.selectedGame.ID)
+	lh.app.logView.Highlight()
 	lh.app.refreshGameTree()
 	lh.app.notification.ShowSuccess("Log saved successfully")
 }
@@ -55,7 +56,8 @@ func (lh *LogHandler) HandleCancel() {
 	lh.app.logForm.Reset(lh.app.selectedGame.ID)
 	lh.app.logForm.ClearFieldErrors()
 	lh.app.pages.HidePage(LOG_MODAL_ID)
-	lh.app.SetFocus(lh.app.gameTree)
+	lh.app.logView.Highlight()
+	lh.app.SetFocus(lh.app.logView)
 }
 
 // HandleEdit prepares form for editing selected log
