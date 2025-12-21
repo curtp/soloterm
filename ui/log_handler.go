@@ -46,6 +46,7 @@ func (lh *LogHandler) HandleSave() {
 	lh.app.pages.HidePage(LOG_MODAL_ID)
 	lh.app.SetFocus(lh.app.gameTree)
 	lh.LoadLogsForGame(lh.app.selectedGame.ID)
+	lh.app.refreshGameTree()
 	lh.app.notification.ShowSuccess("Log saved successfully")
 }
 
