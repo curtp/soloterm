@@ -118,6 +118,8 @@ package "ui" <<Rectangle>> UI_COLOR {
         - db: *sqlx.DB
         - gameService: *game.Service
         - logService: *log.Service
+        - gameHandler: *GameHandler
+        - logHandler: *LogHandler
         --
         - selectedGame: *Game
         - selectedLog: *Log
@@ -143,18 +145,45 @@ package "ui" <<Rectangle>> UI_COLOR {
         - setupUI()
         - setupKeyBindings()
         - refreshGameTree()
-        - loadLogsForGame(gameID: int64)
-        - loadLogsForSession(gameID: int64, sessionDate: string)
-        - displayLogs(logs: []*Log)
+        - loadLogsForSelectedGameEntry()
+        - showGameModal()
+        - showLogModal()
+        - showEditGameModal(game: *Game)
+        - togglePane(pane: tview.Primitive)
         - handleGameSave()
         - handleGameCancel()
-        - handleGameEdit()
         - handleGameDelete()
         - handleLogSave()
         - handleLogCancel()
-        - handleLogEdit()
         - handleLogDelete()
-        - togglePane(pane: tview.Primitive)
+        - handleGameEdit(gameID: int64)
+        - handleLogEdit(logID: int64)
+        - loadLogsForGame(gameID: int64)
+        - loadLogsForSession(gameID: int64, sessionDate: string)
+        - displayLogs(logs: []*Log)
+    }
+
+    class GameHandler {
+        - app: *App
+        --
+        + NewGameHandler(app: *App): *GameHandler
+        + HandleSave()
+        + HandleCancel()
+        + HandleEdit()
+        + HandleDelete()
+    }
+
+    class LogHandler {
+        - app: *App
+        --
+        + NewLogHandler(app: *App): *LogHandler
+        + HandleSave()
+        + HandleCancel()
+        + HandleEdit()
+        + HandleDelete()
+        + LoadLogsForGame(gameID: int64)
+        + LoadLogsForSession(gameID: int64, sessionDate: string)
+        + DisplayLogs(logs: []*Log)
     }
 
     interface ValidatableForm {
@@ -338,10 +367,17 @@ App *-- GameForm : contains
 App *-- LogForm : contains
 App *-- ConfirmationModal : contains
 App *-- Notification : contains
+App *-- GameHandler : contains
+App *-- LogHandler : contains
 App --> sqlxDB : uses
 App --> GameService : uses
 App --> LogService : uses
 App --|> tview : extends
+
+GameHandler --> App : accesses
+LogHandler --> App : accesses
+GameHandler ..> GameService : uses
+LogHandler ..> LogService : uses
 
 GameForm ..|> ValidatableForm : implements
 GameForm --|> tview : extends
