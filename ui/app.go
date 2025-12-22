@@ -20,6 +20,24 @@ const (
 	HELP_MODAL_ID    string = "help"
 )
 
+// UserAction represents user-triggered application events
+type UserAction string
+
+const (
+	GAME_SAVED     UserAction = "game_saved"
+	GAME_DELETED   UserAction = "game_deleted"
+	GAME_CANCEL    UserAction = "game_cancel"
+	GAME_SHOW_NEW  UserAction = "game_show_new"
+	GAME_SHOW_EDIT UserAction = "game_show_edit"
+	LOG_SAVED      UserAction = "log_saved"
+	LOG_DELETED    UserAction = "log_deleted"
+	LOG_CANCEL     UserAction = "log_cancel"
+	LOG_SHOW_NEW   UserAction = "log_show_new"
+	LOG_SHOW_EDIT  UserAction = "log_show_edit"
+	CONFIRM_SHOW   UserAction = "confirm_show"
+	CONFIRM_CANCEL UserAction = "confirm_cancel"
+)
+
 type App struct {
 	*tview.Application
 
@@ -98,7 +116,7 @@ func (a *App) setupUI() {
 			a.Draw()
 		})
 	a.logView.SetBorder(true).
-		SetTitle(" Session Log (click log to edit) ").
+		SetTitle(" Select Game To View ").
 		SetTitleAlign(tview.AlignLeft)
 
 	// Handle region clicks to edit log entries
@@ -200,17 +218,9 @@ func (a *App) setupKeyBindings() {
 			a.togglePane(a.gameTree)
 			return nil
 		case tcell.KeyCtrlL:
-			if a.selectedGame == nil {
-				a.notification.ShowError("Please select a game first")
-				return nil
-			}
 			a.logHandler.ShowModal()
 			return nil
 		case tcell.KeyCtrlE:
-			if a.selectedGame == nil {
-				a.notification.ShowError("Please select a game first")
-				return nil
-			}
 			a.gameHandler.ShowEditModal()
 		}
 
@@ -271,6 +281,128 @@ func (a *App) setupLogModal() {
 
 func (a *App) showHelp() {
 	a.pages.ShowPage(HELP_MODAL_ID)
+}
+
+// UpdateView orchestrates UI updates based on application events
+func (a *App) UpdateView(event UserAction) {
+	switch event {
+	case GAME_DELETED:
+		// Close modals
+		a.pages.HidePage(CONFIRM_MODAL_ID)
+		a.pages.HidePage(GAME_MODAL_ID)
+		a.pages.SwitchToPage(MAIN_PAGE_ID)
+
+		// Reset log view to default state
+		a.logView.Clear()
+		a.logView.SetTitle(" Select Game To View ")
+		a.selectedLog = nil
+
+		// Refresh and focus
+		a.refreshGameTree()
+		a.SetFocus(a.gameTree)
+
+		// Show success notification
+		a.notification.ShowSuccess("Game deleted successfully")
+
+	case GAME_SAVED:
+		// Clear form errors
+		a.gameForm.ClearFieldErrors()
+
+		// Close modal
+		a.pages.HidePage(GAME_MODAL_ID)
+
+		// Refresh and focus
+		a.refreshGameTree()
+		a.SetFocus(a.gameTree)
+
+		// Show success notification
+		a.notification.ShowSuccess("Game saved successfully")
+
+	case GAME_CANCEL:
+		// Clear form errors
+		a.gameForm.ClearFieldErrors()
+
+		// Close modal and focus tree
+		a.pages.HidePage(GAME_MODAL_ID)
+		a.SetFocus(a.gameTree)
+
+	case LOG_SAVED:
+		// Clear form errors
+		a.logForm.ClearFieldErrors()
+
+		// Close modal
+		a.pages.HidePage(LOG_MODAL_ID)
+
+		// Clear highlights and refresh
+		a.logView.Highlight()
+		a.loadLogsForSelectedGameEntry()
+		a.refreshGameTree()
+		a.SetFocus(a.gameTree)
+
+		// Show success notification
+		a.notification.ShowSuccess("Log saved successfully")
+
+	case LOG_DELETED:
+		// Close modals
+		a.pages.HidePage(CONFIRM_MODAL_ID)
+		a.pages.HidePage(LOG_MODAL_ID)
+		a.pages.SwitchToPage(MAIN_PAGE_ID)
+
+		// Refresh and focus
+		a.loadLogsForSelectedGameEntry()
+		a.refreshGameTree()
+		a.SetFocus(a.logView)
+
+		// Show success notification
+		a.notification.ShowSuccess("Log entry deleted successfully")
+
+	case LOG_CANCEL:
+		// Clear form errors
+		a.logForm.ClearFieldErrors()
+
+		// Close modal, clear highlights and focus log view
+		a.pages.HidePage(LOG_MODAL_ID)
+		a.logView.Highlight()
+		a.SetFocus(a.logView)
+
+	case GAME_SHOW_NEW:
+		// Show modal for creating new game
+		a.gameForm.Reset()
+		a.pages.ShowPage(GAME_MODAL_ID)
+		a.SetFocus(a.gameForm)
+
+	case GAME_SHOW_EDIT:
+		// Show modal for editing existing game
+		if a.selectedGame != nil {
+			a.gameForm.PopulateForEdit(a.selectedGame)
+			a.pages.ShowPage(GAME_MODAL_ID)
+			a.SetFocus(a.gameForm)
+		}
+
+	case LOG_SHOW_NEW:
+		// Show modal for creating new log
+		if a.selectedGame != nil {
+			a.logForm.Reset(a.selectedGame.ID)
+			a.pages.ShowPage(LOG_MODAL_ID)
+			a.SetFocus(a.logForm)
+		}
+
+	case LOG_SHOW_EDIT:
+		// Show modal for editing existing log
+		if a.selectedLog != nil {
+			a.logForm.PopulateForEdit(a.selectedLog)
+			a.pages.ShowPage(LOG_MODAL_ID)
+			a.SetFocus(a.logForm)
+		}
+
+	case CONFIRM_SHOW:
+		// Show confirmation modal
+		a.pages.ShowPage(CONFIRM_MODAL_ID)
+
+	case CONFIRM_CANCEL:
+		// Reusable across all confirmation cancellations
+		a.pages.HidePage(CONFIRM_MODAL_ID)
+	}
 }
 
 func (a *App) loadLogsForSelectedGameEntry() {

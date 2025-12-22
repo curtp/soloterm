@@ -112,6 +112,21 @@ package "domain/log" <<Rectangle>> DOMAIN_COLOR {
 
 ' ==================== UI LAYER ====================
 package "ui" <<Rectangle>> UI_COLOR {
+    enum UserAction {
+        GAME_SAVED
+        GAME_DELETED
+        GAME_CANCEL
+        GAME_SHOW_NEW
+        GAME_SHOW_EDIT
+        LOG_SAVED
+        LOG_DELETED
+        LOG_CANCEL
+        LOG_SHOW_NEW
+        LOG_SHOW_EDIT
+        CONFIRM_SHOW
+        CONFIRM_CANCEL
+    }
+
     class App {
         + *tview.Application
         --
@@ -142,25 +157,15 @@ package "ui" <<Rectangle>> UI_COLOR {
         --
         + NewApp(db: *sqlx.DB): *App
         + Run(): error
+        + UpdateView(event: UserAction)
         - setupUI()
         - setupKeyBindings()
+        - setupGameModal()
+        - setupLogModal()
+        - showHelp()
         - refreshGameTree()
         - loadLogsForSelectedGameEntry()
-        - showGameModal()
-        - showLogModal()
-        - showEditGameModal(game: *Game)
         - togglePane(pane: tview.Primitive)
-        - handleGameSave()
-        - handleGameCancel()
-        - handleGameDelete()
-        - handleLogSave()
-        - handleLogCancel()
-        - handleLogDelete()
-        - handleGameEdit(gameID: int64)
-        - handleLogEdit(logID: int64)
-        - loadLogsForGame(gameID: int64)
-        - loadLogsForSession(gameID: int64, sessionDate: string)
-        - displayLogs(logs: []*Log)
     }
 
     class GameHandler {
@@ -171,6 +176,8 @@ package "ui" <<Rectangle>> UI_COLOR {
         + HandleCancel()
         + HandleEdit()
         + HandleDelete()
+        + ShowModal()
+        + ShowEditModal()
     }
 
     class LogHandler {
@@ -181,6 +188,8 @@ package "ui" <<Rectangle>> UI_COLOR {
         + HandleCancel()
         + HandleEdit()
         + HandleDelete()
+        + ShowModal()
+        + ShowEditModal(logID: int64)
         + LoadLogsForGame(gameID: int64)
         + LoadLogsForSession(gameID: int64, sessionDate: string)
         + DisplayLogs(logs: []*Log)
@@ -207,7 +216,6 @@ package "ui" <<Rectangle>> UI_COLOR {
         --
         + NewGameForm(): *GameForm
         + BuildDomain(): *Game
-        + GetValues(): (id: *int64, name: string, description: string)
         + SetupHandlers(onSave: func(), onCancel: func(), onDelete: func())
         + PopulateForEdit(game: *Game)
         + Reset()
@@ -235,7 +243,6 @@ package "ui" <<Rectangle>> UI_COLOR {
         --
         + NewLogForm(): *LogForm
         + BuildDomain(): *Log
-        + GetValues(): (id: *int64, logType: LogType, description: string, result: string, narrative: string)
         + SetupHandlers(onSave: func(), onCancel: func(), onDelete: func())
         + PopulateForEdit(log: *Log)
         + Reset(gameID: int64)
@@ -282,14 +289,35 @@ package "ui" <<Rectangle>> UI_COLOR {
     }
 
     note right of App
-        Main TUI Application
-        Keyboard Shortcuts:
+        <b>Mediator Pattern Implementation</b>
+
+        App acts as the central mediator coordinating
+        all UI updates via UpdateView(UserAction).
+
+        <b>Responsibilities:</b>
+        - Centralized UI orchestration
+        - Modal showing/hiding
+        - Form error clearing
+        - View refreshing
+        - Focus management
+        - Success notifications
+
+        <b>Keyboard Shortcuts:</b>
         - F1: Help
         - Ctrl+G: New Game
         - Ctrl+L: New Log Entry
         - Ctrl+E: Edit Selected
         - Ctrl+B: Toggle Sidebar
         - Ctrl+C: Quit
+    end note
+
+    note right of GameHandler
+        <b>Handler Responsibilities</b>
+        - Business logic execution
+        - Domain state updates
+        - Error handling & notifications
+        - Precondition validation
+        - Calls UpdateView for UI
     end note
 }
 
@@ -373,11 +401,14 @@ App --> sqlxDB : uses
 App --> GameService : uses
 App --> LogService : uses
 App --|> tview : extends
+App ..> UserAction : orchestrates via
 
 GameHandler --> App : accesses
 LogHandler --> App : accesses
 GameHandler ..> GameService : uses
 LogHandler ..> LogService : uses
+GameHandler ..> UserAction : sends to UpdateView
+LogHandler ..> UserAction : sends to UpdateView
 
 GameForm ..|> ValidatableForm : implements
 GameForm --|> tview : extends

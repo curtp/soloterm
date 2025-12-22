@@ -38,28 +38,20 @@ func (gh *GameHandler) HandleSave() {
 		return
 	}
 
-	// Success - update selected game and refresh UI
+	// Success - update domain state and orchestrate UI updates
 	gh.app.selectedGame = savedGame
-	gh.app.gameForm.ClearFieldErrors()
-	gh.app.pages.HidePage(GAME_MODAL_ID)
-	gh.app.SetFocus(gh.app.gameTree)
-	gh.app.refreshGameTree()
-	gh.app.notification.ShowSuccess("Game saved successfully")
+	gh.app.UpdateView(GAME_SAVED)
 }
 
 // HandleCancel processes game form cancellation
 func (gh *GameHandler) HandleCancel() {
 	gh.app.gameForm.Reset()
-	gh.app.gameForm.ClearFieldErrors()
-	gh.app.pages.HidePage(GAME_MODAL_ID)
-	gh.app.SetFocus(gh.app.gameTree)
+	gh.app.UpdateView(GAME_CANCEL)
 }
 
 // HandleEdit prepares form for editing selected game
 func (gh *GameHandler) HandleEdit() {
-	gh.app.gameForm.PopulateForEdit(gh.app.selectedGame)
-	gh.app.pages.ShowPage(GAME_MODAL_ID)
-	gh.app.SetFocus(gh.app.gameForm)
+	gh.app.UpdateView(GAME_SHOW_EDIT)
 }
 
 // HandleDelete processes game deletion with confirmation
@@ -76,41 +68,31 @@ func (gh *GameHandler) HandleDelete() {
 	gh.app.confirmModal.Show(
 		"Are you sure you want to delete this game and all associated log entries?\n\nThis action cannot be undone.",
 		func() {
-			// Delete the game
+			// Business logic: Delete the game
 			err := gh.app.gameService.Delete(gameEntity.ID)
 			if err != nil {
-				gh.app.pages.HidePage(CONFIRM_MODAL_ID)
+				gh.app.UpdateView(CONFIRM_CANCEL)
 				gh.app.notification.ShowError(fmt.Sprintf("Error deleting game: %v", err))
 				return
 			}
 
-			// Close modals
-			gh.app.pages.HidePage(CONFIRM_MODAL_ID)
-			gh.app.pages.HidePage(GAME_MODAL_ID)
-			gh.app.pages.SwitchToPage(MAIN_PAGE_ID)
-
-			// Refresh the UI
-			gh.app.logView.Clear()
-			gh.app.refreshGameTree()
-			gh.app.SetFocus(gh.app.gameTree)
+			// Update domain state
 			gh.app.selectedGame = nil
 
-			// Show success notification
-			gh.app.notification.ShowSuccess("Game deleted successfully")
+			// Orchestrate UI updates
+			gh.app.UpdateView(GAME_DELETED)
 		},
 		func() {
-			// Cancel - just hide the confirmation modal
-			gh.app.pages.HidePage(CONFIRM_MODAL_ID)
+			// Cancel deletion
+			gh.app.UpdateView(CONFIRM_CANCEL)
 		},
 	)
-	gh.app.pages.ShowPage(CONFIRM_MODAL_ID)
+	gh.app.UpdateView(CONFIRM_SHOW)
 }
 
 // ShowModal displays the game form modal for creating a new game
 func (gh *GameHandler) ShowModal() {
-	gh.app.gameForm.Reset()
-	gh.app.pages.ShowPage(GAME_MODAL_ID)
-	gh.app.SetFocus(gh.app.gameForm)
+	gh.app.UpdateView(GAME_SHOW_NEW)
 }
 
 // ShowEditModal displays the game form modal for editing an existing game
@@ -120,7 +102,5 @@ func (gh *GameHandler) ShowEditModal() {
 		return
 	}
 
-	gh.app.gameForm.PopulateForEdit(gh.app.selectedGame)
-	gh.app.pages.ShowPage(GAME_MODAL_ID)
-	gh.app.SetFocus(gh.app.gameForm)
+	gh.app.UpdateView(GAME_SHOW_EDIT)
 }

@@ -40,36 +40,20 @@ func (lh *LogHandler) HandleSave() {
 		return
 	}
 
-	// Success - update selected log and refresh UI
+	// Success - update domain state and orchestrate UI updates
 	lh.app.selectedLog = savedLog
-	lh.app.logForm.ClearFieldErrors()
-	lh.app.pages.HidePage(LOG_MODAL_ID)
-	lh.app.SetFocus(lh.app.gameTree)
-	lh.LoadLogsForGame(lh.app.selectedGame.ID)
-	lh.app.logView.Highlight()
-	lh.app.refreshGameTree()
-	lh.app.notification.ShowSuccess("Log saved successfully")
+	lh.app.UpdateView(LOG_SAVED)
 }
 
 // HandleCancel processes log form cancellation
 func (lh *LogHandler) HandleCancel() {
 	lh.app.logForm.Reset(lh.app.selectedGame.ID)
-	lh.app.logForm.ClearFieldErrors()
-	lh.app.pages.HidePage(LOG_MODAL_ID)
-	lh.app.logView.Highlight()
-	lh.app.SetFocus(lh.app.logView)
+	lh.app.UpdateView(LOG_CANCEL)
 }
 
 // HandleEdit prepares form for editing selected log
 func (lh *LogHandler) HandleEdit() {
-	if lh.app.selectedLog == nil {
-		lh.app.notification.ShowError("Please select a log to edit")
-		return
-	}
-
-	lh.app.logForm.PopulateForEdit(lh.app.selectedLog)
-	lh.app.pages.ShowPage(LOG_MODAL_ID)
-	lh.app.SetFocus(lh.app.logForm)
+	lh.app.UpdateView(LOG_SHOW_EDIT)
 }
 
 // HandleDelete processes log deletion with confirmation
@@ -86,33 +70,23 @@ func (lh *LogHandler) HandleDelete() {
 	lh.app.confirmModal.Show(
 		"Are you sure you want to delete this log entry?\n\nThis action cannot be undone.",
 		func() {
-			// Delete the log entry
+			// Business logic: Delete the log entry
 			err := lh.app.logService.Delete(logEntry.ID)
 			if err != nil {
-				lh.app.pages.HidePage(CONFIRM_MODAL_ID)
+				lh.app.UpdateView(CONFIRM_CANCEL)
 				lh.app.notification.ShowError("Error deleting log entry: " + err.Error())
 				return
 			}
 
-			// Close modals
-			lh.app.pages.HidePage(CONFIRM_MODAL_ID)
-			lh.app.pages.HidePage(LOG_MODAL_ID)
-			lh.app.pages.SwitchToPage(MAIN_PAGE_ID)
-
-			// Refresh the UI
-			lh.app.refreshGameTree()
-			lh.app.loadLogsForSelectedGameEntry()
-			lh.app.SetFocus(lh.app.logView)
-
-			// Show success notification
-			lh.app.notification.ShowSuccess("Log entry deleted successfully")
+			// Orchestrate UI updates
+			lh.app.UpdateView(LOG_DELETED)
 		},
 		func() {
-			// Cancel - just hide the confirmation modal
-			lh.app.pages.HidePage(CONFIRM_MODAL_ID)
+			// Cancel deletion
+			lh.app.UpdateView(CONFIRM_CANCEL)
 		},
 	)
-	lh.app.pages.ShowPage(CONFIRM_MODAL_ID)
+	lh.app.UpdateView(CONFIRM_SHOW)
 }
 
 // ShowModal displays the log form modal for creating a new log entry
@@ -123,9 +97,7 @@ func (lh *LogHandler) ShowModal() {
 		return
 	}
 
-	lh.app.logForm.Reset(lh.app.selectedGame.ID)
-	lh.app.pages.ShowPage(LOG_MODAL_ID)
-	lh.app.SetFocus(lh.app.logForm)
+	lh.app.UpdateView(LOG_SHOW_NEW)
 }
 
 // ShowEditModal displays the log form modal for editing an existing log entry
@@ -137,15 +109,11 @@ func (lh *LogHandler) ShowEditModal(logID int64) {
 		return
 	}
 
-	// Populate the form with the existing log data
-	lh.app.logForm.PopulateForEdit(logEntry)
-
 	// Set the selected log on the app
 	lh.app.selectedLog = logEntry
 
 	// Show the modal
-	lh.app.pages.ShowPage(LOG_MODAL_ID)
-	lh.app.SetFocus(lh.app.logForm)
+	lh.app.UpdateView(LOG_SHOW_EDIT)
 }
 
 // LoadLogsForGame loads all logs for a game and displays them in the log view
@@ -221,4 +189,5 @@ func (lh *LogHandler) DisplayLogs(logs []*log.Log) {
 	}
 
 	lh.app.logView.SetText(output)
+	lh.app.logView.SetTitle(" Session Logs - Click To Edit, Ctrl+L To Add ")
 }
