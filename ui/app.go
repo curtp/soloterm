@@ -214,10 +214,11 @@ func (a *App) setupKeyBindings() {
 		case tcell.KeyTab:
 			// Only handle Tab on main view, not in modals
 			currentFocus := a.GetFocus()
-			if currentFocus == a.gameTree {
+			switch currentFocus {
+			case a.gameTree:
 				a.SetFocus(a.logView)
 				return nil
-			} else if currentFocus == a.logView {
+			case a.logView:
 				a.SetFocus(a.gameTree)
 				return nil
 			}
