@@ -133,7 +133,7 @@ func (a *App) setupUI() {
 	a.footer = tview.NewTextView().
 		SetDynamicColors(true).
 		SetTextAlign(tview.AlignCenter).
-		SetText("[yellow]F1[white] Help  [yellow]Ctrl+G[white] New Game  [yellow]Ctrl+L[white] New Log  [yellow]Ctrl+B[white] Toggle Sidebar  [yellow]Ctrl+C[white] Quit")
+		SetText("[yellow]F1[white] Help  [yellow]Tab[white] Switch Pane  [yellow]Ctrl+G[white] New Game  [yellow]Ctrl+L[white] New Log  [yellow]Ctrl+B[white] Toggle Sidebar  [yellow]Ctrl+C[white] Quit")
 
 	// Main layout: horizontal split of tree (left, narrow) and log view (right)
 	a.mainFlex = tview.NewFlex().
@@ -211,11 +211,24 @@ func (a *App) setupKeyBindings() {
 		case tcell.KeyF1:
 			a.showHelp()
 			return nil
+		case tcell.KeyTab:
+			// Only handle Tab on main view, not in modals
+			currentFocus := a.GetFocus()
+			if currentFocus == a.gameTree {
+				a.SetFocus(a.logView)
+				return nil
+			} else if currentFocus == a.logView {
+				a.SetFocus(a.gameTree)
+				return nil
+			}
+			// If focus is not on main views (ie. in a modal), let Tab work normally
+			return event
 		case tcell.KeyCtrlG:
 			a.gameHandler.ShowModal()
 			return nil
 		case tcell.KeyCtrlB:
 			a.togglePane(a.gameTree)
+			a.SetFocus(a.logView)
 			return nil
 		case tcell.KeyCtrlL:
 			a.logHandler.ShowModal()

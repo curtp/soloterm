@@ -3,6 +3,7 @@ package ui
 import (
 	"time"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
@@ -54,7 +55,7 @@ func (n *Notification) Show(notifType NotificationType, message string) {
 	case NotificationInfo:
 		coloredMessage = "[blue::b]ℹ " + message + "[-::-]"
 	case NotificationSuccess:
-		coloredMessage = "[green::b]✓ " + message + "[-::-]"
+		coloredMessage = "[lime::b]✓ " + message + "[-::-]"
 	case NotificationWarning:
 		coloredMessage = "[yellow::b]⚠ " + message + "[-::-]"
 	case NotificationError:
@@ -62,6 +63,7 @@ func (n *Notification) Show(notifType NotificationType, message string) {
 	}
 
 	n.SetText(coloredMessage)
+	n.SetBackgroundColor(tcell.ColorDarkGray)
 
 	// Make the notification visible
 	n.show()
