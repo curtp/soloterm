@@ -54,8 +54,12 @@ func getDBPath() string {
 		return dbPath
 	}
 
-	os.MkdirAll("./data", 0755)
-	return filepath.Join("data", "soloterm.db")
+	home, _ := os.UserHomeDir()
+	path := home + "/soloterm"
+
+	os.MkdirAll(path, 0755)
+
+	return filepath.Join(path, "soloterm.db")
 }
 
 // RegisterMigration allows packages to register their migrations
