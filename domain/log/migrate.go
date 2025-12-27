@@ -2,8 +2,6 @@ package log
 
 import (
 	"soloterm/database"
-
-	"github.com/jmoiron/sqlx"
 )
 
 func init() {
@@ -12,7 +10,7 @@ func init() {
 }
 
 // Migrate runs all migrations for the logs domain
-func Migrate(db *sqlx.DB) error {
+func Migrate(db *database.DBStore) error {
 	// Migration: Create log table
 	if err := createTable(db); err != nil {
 		return err
@@ -22,7 +20,7 @@ func Migrate(db *sqlx.DB) error {
 }
 
 // createTable creates the initial logs table and index
-func createTable(db *sqlx.DB) error {
+func createTable(db *database.DBStore) error {
 	schema := `
 		CREATE TABLE IF NOT EXISTS logs (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,6 +36,6 @@ func createTable(db *sqlx.DB) error {
 
 		CREATE INDEX IF NOT EXISTS idx_logs_by_game_id ON logs (game_id);
 	`
-	_, err := db.Exec(schema)
+	_, err := db.Connection.Exec(schema)
 	return err
 }

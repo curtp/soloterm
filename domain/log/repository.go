@@ -4,17 +4,16 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-
-	"github.com/jmoiron/sqlx"
+	"soloterm/database"
 )
 
 // Repository handles database operations for logs
 type Repository struct {
-	db *sqlx.DB
+	db *database.DBStore
 }
 
 // NewRepository creates a new Repository
-func NewRepository(db *sqlx.DB) *Repository {
+func NewRepository(db *database.DBStore) *Repository {
 	return &Repository{db: db}
 }
 
@@ -40,7 +39,7 @@ func (r *Repository) Delete(id int64) (int64, error) {
 
 	query := `DELETE FROM logs WHERE id = ?`
 
-	result, err := r.db.Exec(query, id)
+	result, err := r.db.Connection.Exec(query, id)
 
 	if err != nil {
 		return 0, err
@@ -66,7 +65,7 @@ func (r *Repository) DeleteAllForGame(gameID int64) (int64, error) {
 
 	query := `DELETE FROM logs WHERE game_id = ?`
 
-	result, err := r.db.Exec(query, gameID)
+	result, err := r.db.Connection.Exec(query, gameID)
 
 	if err != nil {
 		return 0, err
@@ -93,7 +92,7 @@ func (r *Repository) GetByID(id int64) (*Log, error) {
 	}
 
 	var log Log
-	err := r.db.Get(&log, "SELECT * FROM logs WHERE id = ?", id)
+	err := r.db.Connection.Get(&log, "SELECT * FROM logs WHERE id = ?", id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, errors.New("log not found")
@@ -107,7 +106,7 @@ func (r *Repository) GetByID(id int64) (*Log, error) {
 // GetAllForGame retrieves all logs for the game ordered by created_at
 func (r *Repository) GetAllForGame(gameID int64) ([]*Log, error) {
 	var logs []*Log
-	err := r.db.Select(&logs, "SELECT * FROM logs WHERE game_id = ? ORDER BY created_at ASC", gameID)
+	err := r.db.Connection.Select(&logs, "SELECT * FROM logs WHERE game_id = ? ORDER BY created_at ASC", gameID)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +134,7 @@ func (r *Repository) GetSessionsForGame(gameID int64) ([]*Session, error) {
 	`
 
 	var sessions []*Session
-	err := r.db.Select(&sessions, query, gameID)
+	err := r.db.Connection.Select(&sessions, query, gameID)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +156,7 @@ func (r *Repository) GetLogsForSession(gameID int64, sessionDate string) ([]*Log
 		ORDER BY created_at ASC
 	`
 	var logs []*Log
-	err := r.db.Select(&logs, query, gameID, sessionDate)
+	err := r.db.Connection.Select(&logs, query, gameID, sessionDate)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +172,7 @@ func (r *Repository) insert(log *Log) error {
 	`
 
 	// Execute and scan the returned values back into log
-	err := r.db.QueryRowx(query,
+	err := r.db.Connection.QueryRowx(query,
 		log.GameID,
 		log.LogType,
 		log.Description,
@@ -193,7 +192,7 @@ func (r *Repository) update(log *Log) error {
 	`
 
 	// Execute and scan the returned values back into log
-	err := r.db.QueryRowx(query,
+	err := r.db.Connection.QueryRowx(query,
 		log.GameID,
 		log.LogType,
 		log.Description,

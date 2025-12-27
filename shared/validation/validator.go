@@ -27,17 +27,32 @@ func NewValidator() *Validator {
 //
 // Usage Example:
 //
-//	 func (e *Entry) Validate() error {
-//	   validator := NewValidator()
-//		  var errorArray []validator.ValidationError
-//		  v.check("key", helpers.isUrlSafe(key), "must contain only alphanumeric characters, hyphens, underscores, periods, or tildes")
-//		  return v
-//	 }
+//	  struct Entry {
+//	     Key       string
+//	     Namespace string
+//	     Value     string
+//	  }
+//
+//		 func (e *Entry) Validate() (validator Validator, error) {
+//		   v := NewValidator()
+//		   v.check("key", len(Key) >= 5 && len(Key) <= 20, "must be between 5 and 20 characters")
+//	    v.check("namespace", len(Namespace) >= 5 && len(Namespace) <= 20, "must be between 5 and 20 characters")
+//		   v.check("value", len(value) > 0, "may not be blank")
+//		   return v
+//		 }
+//
+//	  func main() {
+//			e := Entry{}
+//			v, err := e.Validate
+//			if v.HasErrors() {
+//				log.Printf("errors: %s", v.GetAllErrorMessages())
+//		    }
+//		  }
 //
 // Example for validating input to a service call
 //
 //	v := validation.NewValidator()
-//	v.Check("key", helpers.IsURLSafe(key), "must contain only alphanumeric characters, hyphens, underscores, periods, or tildes")
+//	v.Check("Key", len(key) > 0, "must contain only alphanumeric characters, hyphens, underscores, periods, or tildes")
 //	v.Check("namespace", helpers.IsURLSafe(namespace), "must contain only alphanumeric characters, hyphens, underscores, periods, or tildes")
 //	if v.HasErrors() {
 //		return nil, errors.New(v.GetAllErrorMessages())

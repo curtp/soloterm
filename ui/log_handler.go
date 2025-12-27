@@ -51,15 +51,15 @@ func (lh *LogHandler) HandleCancel() {
 	lh.app.UpdateView(LOG_CANCEL)
 }
 
-// HandleEdit prepares form for editing selected log
-func (lh *LogHandler) HandleEdit() {
-	lh.app.UpdateView(LOG_SHOW_EDIT)
-}
-
 // HandleDelete processes log deletion with confirmation
 func (lh *LogHandler) HandleDelete() {
 	if lh.app.selectedLog == nil {
 		lh.app.notification.ShowError("Please select a log to delete")
+		return
+	}
+
+	if lh.app.selectedLog.ID == 0 {
+		lh.app.notification.ShowError("Only saved log entries can be deleted")
 		return
 	}
 

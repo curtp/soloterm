@@ -3,12 +3,12 @@
 package ui
 
 import (
+	"soloterm/database"
 	"soloterm/domain/game"
 	"soloterm/domain/log"
 	"strconv"
 
 	"github.com/gdamore/tcell/v2"
-	"github.com/jmoiron/sqlx"
 	"github.com/rivo/tview"
 )
 
@@ -42,7 +42,7 @@ type App struct {
 	*tview.Application
 
 	// Dependencies
-	db          *sqlx.DB
+	db          *database.DBStore
 	gameService *game.Service
 	logService  *log.Service
 
@@ -73,7 +73,7 @@ type App struct {
 	notification *Notification
 }
 
-func NewApp(db *sqlx.DB) *App {
+func NewApp(db *database.DBStore) *App {
 	app := &App{
 		Application: tview.NewApplication(),
 		db:          db,
@@ -351,7 +351,7 @@ func (a *App) UpdateView(event UserAction) {
 		a.logView.Highlight()
 		a.loadLogsForSelectedGameEntry()
 		a.refreshGameTree()
-		a.SetFocus(a.gameTree)
+		a.SetFocus(a.logView)
 
 		// Show success notification
 		a.notification.ShowSuccess("Log saved successfully")
@@ -376,6 +376,7 @@ func (a *App) UpdateView(event UserAction) {
 
 		// Close modal, clear highlights and focus log view
 		a.pages.HidePage(LOG_MODAL_ID)
+		a.pages.SwitchToPage(MAIN_PAGE_ID)
 		a.logView.Highlight()
 		a.SetFocus(a.logView)
 

@@ -3,8 +3,6 @@ package testing
 import (
 	"soloterm/database"
 	"testing"
-
-	"github.com/jmoiron/sqlx"
 )
 
 // SetupTestDB creates an in-memory SQLite database for testing.
@@ -26,7 +24,7 @@ import (
 //
 //	    // Use db for testing...
 //	}
-func SetupTestDB(t *testing.T) *sqlx.DB {
+func SetupTestDB(t *testing.T) *database.DBStore {
 	t.Helper() // Marks this as a test helper for better error reporting
 
 	// Connect to in-memory database
@@ -40,10 +38,10 @@ func SetupTestDB(t *testing.T) *sqlx.DB {
 
 // TeardownTestDB closes the database connection.
 // Use with defer: defer TeardownTestDB(t, db)
-func TeardownTestDB(t *testing.T, db *sqlx.DB) {
+func TeardownTestDB(t *testing.T, db *database.DBStore) {
 	t.Helper() // Marks this as a test helper for better error reporting
 
-	if err := db.Close(); err != nil {
+	if err := db.Connection.Close(); err != nil {
 		t.Errorf("Failed to close test database: %v", err)
 	}
 }
@@ -56,7 +54,7 @@ func TeardownTestDB(t *testing.T, db *sqlx.DB) {
 //	func setupTestDB(t *testing.T) *sqlx.DB {
 //	    return testhelper.SetupTestDBWithMigration(t, Migrate)
 //	}
-func SetupTestDBWithMigration(t *testing.T, migrateFn func(*sqlx.DB) error) *sqlx.DB {
+func SetupTestDBWithMigration(t *testing.T, migrateFn func(*database.DBStore) error) *database.DBStore {
 	t.Helper()
 
 	db := SetupTestDB(t)

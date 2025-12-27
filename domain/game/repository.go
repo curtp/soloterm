@@ -4,17 +4,16 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-
-	"github.com/jmoiron/sqlx"
+	"soloterm/database"
 )
 
 // Repository handles database operations for games
 type Repository struct {
-	db *sqlx.DB
+	db *database.DBStore
 }
 
 // NewRepository creates a new Repository
-func NewRepository(db *sqlx.DB) *Repository {
+func NewRepository(db *database.DBStore) *Repository {
 	return &Repository{db: db}
 }
 
@@ -40,7 +39,7 @@ func (r *Repository) Delete(id int64) (int64, error) {
 
 	query := `DELETE FROM games WHERE id = ?`
 
-	result, err := r.db.Exec(query, id)
+	result, err := r.db.Connection.Exec(query, id)
 
 	if err != nil {
 		return 0, err
@@ -66,7 +65,7 @@ func (r *Repository) GetByID(id int64) (*Game, error) {
 	}
 
 	var game Game
-	err := r.db.Get(&game, "SELECT * FROM games WHERE id = ?", id)
+	err := r.db.Connection.Get(&game, "SELECT * FROM games WHERE id = ?", id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, errors.New("game not found")
@@ -80,7 +79,7 @@ func (r *Repository) GetByID(id int64) (*Game, error) {
 // GetAll retrieves all games ordered by name
 func (r *Repository) GetAll() ([]*Game, error) {
 	var games []*Game
-	err := r.db.Select(&games, "SELECT * FROM games ORDER BY name ASC")
+	err := r.db.Connection.Select(&games, "SELECT * FROM games ORDER BY name ASC")
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +95,7 @@ func (r *Repository) insert(game *Game) error {
 	`
 
 	// Execute and scan the returned values back into game
-	err := r.db.QueryRowx(query,
+	err := r.db.Connection.QueryRowx(query,
 		game.Name,
 		game.Description,
 	).Scan(&game.ID, &game.CreatedAt, &game.UpdatedAt)
@@ -113,7 +112,7 @@ func (r *Repository) update(game *Game) error {
 	`
 
 	// Execute and scan the returned values back into game
-	err := r.db.QueryRowx(query,
+	err := r.db.Connection.QueryRowx(query,
 		game.Name,
 		game.Description,
 		game.ID,

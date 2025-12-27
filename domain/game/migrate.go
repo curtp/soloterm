@@ -2,8 +2,6 @@ package game
 
 import (
 	"soloterm/database"
-
-	"github.com/jmoiron/sqlx"
 )
 
 func init() {
@@ -12,9 +10,9 @@ func init() {
 }
 
 // Migrate runs all migrations for the games domain
-func Migrate(db *sqlx.DB) error {
+func Migrate(dbStore *database.DBStore) error {
 	// Migration: Create games table
-	if err := createGamesTable(db); err != nil {
+	if err := createGamesTable(dbStore); err != nil {
 		return err
 	}
 
@@ -22,7 +20,7 @@ func Migrate(db *sqlx.DB) error {
 }
 
 // createGamesTable creates the initial games table and index
-func createGamesTable(db *sqlx.DB) error {
+func createGamesTable(dbStore *database.DBStore) error {
 	schema := `
 		CREATE TABLE IF NOT EXISTS games (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -34,6 +32,6 @@ func createGamesTable(db *sqlx.DB) error {
 
 		CREATE INDEX IF NOT EXISTS idx_games_by_name ON games (name);
 	`
-	_, err := db.Exec(schema)
+	_, err := dbStore.Connection.Exec(schema)
 	return err
 }
