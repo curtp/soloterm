@@ -47,7 +47,8 @@ func TestLog_LogTypeValidation(t *testing.T) {
 
 			if tc.shouldPass {
 				if v.IsInError("log_type") {
-					t.Errorf("%s: Expected no validation error, got: %s", tc.description, v.GetErrorMessagesFor("log_type"))
+					err := v.GetError("log_type")
+					t.Errorf("%s: Expected no validation error, got: %v", tc.description, err.Messages)
 				}
 			} else {
 				if !v.IsInError("log_type") {
@@ -119,7 +120,7 @@ func TestLog_RequiredFieldValidation(t *testing.T) {
 
 			if tc.shouldPass {
 				if v.HasErrors() {
-					t.Errorf("Expected no validation error, got: %s", v.GetAllErrorMessages())
+					t.Errorf("Expected no validation error, got: %v", v.Errors)
 				}
 			} else {
 				if !v.HasErrors() {

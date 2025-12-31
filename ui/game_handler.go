@@ -2,7 +2,6 @@ package ui
 
 import (
 	"fmt"
-	"soloterm/shared/validation"
 )
 
 // GameHandler coordinates game-related UI operations
@@ -24,12 +23,7 @@ func (gh *GameHandler) HandleSave() {
 	savedGame, err := gh.app.gameService.Save(gameEntity)
 	if err != nil {
 		// Check if it's a validation error
-		if validator, ok := err.(*validation.Validator); ok {
-			fieldErrors := make(map[string]string)
-			for _, fieldError := range validator.Errors {
-				fieldErrors[fieldError.Field] = fieldError.FormattedErrorMessage()
-			}
-			gh.app.gameForm.SetFieldErrors(fieldErrors)
+		if handleValidationError(err, gh.app.gameForm) {
 			return
 		}
 

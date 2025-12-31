@@ -3,7 +3,6 @@ package ui
 import (
 	"fmt"
 	"soloterm/domain/log"
-	"soloterm/shared/validation"
 	"strings"
 )
 
@@ -26,12 +25,7 @@ func (lh *LogHandler) HandleSave() {
 	savedLog, err := lh.app.logService.Save(logEntity)
 	if err != nil {
 		// Check if it's a validation error
-		if validator, ok := err.(*validation.Validator); ok {
-			fieldErrors := make(map[string]string)
-			for _, fieldError := range validator.Errors {
-				fieldErrors[fieldError.Field] = fieldError.FormattedErrorMessage()
-			}
-			lh.app.logForm.SetFieldErrors(fieldErrors)
+		if handleValidationError(err, lh.app.logForm) {
 			return
 		}
 

@@ -212,7 +212,8 @@ func (a *App) setupKeyBindings() {
 			a.showHelp()
 			return nil
 		case tcell.KeyTab:
-			// Only handle Tab on main view, not in modals
+			// When tabbing on the main view, capture it and set focus properly.
+			// When tabbing elsewhere, send the event onward for it to be handled.
 			currentFocus := a.GetFocus()
 			switch currentFocus {
 			case a.gameTree:

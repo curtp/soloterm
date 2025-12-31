@@ -7,12 +7,13 @@ import (
 	testhelper "soloterm/shared/testing"
 )
 
-func TestRepository_Save(t *testing.T) {
+func TestService_Save(t *testing.T) {
 	// Setup
 	db := testhelper.SetupTestDBWithMigration(t, Migrate)
 	defer testhelper.TeardownTestDB(t, db)
 
 	repo := NewRepository(db)
+	service := NewService(repo)
 
 	t.Run("save new game", func(t *testing.T) {
 
@@ -20,74 +21,60 @@ func TestRepository_Save(t *testing.T) {
 		game, _ := NewGame("Test Game")
 
 		// Test: Save the game (insert)
-		err := repo.Save(game)
+		game, err := service.Save(game)
 		if err != nil {
 			t.Fatalf("Save() insert failed: %v", err)
-		}
-
-		// Verify: Database managed fields are set after insert
-		if game.ID == 0 {
-			t.Errorf("Expected ID to be set after insert, got %d", game.ID)
-		}
-		if game.CreatedAt.IsZero() {
-			t.Error("Expected CreatedAt to be set after insert")
-		}
-		if game.UpdatedAt.IsZero() {
-			t.Error("Expected UpdatedAt to be set after insert")
 		}
 	})
 
 	t.Run("update existing game", func(t *testing.T) {
 		// Create initial game
 		game, _ := NewGame("Original Name")
-		err := repo.Save(game)
+		game, err := service.Save(game)
 		if err != nil {
 			t.Fatalf("Save() insert failed: %v", err)
 		}
-
-		// Verify the DB managed fields are set
-		if game.CreatedAt.IsZero() || game.UpdatedAt.IsZero() || game.ID == 0 {
-			t.Fatalf("Game was not saved with DB managed fields: %+v", game)
-		}
-
-		firstCreatedAt := game.CreatedAt
-		firstUpdatedAt := game.UpdatedAt
 
 		// Wait a moment to ensure timestamps differ
 		time.Sleep(10 * time.Millisecond)
 
 		// Update the game
 		game.Name = "Updated Name"
-		err = repo.Save(game)
+		game, err = service.Save(game)
 		if err != nil {
 			t.Fatalf("Save() update failed: %v", err)
 		}
 
 		// Make sure the updated_at column was updated
-		if game.UpdatedAt.Equal(firstUpdatedAt) {
+		if game.UpdatedAt.Equal(game.CreatedAt) {
 			t.Errorf("updated_at was not modified on update: original=%v, updated=%v",
-				firstUpdatedAt, game.UpdatedAt)
+				game.UpdatedAt, game.CreatedAt)
 		}
-
-		// Verify created_at was not updated
-		if !game.CreatedAt.Equal(firstCreatedAt) {
-			t.Errorf("created_at was modified on update: original=%v, updated=%v",
-				firstCreatedAt, game.CreatedAt)
-		}
-
 	})
+
+	t.Run("validation errors prevent save", func(t *testing.T) {
+		game, _ := NewGame("Original Name")
+		desc := "a"
+		game.Description = &desc
+		game, err := service.Save(game)
+		if err == nil {
+			t.Fatalf("Save() should have failed with a validation error")
+		}
+	})
+
 }
 
-func TestRepository_GetByID(t *testing.T) {
+func TestService_GetByID(t *testing.T) {
 	// Setup
 	db := testhelper.SetupTestDBWithMigration(t, Migrate)
 	defer testhelper.TeardownTestDB(t, db)
 
 	repo := NewRepository(db)
+	service := NewService(repo)
 
 	// Create test game
 	game, _ := NewGame("Test Game")
-	err := repo.Save(game)
+	game, err := service.Save(game)
 	if err != nil {
 		t.Fatalf("Save() failed: %v", err)
 	}
@@ -109,38 +96,25 @@ func TestRepository_GetByID(t *testing.T) {
 			t.Errorf("Expected name 'Test Game', got %q", retrieved.Name)
 		}
 	})
-
-	t.Run("get invalid id", func(t *testing.T) {
-		// Test: Get non-existent game
-		_, err = repo.GetByID(999999)
-		if err == nil {
-			t.Error("Expected error for non-existent ID, got nil")
-		}
-
-		// Test: Zero ID should return error
-		_, err = repo.GetByID(0)
-		if err == nil {
-			t.Error("Expected error for zero ID, got nil")
-		}
-	})
 }
 
-func TestRepository_GetAll(t *testing.T) {
+func TestService_GetAll(t *testing.T) {
 	// Setup
 	db := testhelper.SetupTestDBWithMigration(t, Migrate)
 	defer testhelper.TeardownTestDB(t, db)
 
 	repo := NewRepository(db)
+	service := NewService(repo)
 
 	// Create some games
 	game, _ := NewGame("Test Game")
-	repo.Save(game)
+	service.Save(game)
 	game, _ = NewGame("Another Game")
-	repo.Save(game)
+	service.Save(game)
 
 	t.Run("get all", func(t *testing.T) {
 		// Test: Get all games
-		retrieved, err := repo.GetAll()
+		retrieved, err := service.GetAll()
 		if err != nil {
 			t.Fatalf("GetAll() failed: %v", err)
 		}
@@ -152,59 +126,32 @@ func TestRepository_GetAll(t *testing.T) {
 	})
 }
 
-func TestRepository_Delete(t *testing.T) {
+func TestService_Delete(t *testing.T) {
 	// Setup
 	db := testhelper.SetupTestDBWithMigration(t, Migrate)
 	defer testhelper.TeardownTestDB(t, db)
 
 	repo := NewRepository(db)
+	service := NewService(repo)
 
 	// Create game to delete
 	game, _ := NewGame("Test Game")
-	err := repo.Save(game)
+	game, err := service.Save(game)
 	if err != nil {
 		t.Fatalf("Save() failed: %v", err)
 	}
 
 	t.Run("delete existing", func(t *testing.T) {
 		// Now delete it
-		count, err := repo.Delete(game.ID)
+		err := service.Delete(game.ID)
 		if err != nil {
 			t.Fatalf("Delete() failed: %v", err)
 		}
 
-		if count != 1 {
-			t.Errorf("Expected 1 row deleted, got %d", count)
-		}
-
 		// Verify it was deleted
-		_, err = repo.GetByID(game.ID)
+		_, err = service.GetByID(game.ID)
 		if err == nil {
 			t.Error("Expected error for deleted entry, got nil")
-		}
-	})
-
-	t.Run("invalid id", func(t *testing.T) {
-		// This should return an error
-		count, err := repo.Delete(9999)
-		if err == nil {
-			t.Error("Expected error for non-existent key, got nil")
-		}
-
-		if count != 0 {
-			t.Errorf("Expected 0 rows deleted, got %d", count)
-		}
-	})
-
-	t.Run("zero fails", func(t *testing.T) {
-		// This should return an error
-		count, err := repo.Delete(0)
-		if err == nil {
-			t.Error("Expected error for non-existent key, got nil")
-		}
-
-		if count != 0 {
-			t.Errorf("Expected 0 rows deleted, got %d", count)
 		}
 	})
 

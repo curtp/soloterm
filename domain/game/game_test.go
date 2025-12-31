@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestGame_NameValidation(t *testing.T) {
+func TestGame_Validation(t *testing.T) {
 	testCases := []struct {
 		testName    string
 		gameName    string
@@ -42,23 +42,42 @@ func TestGame_NameValidation(t *testing.T) {
 			shouldPass:  false,
 			description: "name longer than max length should fail",
 		},
+		{
+			testName:    "description description",
+			gameName:    "name",
+			shouldPass:  true,
+			description: "nasdf",
+		},
+		{
+			testName:    "too short description",
+			gameName:    "name",
+			shouldPass:  false,
+			description: "n",
+		},
+		{
+			testName:    "too long description",
+			gameName:    "name",
+			shouldPass:  false,
+			description: strings.Repeat("a", MaxDescriptionLength+1),
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
 			game := &Game{
-				Name: tc.gameName,
+				Name:        tc.gameName,
+				Description: &tc.description,
 			}
 
 			v := game.Validate()
 
 			if tc.shouldPass {
-				if v.IsInError("name") {
-					t.Errorf("%s: Expected no validation error, got: %s", tc.description, v.GetErrorMessagesFor("name"))
+				if v.HasErrors() {
+					t.Errorf("%s: Expected no validation error, got: %v", tc.description, v.Errors)
 				}
 			} else {
-				if !v.IsInError("name") {
-					t.Errorf("%s: Expected validation error, but validation passed", tc.description)
+				if !v.HasErrors() {
+					t.Error("Expected a validation error, but didn't find one.")
 				}
 			}
 		})

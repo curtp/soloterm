@@ -1,0 +1,85 @@
+// Package validation provides field-level validation support for domain entities.
+// It collects validation errors and provides methods to query them.
+// Inspired by https://stackoverflow.com/a/36652225 and Rails ActiveModel validations.
+package validation
+
+import (
+	"fmt"
+	"strings"
+)
+
+// Validator collects field-level validation errors.
+type Validator struct {
+	Errors []ValidationError
+}
+
+// ValidationError represents one or more validation errors for a specific field.
+type ValidationError struct {
+	Field    string
+	Messages []string
+}
+
+// NewValidator creates a new Validator instance.
+func NewValidator() *Validator {
+	return &Validator{}
+}
+
+// Check validates a condition and records an error if the condition is false.
+// The errMsg can include format specifiers and will be formatted using fmt.Sprintf.
+//
+// Example:
+//
+//	v := validation.NewValidator()
+//	v.Check("email", isValidEmail(email), "must be a valid email address")
+//	v.Check("age", age >= 18, "must be at least %d years old", 18)
+//	if v.HasErrors() {
+//		return v  // Validator implements error interface
+//	}
+func (v *Validator) Check(field string, condition bool, errMsg string, args ...any) {
+	if !condition {
+		v.Errors = append(v.Errors, newValidationError(field, fmt.Sprintf(errMsg, args...)))
+	}
+}
+
+// HasErrors returns true if any validation errors have been recorded.
+func (v *Validator) HasErrors() bool {
+	return len(v.Errors) > 0
+}
+
+// IsInError returns true if the given field has a validation error.
+func (v *Validator) IsInError(field string) bool {
+	return v.GetError(field) != nil
+}
+
+// GetError returns the ValidationError for the given field, or nil if none exists.
+func (v *Validator) GetError(field string) *ValidationError {
+	for i := range v.Errors {
+		if v.Errors[i].Field == field {
+			return &v.Errors[i]
+		}
+	}
+	return nil
+}
+
+// Error implements the error interface.
+// Returns all errors formatted as "field: message; field2: message2".
+func (v *Validator) Error() string {
+	var errMsgs []string
+	for _, err := range v.Errors {
+		errMsgs = append(errMsgs, err.FormattedErrorMessage())
+	}
+	return strings.Join(errMsgs, "; ")
+}
+
+// newValidationError creates a new ValidationError with a single message.
+func newValidationError(field string, message string) ValidationError {
+	return ValidationError{
+		Field:    field,
+		Messages: []string{message},
+	}
+}
+
+// FormattedErrorMessage returns the error formatted as "field: message1, message2".
+func (ve ValidationError) FormattedErrorMessage() string {
+	return fmt.Sprintf("%s: %s", ve.Field, strings.Join(ve.Messages, ", "))
+}
