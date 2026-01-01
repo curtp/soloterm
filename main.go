@@ -20,7 +20,7 @@ func main() {
 	// log.SetFlags(log.Ldate | log.Ltime)
 
 	// Setup database (connect + migrate)
-	db, err := database.Setup()
+	db, err := database.Setup(nil)
 	if err != nil {
 		log.SetOutput(os.Stdout)
 		log.Fatal("Database setup failed: ", err)

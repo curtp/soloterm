@@ -104,8 +104,7 @@ func (lf *LogForm) PopulateForEdit(logEntry *log.Log) {
 	lf.gameID = logEntry.GameID
 
 	// Set the log type dropdown by matching LogType to index
-	logTypes := log.LogTypes()
-	for i, lt := range logTypes {
+	for i, lt := range log.LogTypes() {
 		if lt == logEntry.LogType {
 			lf.logTypeField.SetCurrentOption(i)
 			break

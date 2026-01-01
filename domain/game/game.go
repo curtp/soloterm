@@ -37,7 +37,7 @@ func (g *Game) Validate() *validation.Validator {
 	v.Check("name", g.Name != "", "is required")
 	v.Check("name", len(g.Name) >= MinNameLength && len(g.Name) <= MaxNameLength, "must be between %d and %d characters", MinNameLength, MaxNameLength)
 	if g.Description != nil {
-		v.Check("description", len(*g.Description) >= MinDescriptionLength && len(*g.Description) <= MaxDescriptionLength, "is required")
+		v.Check("description", len(*g.Description) >= MinDescriptionLength && len(*g.Description) <= MaxDescriptionLength, "must be between %d and %d characters", MinDescriptionLength, MaxDescriptionLength)
 	}
 	return v
 }

@@ -28,7 +28,8 @@ func SetupTestDB(t *testing.T) *database.DBStore {
 	t.Helper() // Marks this as a test helper for better error reporting
 
 	// Connect to in-memory database
-	db, err := database.ConnectWithPath(":memory:")
+	path := ":memory:"
+	db, err := database.Setup(&path)
 	if err != nil {
 		t.Fatalf("Failed to connect to test database: %v", err)
 	}

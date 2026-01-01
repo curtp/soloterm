@@ -47,13 +47,12 @@ type Log struct {
 
 // Returns an array of LogTypes
 func LogTypes() []LogType {
-	logTypes := []LogType{
+	return []LogType{
 		CHARACTER_ACTION,
 		MECHANICS,
 		ORACLE_QUESTION,
 		STORY,
 	}
-	return logTypes
 }
 
 func NewLog(gameID int64) (*Log, error) {

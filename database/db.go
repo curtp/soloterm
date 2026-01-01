@@ -21,22 +21,53 @@ type MigrationFunc func(*DBStore) error
 
 var migrations []MigrationFunc
 
-// Connect establishes a connection to the SQLite database
-// Returns a DBStore or an error
-func Connect() (*DBStore, error) {
-	path, err := getDBPath()
+// RegisterMigration allows packages to register their migrations
+func RegisterMigration(fn MigrationFunc) {
+	migrations = append(migrations, fn)
+}
+
+// Setup connects to the database and runs all migrations
+// Use ":memory:" for in-memory databases (useful for testing)
+// Provide a path to the file to connect to.
+// Leave path nil to use the DB_PATH environment variable
+// If DB_PATH isn't found, it will use the default directory.
+// Returns a ready-to-use DBStore.
+// * Use dbStore.Connection to interact with the database
+// * Use dbStore.Path to see what path is being used
+func Setup(path *string) (*DBStore, error) {
+
+	// If path isn't provided, try to get the path from either the
+	// environment or the default location
+	if path == nil {
+		dbPath, err := getDBPath()
+		if err != nil {
+			return nil, err
+		}
+		path = &dbPath
+	}
+
+	// Connect to database
+	dbStore, err := connectWithPath(*path)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Printf("Connecting to path: %s", path)
+	// Run all registered migrations
+	if len(migrations) > 0 {
+		for _, migrate := range migrations {
+			if err := migrate(dbStore); err != nil {
+				dbStore.Connection.Close()
+				return nil, err
+			}
+		}
+	}
 
-	return ConnectWithPath(path)
+	return dbStore, nil
 }
 
-// ConnectWithPath establishes a connection to the SQLite database at the specified path
+// connectWithPath establishes a connection to the SQLite database at the specified path
 // Use ":memory:" for in-memory databases (useful for testing)
-func ConnectWithPath(dbPath string) (*DBStore, error) {
+func connectWithPath(dbPath string) (*DBStore, error) {
 	dbStore := DBStore{}
 
 	db, err := sqlx.Connect("sqlite", dbPath)
@@ -82,31 +113,4 @@ func getDBPath() (string, error) {
 	}
 
 	return filepath.Join(path, "soloterm.db"), nil
-}
-
-// RegisterMigration allows packages to register their migrations
-func RegisterMigration(fn MigrationFunc) {
-	migrations = append(migrations, fn)
-}
-
-// Setup connects to the database and runs all migrations
-// Returns a ready-to-use database connection
-func Setup() (*DBStore, error) {
-	// Connect to database
-	dbStore, err := Connect()
-	if err != nil {
-		return nil, err
-	}
-
-	// Run all registered migrations
-	if len(migrations) > 0 {
-		for _, migrate := range migrations {
-			if err := migrate(dbStore); err != nil {
-				dbStore.Connection.Close()
-				return nil, err
-			}
-		}
-	}
-
-	return dbStore, nil
 }
