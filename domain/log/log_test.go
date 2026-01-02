@@ -47,8 +47,7 @@ func TestLog_LogTypeValidation(t *testing.T) {
 
 			if tc.shouldPass {
 				if v.HasError("log_type") {
-					err := v.GetError("log_type")
-					t.Errorf("%s: Expected no validation error, got: %v", tc.description, err.Messages)
+					t.Errorf("%s: Expected no validation error, got: %v", tc.description, v.GetError("log_type"))
 				}
 			} else {
 				if !v.HasError("log_type") {

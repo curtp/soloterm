@@ -8,18 +8,14 @@ import (
 
 // Validator collects validation errors for one or more identifiers.
 type Validator struct {
-	Errors []ValidationError
-}
-
-// ValidationError represents one or more validation errors for a specific identifier.
-type ValidationError struct {
-	Identifier string   // Used for grouping error messages together
-	Messages   []string // Error messages for the identifier
+	Errors map[string][]string
 }
 
 // NewValidator creates a new Validator instance.
 func NewValidator() *Validator {
-	return &Validator{}
+	return &Validator{
+		Errors: make(map[string][]string),
+	}
 }
 
 // Check validates a condition and records an error if the condition is false.
@@ -34,19 +30,20 @@ func NewValidator() *Validator {
 //
 //	func (e *Entry) Validate() *Validator {
 //		v := NewValidator()
-//		v.Check("key", len(e.Key) >= 5 && len(e.Key) <= 20, "must be between 5 and 20 characters")
-//		v.Check("namespace", len(e.Namespace) >= 5 && len(e.Namespace) <= 20, "must be between 5 and 20 characters")
+//		v.Check("key", len(e.Key) >= 5, "must be at least 5 characters")
+//		v.Check("key", len(e.Key) <= 20, "must be at most 20 characters")
+//		v.Check("namespace", len(e.Namespace) > 0, "may not be blank")
 //		v.Check("value", len(e.Value) > 0, "may not be blank")
 //		return v
 //	}
 //
 //	func main() {
-//		e := Entry{}
+//		e := Entry{Key: "ab"}
 //		v := e.Validate()
 //		if v.HasErrors() {
 //			// Iterate over v.Errors to format as needed
-//			for _, err := range v.Errors {
-//				fmt.Println(err.FormattedErrorMessage())
+//			for identifier, messages := range v.Errors {
+//				fmt.Printf("%s: %s\n", identifier, strings.Join(messages, ", "))
 //			}
 //		}
 //	}
@@ -61,13 +58,14 @@ func NewValidator() *Validator {
 //	}
 func (v *Validator) Check(identifier string, checkResult bool, errMsg string, args ...any) {
 	if !checkResult {
-		v.Errors = append(v.Errors, newValidationError(identifier, fmt.Sprintf(errMsg, args...)))
+		v.Errors[identifier] = append(v.Errors[identifier], fmt.Sprintf(errMsg, args...))
 	}
 }
 
 // HasError returns true if the given identifier has a validation error.
 func (v *Validator) HasError(identifier string) bool {
-	return v.GetError(identifier) != nil
+	_, exists := v.Errors[identifier]
+	return exists
 }
 
 // HasErrors returns true if any validation errors have been recorded.
@@ -75,32 +73,21 @@ func (v *Validator) HasErrors() bool {
 	return len(v.Errors) > 0
 }
 
-// GetError returns the ValidationError for the given identifier, or nil if none exists.
-func (v *Validator) GetError(identifier string) *ValidationError {
-	for i := range v.Errors {
-		if v.Errors[i].Identifier == identifier {
-			return &v.Errors[i]
-		}
-	}
-	return nil
+// GetError returns the error messages for the given identifier, or nil if none exists.
+func (v *Validator) GetError(identifier string) []string {
+	return v.Errors[identifier]
 }
 
 // Error implements the error interface.
-// Aggregates all errors into a semicolon delimited string
+// Aggregates all errors into a semicolon delimited string.
 func (v *Validator) Error() string {
+	if len(v.Errors) == 0 {
+		return ""
+	}
+
 	var errMsgs []string
-	for _, err := range v.Errors {
-		errMsgs = append(errMsgs, err.Error())
+	for identifier, messages := range v.Errors {
+		errMsgs = append(errMsgs, fmt.Sprintf("%s: %s", identifier, strings.Join(messages, ", ")))
 	}
 	return strings.Join(errMsgs, "; ")
-}
-
-// FormattedErrorMessage returns the error formatted as "identifier: message1, message2".
-func (ve ValidationError) Error() string {
-	return fmt.Sprintf("%s: %s", ve.Identifier, strings.Join(ve.Messages, ", "))
-}
-
-// newValidationError creates a new ValidationError with a single message.
-func newValidationError(identifier string, message string) ValidationError {
-	return ValidationError{Identifier: identifier, Messages: []string{message}}
 }
