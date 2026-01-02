@@ -1,8 +1,4 @@
-// Package validation provides simple validation functionality.
-// It provides a simple Check method for evaluating conditions and setting error messages.
-// It collects validation errors and provides methods to query them.
-// Inspired by this StackOverflow answer: https://stackoverflow.com/a/36652225
-// and Rails ActiveModel validations.
+// Package validation provides simple validation functionality for collecting and querying validation errors.
 package validation
 
 import (
@@ -50,7 +46,7 @@ func NewValidator() *Validator {
 //		if v.HasErrors() {
 //			// Iterate over v.Errors to format as needed
 //			for _, err := range v.Errors {
-//				log.Printf("%s: %s", err.Identifier, err.Messages)
+//				fmt.Println(err.FormattedErrorMessage())
 //			}
 //		}
 //	}
@@ -69,8 +65,8 @@ func (v *Validator) Check(identifier string, checkResult bool, errMsg string, ar
 	}
 }
 
-// IsInError returns true if the given identifier has a validation error.
-func (v *Validator) IsInError(identifier string) bool {
+// HasError returns true if the given identifier has a validation error.
+func (v *Validator) HasError(identifier string) bool {
 	return v.GetError(identifier) != nil
 }
 
