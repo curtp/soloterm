@@ -1,4 +1,7 @@
 // Package validation provides simple validation functionality for collecting and querying validation errors.
+//
+// Inspired by a Stack Overflow post I can no longer locate. Specifically the Check function. It is not mine.
+// Credit to the helpful person who posted it. I wish I could add a link here.
 package validation
 
 import (
