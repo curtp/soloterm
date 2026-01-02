@@ -13,7 +13,7 @@ func handleValidationError(err error, form ValidatableForm) bool {
 		// Build field errors map from validator
 		fieldErrors := make(map[string]string)
 		for _, fieldErr := range validator.Errors {
-			fieldErrors[fieldErr.Identifier] = fieldErr.FormattedErrorMessage()
+			fieldErrors[fieldErr.Identifier] = fieldErr.Error()
 		}
 
 		// Set all errors at once and update labels

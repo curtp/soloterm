@@ -86,21 +86,21 @@ func (v *Validator) GetError(identifier string) *ValidationError {
 }
 
 // Error implements the error interface.
-// Returns all errors formatted as "identifier: message; identifier2: message2".
+// Aggregates all errors into a semicolon delimited string
 func (v *Validator) Error() string {
 	var errMsgs []string
 	for _, err := range v.Errors {
-		errMsgs = append(errMsgs, err.FormattedErrorMessage())
+		errMsgs = append(errMsgs, err.Error())
 	}
 	return strings.Join(errMsgs, "; ")
+}
+
+// FormattedErrorMessage returns the error formatted as "identifier: message1, message2".
+func (ve ValidationError) Error() string {
+	return fmt.Sprintf("%s: %s", ve.Identifier, strings.Join(ve.Messages, ", "))
 }
 
 // newValidationError creates a new ValidationError with a single message.
 func newValidationError(identifier string, message string) ValidationError {
 	return ValidationError{Identifier: identifier, Messages: []string{message}}
-}
-
-// FormattedErrorMessage returns the error formatted as "identifier: message1, message2".
-func (ve ValidationError) FormattedErrorMessage() string {
-	return fmt.Sprintf("%s: %s", ve.Identifier, strings.Join(ve.Messages, ", "))
 }
