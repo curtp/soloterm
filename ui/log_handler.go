@@ -150,38 +150,56 @@ func (lh *LogHandler) DisplayLogs(logs []*log.Log) {
 	// Display logs grouped by time blocks
 	var output string
 	var lastBlockLabel string
+	var wroteBlockLabel bool
+
+	_, _, w, _ := lh.app.logView.GetInnerRect()
 
 	for _, l := range logs {
 		// Format timestamp in local timezone
 		localTime := l.CreatedAt.Local()
 
 		// Create time block label (date + hour)
-		blockLabel := localTime.Format("2006-01-02 3PM")
+		blockLabel := localTime.Format(" 2006-01-02 ")
 
 		// Print time block header if it changed
 		if blockLabel != lastBlockLabel {
-			output += "[lime::b]===  " + blockLabel + "  ===[-::-]\n\n"
+			b := len(blockLabel)
+			s := w - b
+			h := s / 2
+			strings.Repeat("─", w)
+			output += "[lime::b]" + strings.Repeat("=", h) + blockLabel + strings.Repeat("=", h) + "[-::-]\n\n"
 			lastBlockLabel = blockLabel
+			wroteBlockLabel = true
+		} else {
+			wroteBlockLabel = false
+		}
+
+		if !wroteBlockLabel {
+			output += strings.Repeat("─", w) + "\n\n"
 		}
 
 		// Print the log entry
 		timestamp := localTime.Format("03:04 PM")
-		output += "[\"" + fmt.Sprintf("%d", l.ID) + "\"][::i][aqua::b]" + timestamp + "[-::-] "
-		output += "[::i][yellow::b]" + l.LogType.LogTypeDisplayName() + "[-::-]\n"
+		// Add the region ID so clicking it will open the edit modal
+		output += "[\"" + fmt.Sprintf("%d", l.ID) + "\"][::i]"
+		// Add the timestamp and log type display name
+		output += "[aqua::b]" + timestamp + " - " + l.LogType.LogTypeDisplayName() + "[-::-]\n"
 		if len(l.Description) > 0 {
 			output += "[::i][yellow::b]Description:[-::-] " + l.Description + "\n"
 		}
 		if len(l.Result) > 0 {
-			output += "[::i][yellow::b]Result:[-::-] " + l.Result + "\n"
+			output += "[::i][yellow::b]     Result:[-::-] " + l.Result + "\n"
 		}
 		if len(l.Narrative) > 0 {
-			output += "[::i][yellow::b]Narrative:[-::-]\n" + l.Narrative + "[\"\"]\n"
+			// output += "[::i][yellow::b]  Narrative:[-::-] " + l.Narrative + "[\"\"]\n"
+			output += "\n" + l.Narrative + "[\"\"]\n"
 		}
+		// Close the region and other formatting
 		output += "[-::-][\"\"]\n"
-		_, _, w, _ := lh.app.logView.GetInnerRect()
-		output += strings.Repeat("─", w) + "\n\n"
 	}
 
+	// Write the output to the log
 	lh.app.logView.SetText(output)
+	// Update the title of the text area
 	lh.app.logView.SetTitle(" Session Logs - Click To Edit, Ctrl+L To Add ")
 }

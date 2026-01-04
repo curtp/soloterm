@@ -103,7 +103,7 @@ func (a *App) setupUI() {
 	// Set up selection handler for the tree
 	a.gameTree.SetSelectedFunc(func(node *tview.TreeNode) {
 		a.loadLogsForSelectedGameEntry()
-		a.logView.ScrollToEnd()
+		a.logView.ScrollToBeginning()
 	})
 
 	// Right top pane: Log display
@@ -287,9 +287,9 @@ func (a *App) setupLogModal() {
 			tview.NewFlex().
 				SetDirection(tview.FlexRow).
 				AddItem(nil, 0, 1, false).
-				AddItem(a.logForm, 20, 1, true). // Dynamic height: expands to fit content
+				AddItem(a.logForm, 20, 2, true). // Dynamic height: expands to fit content
 				AddItem(nil, 0, 1, false),
-			60, 1, true, // Dynamic width: expands to fit content (up to screen width)
+			100, 1, true, // Dynamic width: expands to fit content (up to screen width)
 		).
 		AddItem(nil, 0, 1, false)
 }
@@ -353,6 +353,7 @@ func (a *App) UpdateView(event UserAction) {
 		a.loadLogsForSelectedGameEntry()
 		a.refreshGameTree()
 		a.SetFocus(a.logView)
+		a.logView.ScrollToEnd()
 
 		// Show success notification
 		a.notification.ShowSuccess("Log saved successfully")
