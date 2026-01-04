@@ -196,11 +196,14 @@ package "ui" <<Rectangle>> UI_COLOR {
     }
 
     interface ValidatableForm {
-        + SetFieldError(field: string, message: string)
         + SetFieldErrors(errors: map[string]string)
-        + UpdateFieldLabels()
-        + ClearFieldErrors()
     }
+
+    note right of ValidatableForm
+        Forms implement this interface to
+        receive validation errors from
+        handleValidationError() helper.
+    end note
 
     class GameForm {
         + *tview.Form
@@ -324,23 +327,28 @@ package "ui" <<Rectangle>> UI_COLOR {
 ' ==================== SHARED LAYER ====================
 package "shared/validation" <<Rectangle>> SHARED_COLOR {
     class Validator {
-        + Errors: []ValidationError
+        + Errors: map[string][]string
         --
         + NewValidator(): *Validator
         + Check(identifier: string, checkResult: bool, errMsg: string, args: ...any)
-        + IsInError(identifier: string): bool
+        + HasError(identifier: string): bool
         + HasErrors(): bool
-        + GetError(identifier: string): *ValidationError
-        + GetErrorMessagesFor(identifier: string): string
-        + GetAllErrorMessages(): string
+        + GetError(identifier: string): []string
+        + Error(): string
     }
 
-    class ValidationFieldError {
-        + Field: string
-        + Messages: []string
-        --
-        + FormattedErrorMessage(): string
-    }
+    note right of Validator
+        <b>Simplified Map-Based Design</b>
+
+        Errors are stored as a map where:
+        - Key: identifier (field/variable name)
+        - Value: slice of error messages
+
+        Multiple Check() calls for the same
+        identifier automatically append messages.
+
+        Implements error interface via Error().
+    end note
 }
 
 ' ==================== DATABASE LAYER ====================
@@ -425,8 +433,7 @@ Notification --> NotificationType : uses
 ' Validation relationships
 Game ..> Validator : validates with
 Log ..> Validator : validates with
-Validator *-- ValidationFieldError : contains
-ValidatableForm ..> ValidationFieldError : displays
+ValidatableForm ..> Validator : uses errors from
 
 ' Database relationships
 Database ..> sqlxDB : creates
