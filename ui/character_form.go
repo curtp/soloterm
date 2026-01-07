@@ -2,8 +2,6 @@ package ui
 
 import (
 	"soloterm/domain/character"
-	"soloterm/shared/validation"
-	"strconv"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -17,8 +15,6 @@ type CharacterForm struct {
 	systemField  *tview.InputField
 	roleField    *tview.InputField
 	speciesField *tview.InputField
-	xpField      *tview.InputField
-	levelField   *tview.InputField
 	fieldErrors  map[string]string // Track which fields have errors
 	onSave       func()
 	onCancel     func()
@@ -56,18 +52,6 @@ func NewCharacterForm() *CharacterForm {
 		SetFieldBackgroundColor(tcell.ColorDefault).
 		SetFieldWidth(0)
 
-	// Level field
-	cf.levelField = tview.NewInputField().
-		SetLabel("Level").
-		SetFieldBackgroundColor(tcell.ColorDefault).
-		SetFieldWidth(0)
-
-	// XP field
-	cf.xpField = tview.NewInputField().
-		SetLabel("XP").
-		SetFieldBackgroundColor(tcell.ColorDefault).
-		SetFieldWidth(0)
-
 	cf.setupForm()
 	return cf
 }
@@ -101,8 +85,6 @@ func (cf *CharacterForm) setupForm() {
 	cf.AddFormItem(cf.systemField)
 	cf.AddFormItem(cf.roleField)
 	cf.AddFormItem(cf.speciesField)
-	cf.AddFormItem(cf.levelField)
-	cf.AddFormItem(cf.xpField)
 
 	// Buttons will be set up when handlers are attached
 	cf.SetBorder(true).
@@ -122,8 +104,6 @@ func (cf *CharacterForm) Reset() {
 	cf.systemField.SetText("")
 	cf.roleField.SetText("")
 	cf.speciesField.SetText("")
-	cf.levelField.SetText("")
-	cf.xpField.SetText("")
 	cf.ClearFieldErrors()
 	cf.SetFocus(0)
 }
@@ -171,27 +151,6 @@ func (cf *CharacterForm) updateFieldLabels() {
 func (cf *CharacterForm) ClearFieldErrors() {
 	cf.fieldErrors = make(map[string]string)
 	cf.updateFieldLabels()
-}
-
-// ValidateNumericFields validates that Level and XP fields contain valid integers
-func (cf *CharacterForm) ValidateNumericFields() *validation.Validator {
-	v := validation.NewValidator()
-
-	// Validate Level field - only if not empty
-	levelText := cf.levelField.GetText()
-	if levelText != "" {
-		_, err := strconv.ParseInt(levelText, 10, 64)
-		v.Check("level", err == nil, "must be a valid number")
-	}
-
-	// Validate XP field - only if not empty
-	xpText := cf.xpField.GetText()
-	if xpText != "" {
-		_, err := strconv.ParseInt(xpText, 10, 64)
-		v.Check("xp", err == nil, "must be a valid number")
-	}
-
-	return v
 }
 
 // BuildDomain constructs a Character entity from the form data

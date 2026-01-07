@@ -59,6 +59,7 @@ func createAttributesTable(dbStore *database.DBStore) error {
 			name STRING NOT NULL,
 			value STRING NOT NULL,
 			attribute_group INTEGER NOT NULL DEFAULT 0,
+			position_in_group INTEGER NOT NULL DEFAULT 0,
 			created_at DATETIME NOT NULL,
 			updated_at DATETIME NOT NULL,
 			FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
@@ -71,45 +72,9 @@ func createAttributesTable(dbStore *database.DBStore) error {
 }
 
 func removeExistingColumns(dbStore *database.DBStore) error {
-	err := database.RemoveColumn(dbStore.Connection, "characters", "level")
-	if err != nil {
-		return err
-	}
-
-	err = database.RemoveColumn(dbStore.Connection, "characters", "xp")
-	return err
+	return nil
 }
 
 func addMissingColumns(dbStore *database.DBStore) error {
-	defaultValue := "''"
-
-	err := database.AddColumn(dbStore.Connection, "characters", "role", "string", true, &defaultValue)
-	if err != nil {
-		return err
-	}
-
-	err = database.AddColumn(dbStore.Connection, "characters", "species", "string", true, &defaultValue)
-	if err != nil {
-		return err
-	}
-
-	err = database.AddColumn(dbStore.Connection, "characters", "level", "integer", false, nil)
-	if err != nil {
-		return err
-	}
-
-	err = database.AddColumn(dbStore.Connection, "characters", "xp", "integer", false, nil)
-	if err != nil {
-		return err
-	}
-
-	defaultValue = "0"
-	err = database.AddColumn(dbStore.Connection, "attributes", "attribute_group", "integer", true, &defaultValue)
-	if err != nil {
-		return err
-	}
-
-	err = database.AddColumn(dbStore.Connection, "attributes", "position_in_group", "integer", false, &defaultValue)
-	return err
-
+	return nil
 }

@@ -47,20 +47,6 @@ func (h *CharacterHandler) LoadCharacters() (map[string][]*character.Character, 
 
 // HandleSave saves the character from the form
 func (h *CharacterHandler) HandleSave() {
-	// Validate numeric fields before building domain
-	v := h.app.characterForm.ValidateNumericFields()
-	if v.HasErrors() {
-		// Convert validator errors to form field errors
-		fieldErrors := make(map[string]string)
-		for field, msgs := range v.Errors {
-			if len(msgs) > 0 {
-				fieldErrors[field] = msgs[0] // Take first error message
-			}
-		}
-		h.app.characterForm.SetFieldErrors(fieldErrors)
-		return
-	}
-
 	char := h.app.characterForm.BuildDomain()
 
 	// Validate and save - get the saved character back from the service
