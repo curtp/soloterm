@@ -152,9 +152,14 @@ func (lh *LogHandler) DisplayLogs(logs []*log.Log) {
 	var lastBlockLabel string
 	var wroteBlockLabel bool
 
+	// Store the IDs of the loaded logs for navigation purposes
+	lh.app.loadedLogIDs = nil
+
 	_, _, w, _ := lh.app.logView.GetInnerRect()
 
 	for _, l := range logs {
+		lh.app.loadedLogIDs = append(lh.app.loadedLogIDs, l.ID)
+
 		// Format timestamp in local timezone
 		localTime := l.CreatedAt.Local()
 
@@ -183,7 +188,7 @@ func (lh *LogHandler) DisplayLogs(logs []*log.Log) {
 		// Add the region ID so clicking it will open the edit modal
 		output += "[\"" + fmt.Sprintf("%d", l.ID) + "\"][::i]"
 		// Add the timestamp and log type display name
-		output += "[aqua::b]" + timestamp + " - " + l.LogType.LogTypeDisplayName() + "[-::-]\n"
+		output += "[aqua::b]" + timestamp + " - " + l.LogType.LogTypeDisplayName() + "[-::-][\"\"]\n"
 		if len(l.Description) > 0 {
 			output += "[::i][yellow::b]Description:[-::-] " + l.Description + "\n"
 		}
@@ -192,7 +197,8 @@ func (lh *LogHandler) DisplayLogs(logs []*log.Log) {
 		}
 		if len(l.Narrative) > 0 {
 			// output += "[::i][yellow::b]  Narrative:[-::-] " + l.Narrative + "[\"\"]\n"
-			output += "\n" + l.Narrative + "[\"\"]\n"
+			// output += "\n" + l.Narrative + "[\"\"]\n"
+			output += "\n" + l.Narrative + "\n"
 		}
 		// Close the region and other formatting
 		output += "[-::-][\"\"]\n"
@@ -201,5 +207,5 @@ func (lh *LogHandler) DisplayLogs(logs []*log.Log) {
 	// Write the output to the log
 	lh.app.logView.SetText(output)
 	// Update the title of the text area
-	lh.app.logView.SetTitle(" Session Logs - Click To Edit, Ctrl+L To Add ")
+	lh.app.logView.SetTitle(" Session Logs ")
 }

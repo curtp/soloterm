@@ -31,7 +31,7 @@ func main() {
 
 	// Create and run the TUI application
 	app := ui.NewApp(db)
-	if err := app.EnableMouse(true).Run(); err != nil {
+	if err := app.EnableMouse(false).Run(); err != nil {
 		log.SetOutput(os.Stdout)
 		log.Fatal("Application error:", err)
 	}

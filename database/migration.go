@@ -33,6 +33,22 @@ func AddColumn(db *sqlx.DB, tableName string, column string, columnType string, 
 	return err
 }
 
+func RemoveColumn(db *sqlx.DB, tableName string, column string) error {
+	exists, err := columnExists(db, tableName, column)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return nil
+	}
+
+	query := fmt.Sprintf("ALTER TABLE %s DROP COLUMN %s", tableName, column)
+
+	// Execute the query
+	_, err = db.Exec(query)
+	return err
+}
+
 // columnExists checks if a column exists in a table
 func columnExists(db *sqlx.DB, table string, column string) (bool, error) {
 	var exists bool
