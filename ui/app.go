@@ -527,24 +527,3 @@ func (a *App) UpdateView(event UserAction) {
 		a.pages.HidePage(CONFIRM_MODAL_ID)
 	}
 }
-
-func (a *App) togglePane(pane tview.Primitive) {
-	// Check if pane is in main flex
-	itemCount := a.mainFlex.GetItemCount()
-	for i := 0; i < itemCount; i++ {
-		item := a.mainFlex.GetItem(i)
-		if item == pane {
-			// Found in main flex, remove it
-			a.mainFlex.RemoveItem(pane)
-			return
-		}
-	}
-
-	// Not found, so add it back (only handles gameTree)
-	if pane == a.gameTree {
-		// Re-add to main flex at the beginning
-		a.mainFlex.Clear()
-		a.mainFlex.AddItem(a.gameTree, 0, 1, false).
-			AddItem(a.logView, 0, 2, true)
-	}
-}
