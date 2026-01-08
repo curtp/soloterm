@@ -147,10 +147,10 @@ func (a *App) setupUI() {
 		a.logView.ScrollToBeginning()
 	})
 
-	// Set up input capture for game tree - Enter to edit game, Ctrl+N to add game
+	// Set up input capture for game tree - Ctrl+E to edit game, Ctrl+N to add game
 	a.gameTree.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
-		case tcell.KeyEnter:
+		case tcell.KeyCtrlE:
 			node := a.gameTree.GetCurrentNode()
 			if node != nil {
 				reference := node.GetReference()
@@ -203,10 +203,10 @@ func (a *App) setupUI() {
 		SetTitle(" Character Info ").
 		SetTitleAlign(tview.AlignLeft)
 
-	// Set up input capture for character info - Enter to edit character
+	// Set up input capture for character info - Ctrl+E to edit, Ctrl+D to duplicate character
 	a.charInfoView.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
-		case tcell.KeyEnter:
+		case tcell.KeyCtrlE:
 			a.charHandler.ShowEditCharacterModal()
 			return nil
 		case tcell.KeyCtrlD:
@@ -235,8 +235,8 @@ func (a *App) setupUI() {
 			return nil
 		}
 
-		// Handle Enter key to edit selected attribute
-		if event.Key() == tcell.KeyEnter {
+		// Handle Ctrl+E to edit selected attribute
+		if event.Key() == tcell.KeyCtrlE {
 			if a.selectedCharacter != nil {
 				attrs, _ := a.charService.GetAttributesForCharacter(a.selectedCharacter.ID)
 				attrIndex := row - 1
@@ -271,7 +271,7 @@ func (a *App) setupUI() {
 		case tcell.KeyDown:
 			a.highlightNextLog()
 			return nil
-		case tcell.KeyEnter:
+		case tcell.KeyCtrlE:
 			// Get currently highlighted region and open edit modal
 			regions := a.logView.GetHighlights()
 			if len(regions) > 0 {
@@ -312,7 +312,7 @@ func (a *App) setupUI() {
 	// Character pane combining info and attributes
 	a.charPane = tview.NewFlex().
 		SetDirection(tview.FlexRow).
-		AddItem(a.charInfoView, 0, 1, false).  // Proportional height (smaller weight)
+		AddItem(a.charInfoView, 6, 1, false).  // Proportional height (smaller weight)
 		AddItem(a.attributeTable, 0, 2, false) // Proportional height (larger weight - gets 2x space)
 
 	a.leftSidebar = tview.NewFlex().
@@ -405,15 +405,15 @@ func (a *App) updateFooterHelp(context string) {
 	globalHelp := " [yellow]Tab/Shift-Tab[white] Navigate  [yellow]Ctrl+C[white] Quit  |  "
 	switch context {
 	case "logView":
-		helpText = globalHelp + "[aqua::b]Session Logs[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Enter[white] Edit  [yellow]Ctrl+N[white] New"
+		helpText = globalHelp + "[aqua::b]Session Logs[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Ctrl+E[white] Edit  [yellow]Ctrl+N[white] New"
 	case "gameTree":
-		helpText = globalHelp + "[aqua::b]Games[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Space[white] Select/Expand  [yellow]Enter[white] Edit  [yellow]Ctrl+N[white] New"
+		helpText = globalHelp + "[aqua::b]Games[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Space[white] Select/Expand  [yellow]Ctrl+E[white] Edit  [yellow]Ctrl+N[white] New"
 	case "charTree":
 		helpText = globalHelp + "[aqua::b]Characters[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Space/Enter[white] Select/Expand  [yellow]Ctrl+N[white] New"
 	case "charInfo":
-		helpText = globalHelp + "[aqua::b]Character Info[-::-] :: [yellow]Enter[white] Edit  [yellow]Ctrl+D[white] Duplicate"
+		helpText = globalHelp + "[aqua::b]Character Info[-::-] :: [yellow]Ctrl+E[white] Edit  [yellow]Ctrl+D[white] Duplicate"
 	case "attributeTable":
-		helpText = globalHelp + "[aqua::b]Sheet[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Enter[white] Edit  [yellow]Ctrl+N[white] New"
+		helpText = globalHelp + "[aqua::b]Sheet[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Ctrl+E[white] Edit  [yellow]Ctrl+N[white] New"
 	}
 
 	a.footer.SetText(helpText)
