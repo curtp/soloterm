@@ -3,9 +3,6 @@ package ui
 import (
 	syslog "log"
 	"soloterm/domain/character"
-
-	"github.com/gdamore/tcell/v2"
-	"github.com/rivo/tview"
 )
 
 // CharacterHandler coordinates character-related UI operations
@@ -163,7 +160,7 @@ func (h *CharacterHandler) HandleAttributeSave() {
 
 	// Reload attributes for the current character
 	if h.app.selectedCharacter != nil {
-		h.LoadAndDisplayAttributes(h.app.selectedCharacter.ID)
+		h.app.characterViewHelper.RefreshDisplay()
 	}
 
 	// Orchestrate UI updates
@@ -199,7 +196,7 @@ func (h *CharacterHandler) HandleAttributeDelete() {
 
 			// Reload attributes for the current character
 			if h.app.selectedCharacter != nil {
-				h.LoadAndDisplayAttributes(h.app.selectedCharacter.ID)
+				h.app.characterViewHelper.RefreshDisplay()
 			}
 
 			// Orchestrate UI updates
@@ -224,57 +221,5 @@ func (h *CharacterHandler) ShowNewAttributeModal() {
 	if h.app.selectedCharacter != nil {
 		h.app.attributeForm.Reset(h.app.selectedCharacter.ID)
 		h.app.UpdateView(ATTRIBUTE_SHOW_NEW)
-	}
-}
-
-// DisplayCharacterInfo displays character information in the character info view
-func (h *CharacterHandler) DisplayCharacterInfo(char *character.Character) {
-	charInfo := "[aqua::b]" + char.Name + "[-::-]\n"
-	charInfo += "[yellow::b]      System:[white::-] " + char.System + "\n"
-	charInfo += "[yellow::b]  Role/Class:[white::-] " + char.Role + "\n"
-	charInfo += "[yellow::b]Species/Race:[white::-] " + char.Species
-	h.app.charInfoView.SetText(charInfo)
-}
-
-// LoadAndDisplayAttributes loads and displays attributes for a character
-func (h *CharacterHandler) LoadAndDisplayAttributes(characterID int64) {
-	// Load attributes for this character
-	attrs, err := h.app.charService.GetAttributesForCharacter(characterID)
-	if err != nil {
-		attrs = []*character.Attribute{}
-	}
-
-	// Clear and repopulate attribute table
-	h.app.attributeTable.Clear()
-
-	// Add header row
-	h.app.attributeTable.SetCell(0, 0, tview.NewTableCell("").
-		SetTextColor(tcell.ColorYellow).
-		SetAlign(tview.AlignLeft).
-		SetSelectable(false))
-	h.app.attributeTable.SetCell(0, 1, tview.NewTableCell("").
-		SetTextColor(tcell.ColorYellow).
-		SetAlign(tview.AlignLeft).
-		SetSelectable(false))
-
-	// Add attribute rows (starting from row 1)
-	for i, attr := range attrs {
-		row := i + 1
-		h.app.attributeTable.SetCell(row, 0, tview.NewTableCell(tview.Escape(attr.Name)).
-			SetTextColor(tcell.ColorWhite).
-			SetAlign(tview.AlignLeft).
-			SetExpansion(0))
-		h.app.attributeTable.SetCell(row, 1, tview.NewTableCell(tview.Escape(attr.Value)).
-			SetTextColor(tcell.ColorWhite).
-			SetAlign(tview.AlignLeft).
-			SetExpansion(1))
-	}
-
-	// Show message if no attributes
-	if len(attrs) == 0 {
-		h.app.attributeTable.SetCell(2, 0, tview.NewTableCell("(No attributes - press 'a' to add)").
-			SetTextColor(tcell.ColorGray).
-			SetAlign(tview.AlignCenter).
-			SetExpansion(2))
 	}
 }

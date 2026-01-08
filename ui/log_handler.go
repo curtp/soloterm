@@ -2,8 +2,6 @@ package ui
 
 import (
 	"fmt"
-	"soloterm/domain/log"
-	"strings"
 )
 
 // LogHandler coordinates log-related UI operations
@@ -108,104 +106,4 @@ func (lh *LogHandler) ShowEditModal(logID int64) {
 
 	// Show the modal
 	lh.app.UpdateView(LOG_SHOW_EDIT)
-}
-
-// LoadLogsForGame loads all logs for a game and displays them in the log view
-func (lh *LogHandler) LoadLogsForGame(gameID int64) {
-	// Clear the log view
-	lh.app.logView.Clear()
-
-	// Load logs from database
-	logs, err := lh.app.logService.GetAllForGame(gameID)
-	if err != nil {
-		lh.app.logView.SetText("[red]Error loading logs: " + err.Error())
-		return
-	}
-
-	if len(logs) == 0 {
-		lh.app.logView.SetText("[gray]No logs yet for this game. Press Ctrl+L to create one.")
-		return
-	}
-
-	lh.DisplayLogs(logs)
-}
-
-// LoadLogsForSession loads logs for a specific session and displays them in the log view
-func (lh *LogHandler) LoadLogsForSession(gameID int64, sessionDate string) {
-	// Clear the log view
-	lh.app.logView.Clear()
-
-	// Load logs for this session from database
-	logs, err := lh.app.logService.GetLogsForSession(gameID, sessionDate)
-	if err != nil {
-		lh.app.logView.SetText("[red]Error loading session logs: " + err.Error())
-		return
-	}
-
-	lh.DisplayLogs(logs)
-}
-
-// DisplayLogs renders logs in the log view panel
-func (lh *LogHandler) DisplayLogs(logs []*log.Log) {
-	// Display logs grouped by time blocks
-	var output string
-	var lastBlockLabel string
-	var wroteBlockLabel bool
-
-	// Store the IDs of the loaded logs for navigation purposes
-	lh.app.loadedLogIDs = nil
-
-	_, _, w, _ := lh.app.logView.GetInnerRect()
-
-	for _, l := range logs {
-		lh.app.loadedLogIDs = append(lh.app.loadedLogIDs, l.ID)
-
-		// Format timestamp in local timezone
-		localTime := l.CreatedAt.Local()
-
-		// Create time block label (date + hour)
-		blockLabel := localTime.Format(" 2006-01-02 ")
-
-		// Print time block header if it changed
-		if blockLabel != lastBlockLabel {
-			b := len(blockLabel)
-			s := w - b
-			h := s / 2
-			strings.Repeat("─", w)
-			output += "[lime::b]" + strings.Repeat("=", h) + blockLabel + strings.Repeat("=", h) + "[-::-]\n\n"
-			lastBlockLabel = blockLabel
-			wroteBlockLabel = true
-		} else {
-			wroteBlockLabel = false
-		}
-
-		if !wroteBlockLabel {
-			output += strings.Repeat("─", w) + "\n\n"
-		}
-
-		// Print the log entry
-		timestamp := localTime.Format("03:04 PM")
-		// Add the region ID so clicking it will open the edit modal
-		output += "[\"" + fmt.Sprintf("%d", l.ID) + "\"][::i]"
-		// Add the timestamp and log type display name
-		output += "[aqua::b]" + timestamp + " - " + l.LogType.LogTypeDisplayName() + "[-::-][\"\"]\n"
-		if len(l.Description) > 0 {
-			output += "[::i][yellow::b]Description:[-::-] " + l.Description + "\n"
-		}
-		if len(l.Result) > 0 {
-			output += "[::i][yellow::b]     Result:[-::-] " + l.Result + "\n"
-		}
-		if len(l.Narrative) > 0 {
-			// output += "[::i][yellow::b]  Narrative:[-::-] " + l.Narrative + "[\"\"]\n"
-			// output += "\n" + l.Narrative + "[\"\"]\n"
-			output += "\n" + l.Narrative + "\n"
-		}
-		// Close the region and other formatting
-		output += "[-::-][\"\"]\n"
-	}
-
-	// Write the output to the log
-	lh.app.logView.SetText(output)
-	// Update the title of the text area
-	lh.app.logView.SetTitle(" Session Logs ")
 }

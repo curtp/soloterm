@@ -3,12 +3,10 @@
 package ui
 
 import (
-	"fmt"
 	"soloterm/database"
 	"soloterm/domain/character"
 	"soloterm/domain/game"
 	"soloterm/domain/log"
-	"strconv"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -67,6 +65,11 @@ type App struct {
 	logHandler  *LogHandler
 	charHandler *CharacterHandler
 
+	// View helpers
+	gameViewHelper      *GameViewHelper
+	logViewHelper       *LogViewHelper
+	characterViewHelper *CharacterViewHelper
+
 	// Application State
 	selectedGame      *game.Game           // Currently selected/active game
 	selectedLog       *log.Log             // Currently selected log (for editing)
@@ -110,10 +113,21 @@ func NewApp(db *database.DBStore) *App {
 		charService: character.NewService(character.NewRepository(db)),
 	}
 
+	// Initialize forms
+	app.gameForm = NewGameForm()
+	app.logForm = NewLogForm()
+	app.characterForm = NewCharacterForm()
+	app.attributeForm = NewAttributeForm()
+
 	// Initialize handlers (after app is created so they can reference it)
 	app.gameHandler = NewGameHandler(app)
 	app.logHandler = NewLogHandler(app)
 	app.charHandler = NewCharacterHandler(app)
+
+	// Initialize view helpers
+	app.gameViewHelper = NewGameViewHelper(app)
+	app.logViewHelper = NewLogViewHelper(app)
+	app.characterViewHelper = NewCharacterViewHelper(app)
 
 	app.setupUI()
 	return app
@@ -121,188 +135,13 @@ func NewApp(db *database.DBStore) *App {
 
 func (a *App) setupUI() {
 	// Left pane: Game/Session tree
-	a.gameTree = tview.NewTreeView()
-	a.gameTree.SetBorder(true).
-		SetTitle(" Games & Sessions ").
-		SetTitleAlign(tview.AlignLeft)
+	a.gameViewHelper.Setup()
 
-	// Placeholder root node
-	root := tview.NewTreeNode("Games").SetColor(tcell.ColorYellow).SetSelectable(false)
-	a.gameTree.SetRoot(root).SetCurrentNode(root)
+	// Setup the character view area
+	a.characterViewHelper.Setup()
 
-	// Set up selection handler for the tree (triggered by Space)
-	a.gameTree.SetSelectedFunc(func(node *tview.TreeNode) {
-		reference := node.GetReference()
-		if reference == nil {
-			return
-		}
-
-		// If node has children (it's a game), expand/collapse it
-		if len(node.GetChildren()) > 0 {
-			node.SetExpanded(!node.IsExpanded())
-		}
-
-		// Always load logs for the selected game or session
-		a.loadLogsForSelectedGameEntry()
-		a.logView.ScrollToBeginning()
-	})
-
-	// Set up input capture for game tree - Ctrl+E to edit game, Ctrl+N to add game
-	a.gameTree.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		switch event.Key() {
-		case tcell.KeyCtrlE:
-			node := a.gameTree.GetCurrentNode()
-			if node != nil {
-				reference := node.GetReference()
-				// Only open edit modal if it's a game (not a session)
-				if _, ok := reference.(*game.Game); ok {
-					a.loadLogsForSelectedGameEntry()
-					a.gameHandler.ShowEditModal()
-					return nil
-				}
-			}
-		case tcell.KeyCtrlN:
-			a.gameHandler.ShowModal()
-			return nil
-		}
-		return event
-	})
-
-	// Setup the char tree
-	a.charTree = tview.NewTreeView()
-	a.charTree.SetBorder(true).
-		SetTitle(" Characters ").
-		SetTitleAlign(tview.AlignLeft)
-
-	// Set up selection handler for the tree
-	a.charTree.SetSelectedFunc(func(node *tview.TreeNode) {
-		// If node has children (it's a system), expand/collapse it
-		if len(node.GetChildren()) > 0 {
-			node.SetExpanded(!node.IsExpanded())
-			return
-		}
-
-		a.loadSelectedCharacter()
-	})
-
-	// Set up input capture for character tree - Ctrl+N to add character
-	a.charTree.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyCtrlN {
-			a.charHandler.ShowModal()
-			return nil
-		}
-		return event
-	})
-
-	// Setup character info display
-	a.charInfoView = tview.NewTextView().
-		SetDynamicColors(true).
-		SetScrollable(false).
-		SetText("")
-	a.charInfoView.SetBorder(true).
-		SetTitle(" Character Info ").
-		SetTitleAlign(tview.AlignLeft)
-
-	// Set up input capture for character info - Ctrl+E to edit, Ctrl+D to duplicate character
-	a.charInfoView.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		switch event.Key() {
-		case tcell.KeyCtrlE:
-			a.charHandler.ShowEditCharacterModal()
-			return nil
-		case tcell.KeyCtrlD:
-			a.charHandler.HandleDuplicate()
-			return nil
-		}
-		return event
-	})
-
-	// Setup attribute table
-	a.attributeTable = tview.NewTable().
-		SetBorders(false).
-		SetSelectable(true, false). // Make rows selectable
-		SetFixed(1, 0)              // Fix the header and divider rows
-	a.attributeTable.SetBorder(true).
-		SetTitle(" Sheet ").
-		SetTitleAlign(tview.AlignLeft)
-
-	// Set up input capture for attribute table
-	a.attributeTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		row, _ := a.attributeTable.GetSelection()
-
-		// Handle Ctrl+N or Insert key to add new attribute
-		if event.Key() == tcell.KeyCtrlN || event.Key() == tcell.KeyInsert {
-			a.charHandler.ShowNewAttributeModal()
-			return nil
-		}
-
-		// Handle Ctrl+E to edit selected attribute
-		if event.Key() == tcell.KeyCtrlE {
-			if a.selectedCharacter != nil {
-				attrs, _ := a.charService.GetAttributesForCharacter(a.selectedCharacter.ID)
-				attrIndex := row - 1
-				if attrIndex >= 0 && attrIndex < len(attrs) {
-					a.charHandler.ShowEditAttributeModal(attrs[attrIndex])
-				}
-			}
-			return nil
-		}
-
-		return event
-	})
-
-	// Right top pane: Log display
-	a.logView = tview.NewTextView().
-		SetDynamicColors(true).
-		SetScrollable(true).
-		SetRegions(true).
-		SetChangedFunc(func() {
-			a.Draw()
-		})
-	a.logView.SetBorder(true).
-		SetTitle(" Select Game To View ").
-		SetTitleAlign(tview.AlignLeft)
-
-	// Set up input capture for log view navigation
-	a.logView.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		switch event.Key() {
-		case tcell.KeyUp:
-			a.highlightPreviousLog()
-			return nil
-		case tcell.KeyDown:
-			a.highlightNextLog()
-			return nil
-		case tcell.KeyCtrlE:
-			// Get currently highlighted region and open edit modal
-			regions := a.logView.GetHighlights()
-			if len(regions) > 0 {
-				if logID, err := strconv.ParseInt(regions[0], 10, 64); err == nil {
-					a.logHandler.ShowEditModal(logID)
-				}
-			}
-			return nil
-		case tcell.KeyCtrlN:
-			a.logHandler.ShowModal()
-			return nil
-		}
-		return event
-	})
-
-	// Set up focus handlers for context-sensitive help
-	a.gameTree.SetFocusFunc(func() {
-		a.updateFooterHelp("gameTree")
-	})
-	a.logView.SetFocusFunc(func() {
-		a.updateFooterHelp("logView")
-	})
-	a.charTree.SetFocusFunc(func() {
-		a.updateFooterHelp("charTree")
-	})
-	a.charInfoView.SetFocusFunc(func() {
-		a.updateFooterHelp("charInfo")
-	})
-	a.attributeTable.SetFocusFunc(func() {
-		a.updateFooterHelp("attributeTable")
-	})
+	// Setup the log view area of the app and everything it needs to work
+	a.logViewHelper.Setup()
 
 	// Footer with help text
 	a.footer = tview.NewTextView().
@@ -353,18 +192,6 @@ func (a *App) setupUI() {
 			a.pages.HidePage(HELP_MODAL_ID)
 		})
 
-	// New game modal
-	a.setupGameModal()
-
-	// New Log Modal
-	a.setupLogModal()
-
-	// New Character Modal
-	a.setupCharacterModal()
-
-	// New Attribute Modal
-	a.setupAttributeModal()
-
 	// Create confirmation modal
 	a.confirmModal = NewConfirmationModal()
 
@@ -396,28 +223,13 @@ func (a *App) setupUI() {
 	a.setupKeyBindings()
 
 	// Load initial game data
-	a.refreshGameTree()
-	a.refreshCharacterTree()
+	a.gameViewHelper.Refresh()
+	a.characterViewHelper.RefreshTree()
 }
 
-func (a *App) updateFooterHelp(context string) {
-	var helpText string
-	globalHelp := " [yellow]Tab/Shift-Tab[white] Navigate  [yellow]Ctrl+C[white] Quit  |  "
-	switch context {
-	case "logView":
-		helpText = globalHelp + "[aqua::b]Session Logs[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Ctrl+E[white] Edit  [yellow]Ctrl+N[white] New"
-	case "gameTree":
-		helpText = globalHelp + "[aqua::b]Games[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Space[white] Select/Expand  [yellow]Ctrl+E[white] Edit  [yellow]Ctrl+N[white] New"
-	case "charTree":
-		helpText = globalHelp + "[aqua::b]Characters[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Space/Enter[white] Select/Expand  [yellow]Ctrl+N[white] New"
-	case "charInfo":
-		helpText = globalHelp + "[aqua::b]Character Info[-::-] :: [yellow]Ctrl+E[white] Edit  [yellow]Ctrl+D[white] Duplicate"
-	case "attributeTable":
-		helpText = globalHelp + "[aqua::b]Sheet[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Ctrl+E[white] Edit  [yellow]Ctrl+N[white] New"
-	}
-
-	a.footer.SetText(helpText)
-
+func (a *App) updateFooterHelp(helpText string) {
+	globalHelp := " [yellow]Tab/Shift+Tab[white] Navigate  [yellow]Ctrl+C[white] Quit  |  "
+	a.footer.SetText(globalHelp + helpText)
 }
 
 func (a *App) setupKeyBindings() {
@@ -479,113 +291,6 @@ func (a *App) setupKeyBindings() {
 	})
 }
 
-func (a *App) setupGameModal() {
-	// Create the form
-	a.gameForm = NewGameForm()
-
-	// Set up handlers
-	a.gameForm.SetupHandlers(
-		a.gameHandler.HandleSave,
-		a.gameHandler.HandleCancel,
-		a.gameHandler.HandleDelete,
-	)
-
-	// Center the modal on screen
-	a.gameModal = tview.NewFlex().
-		AddItem(nil, 0, 1, false).
-		AddItem(
-			tview.NewFlex().
-				SetDirection(tview.FlexRow).
-				AddItem(nil, 0, 1, false).
-				AddItem(a.gameForm, 12, 1, true). // Dynamic height: expands to fit content
-				AddItem(nil, 0, 1, false),
-			60, 1, true, // Dynamic width: expands to fit content (up to screen width)
-		).
-		AddItem(nil, 0, 1, false)
-	a.gameModal.SetBackgroundColor(tcell.ColorBlack)
-}
-
-func (a *App) setupLogModal() {
-	// Create the form
-	a.logForm = NewLogForm()
-
-	// Set up handlers
-	a.logForm.SetupHandlers(
-		a.logHandler.HandleSave,
-		a.logHandler.HandleCancel,
-		a.logHandler.HandleDelete,
-	)
-
-	// Center the modal on screen
-	a.logModal = tview.NewFlex().
-		AddItem(nil, 0, 1, false).
-		AddItem(
-			tview.NewFlex().
-				SetDirection(tview.FlexRow).
-				AddItem(nil, 0, 1, false).
-				AddItem(a.logForm, 20, 2, true). // Dynamic height: expands to fit content
-				AddItem(nil, 0, 1, false),
-			100, 1, true, // Dynamic width: expands to fit content (up to screen width)
-		).
-		AddItem(nil, 0, 1, false)
-}
-
-func (a *App) setupCharacterModal() {
-	// Create the form
-	a.characterForm = NewCharacterForm()
-
-	// Set up handlers
-	a.characterForm.SetupHandlers(
-		a.charHandler.HandleSave,
-		a.charHandler.HandleCancel,
-		a.charHandler.HandleDelete,
-	)
-
-	// Center the modal on screen
-	a.characterModal = tview.NewFlex().
-		AddItem(nil, 0, 1, false).
-		AddItem(
-			tview.NewFlex().
-				SetDirection(tview.FlexRow).
-				AddItem(nil, 0, 1, false).
-				AddItem(a.characterForm, 13, 1, true). // Fixed height for form
-				AddItem(nil, 0, 1, false),
-			60, 1, true, // Fixed width
-		).
-		AddItem(nil, 0, 1, false)
-
-	// Prevent mouse clicks outside modal
-	//	a.characterModal.SetMouseCapture(func(action tview.MouseAction, event *tcell.EventMouse) (tview.MouseAction, *tcell.EventMouse) {
-	//		// Only pass through mouse events if they're within the modal form
-	//		return action, nil
-	//	})
-}
-
-func (a *App) setupAttributeModal() {
-	// Create the form
-	a.attributeForm = NewAttributeForm()
-
-	// Set up handlers
-	a.attributeForm.SetupHandlers(
-		a.charHandler.HandleAttributeSave,
-		a.charHandler.HandleAttributeCancel,
-		a.charHandler.HandleAttributeDelete,
-	)
-
-	// Center the modal on screen
-	a.attributeModal = tview.NewFlex().
-		AddItem(nil, 0, 1, false).
-		AddItem(
-			tview.NewFlex().
-				SetDirection(tview.FlexRow).
-				AddItem(nil, 0, 1, false).
-				AddItem(a.attributeForm, 13, 1, true). // Fixed height for simple form
-				AddItem(nil, 0, 1, false),
-			60, 1, true, // Fixed width
-		).
-		AddItem(nil, 0, 1, false)
-}
-
 func (a *App) showHelp() {
 	a.pages.ShowPage(HELP_MODAL_ID)
 }
@@ -605,7 +310,7 @@ func (a *App) UpdateView(event UserAction) {
 		a.selectedLog = nil
 
 		// Refresh and focus
-		a.refreshGameTree()
+		a.gameViewHelper.Refresh()
 		a.SetFocus(a.gameTree)
 
 		// Show success notification
@@ -619,7 +324,7 @@ func (a *App) UpdateView(event UserAction) {
 		a.pages.HidePage(GAME_MODAL_ID)
 
 		// Refresh and focus
-		a.refreshGameTree()
+		a.gameViewHelper.Refresh()
 		a.SetFocus(a.gameTree)
 
 		// Show success notification
@@ -642,8 +347,8 @@ func (a *App) UpdateView(event UserAction) {
 
 		// Clear highlights and refresh
 		a.logView.Highlight()
-		a.loadLogsForSelectedGameEntry()
-		a.refreshGameTree()
+		a.logViewHelper.Refresh()
+		a.gameViewHelper.Refresh()
 		a.SetFocus(a.logView)
 		a.logView.ScrollToEnd()
 
@@ -657,8 +362,8 @@ func (a *App) UpdateView(event UserAction) {
 		a.pages.SwitchToPage(MAIN_PAGE_ID)
 
 		// Refresh and focus
-		a.loadLogsForSelectedGameEntry()
-		a.refreshGameTree()
+		a.logViewHelper.Refresh()
+		a.gameViewHelper.Refresh()
 		a.SetFocus(a.logView)
 
 		// Show success notification
@@ -717,13 +422,13 @@ func (a *App) UpdateView(event UserAction) {
 		}
 
 		// Refresh character tree
-		a.refreshCharacterTree()
+		a.characterViewHelper.RefreshTree()
 
 		// Focus back on character info view
 		a.SetFocus(a.charInfoView)
 
 		// Display them
-		a.displaySelectedCharacter()
+		a.characterViewHelper.RefreshDisplay()
 
 		// Show success notification
 		a.notification.ShowSuccess("Character saved successfully")
@@ -740,7 +445,7 @@ func (a *App) UpdateView(event UserAction) {
 		a.attributeTable.Clear()
 
 		// Refresh and focus
-		a.refreshCharacterTree()
+		a.characterViewHelper.RefreshTree()
 		a.SetFocus(a.charTree)
 
 		// Show success notification
@@ -823,176 +528,6 @@ func (a *App) UpdateView(event UserAction) {
 	}
 }
 
-func (a *App) loadLogsForSelectedGameEntry() {
-	// Clear the highlight
-	a.logView.Highlight()
-
-	// Get the reference from the node
-	if ref := a.gameTree.GetCurrentNode().GetReference(); ref != nil {
-		// Check if it's a game
-		if g, ok := ref.(*game.Game); ok {
-			// Update selected game state
-			a.selectedGame = g
-
-			// Load all logs for this game
-			a.logHandler.LoadLogsForGame(g.ID)
-		} else if s, ok := ref.(*log.Session); ok {
-			// It's a session - load the game from service using session's GameID
-			g, err := a.gameService.GetByID(s.GameID)
-			if err == nil {
-				a.selectedGame = g
-			}
-
-			// Load logs for this specific session date
-			a.logHandler.LoadLogsForSession(s.GameID, s.Date)
-		}
-	}
-}
-
-func (a *App) refreshGameTree() {
-
-	// Save the currently selected reference (game or session) before clearing
-	var selectedGameID *int64
-	var selectedSessionDate *string
-	var selectedSessionGameID *int64
-
-	if currentNode := a.gameTree.GetCurrentNode(); currentNode != nil {
-		if ref := currentNode.GetReference(); ref != nil {
-			if g, ok := ref.(*game.Game); ok {
-				selectedGameID = &g.ID
-			} else if s, ok := ref.(*log.Session); ok {
-				selectedSessionGameID = &s.GameID
-				selectedSessionDate = &s.Date
-			}
-		}
-	}
-
-	root := a.gameTree.GetRoot()
-	root.ClearChildren()
-
-	// Load all games from database
-	games, err := a.gameService.GetAll()
-	if err != nil {
-		// Show error in tree
-		errorNode := tview.NewTreeNode("Error loading games: " + err.Error()).
-			SetColor(tcell.ColorRed)
-		root.AddChild(errorNode)
-		return
-	}
-
-	if len(games) == 0 {
-		// No games yet
-		placeholder := tview.NewTreeNode("(No games yet - press Ctrl+G to create one)").
-			SetColor(tcell.ColorGray)
-		root.AddChild(placeholder)
-		return
-	}
-
-	var nodeToSelect *tview.TreeNode
-
-	// Add each game to the tree
-	for _, g := range games {
-		gameNode := tview.NewTreeNode(g.Name).
-			SetReference(g).
-			SetColor(tcell.ColorLime).
-			SetSelectable(true)
-		root.AddChild(gameNode)
-
-		// Check if this game was previously selected
-		if selectedGameID != nil && g.ID == *selectedGameID {
-			nodeToSelect = gameNode
-		}
-
-		// Load sessions for this game
-		sessions, err := a.logService.GetSessionsForGame(g.ID)
-		if err != nil || len(sessions) == 0 {
-			sessionPlaceholder := tview.NewTreeNode("(No sessions yet)").
-				SetColor(tcell.ColorGray).
-				SetSelectable(false)
-			gameNode.AddChild(sessionPlaceholder)
-		} else {
-			// Add session nodes
-			for _, s := range sessions {
-				// Parse the date to format it nicely
-				sessionLabel := s.Date + " (" + strconv.Itoa(s.LogCount) + " entries)"
-				sessionNode := tview.NewTreeNode(sessionLabel).
-					SetReference(s).
-					SetColor(tcell.ColorAqua).
-					SetSelectable(true)
-				gameNode.AddChild(sessionNode)
-
-				// Check if this session was previously selected
-				if selectedSessionGameID != nil && selectedSessionDate != nil &&
-					s.GameID == *selectedSessionGameID && s.Date == *selectedSessionDate {
-					nodeToSelect = sessionNode
-					// Expand the parent game node so the session is visible
-					gameNode.SetExpanded(true)
-				}
-			}
-		}
-	}
-
-	root.SetExpanded(true)
-
-	// Restore the selection if we found a matching node
-	if nodeToSelect != nil {
-		a.gameTree.SetCurrentNode(nodeToSelect)
-	}
-}
-
-func (a *App) refreshCharacterTree() {
-
-	root := a.charTree.GetRoot()
-	if root == nil {
-		root = tview.NewTreeNode("Systems").SetColor(tcell.ColorYellow).SetSelectable(false)
-		a.charTree.SetRoot(root).SetCurrentNode(root)
-	}
-	root.ClearChildren()
-
-	// Load all characters from database
-	charsBySystem, err := a.charHandler.LoadCharacters()
-	if err != nil {
-		// Show error in tree
-		errorNode := tview.NewTreeNode("Error loading characters: " + err.Error()).
-			SetColor(tcell.ColorRed)
-		root.AddChild(errorNode)
-		return
-	}
-
-	if len(charsBySystem) == 0 {
-		// No characters yet
-		placeholder := tview.NewTreeNode("(No characters yet - press Ctrl+H to create one)").
-			SetColor(tcell.ColorGray)
-		root.AddChild(placeholder)
-		return
-	}
-
-	// Add each system to the tree, then the characters for that system
-	for system, chars := range charsBySystem {
-		// Create system node
-		systemNode := tview.NewTreeNode(system).
-			SetColor(tcell.ColorLime).
-			SetSelectable(true)
-		root.AddChild(systemNode)
-
-		// Add character nodes under the system
-		for _, c := range chars {
-			charNode := tview.NewTreeNode(c.Name).
-				SetReference(c).
-				SetColor(tcell.ColorAqua).
-				SetSelectable(true)
-			systemNode.AddChild(charNode)
-
-			// If this character is currently selected, then select them in the tree
-			if a.selectedCharacter != nil && c.ID == a.selectedCharacter.ID {
-				a.charTree.SetCurrentNode(charNode)
-			}
-		}
-	}
-
-	root.SetExpanded(true)
-}
-
 func (a *App) togglePane(pane tview.Primitive) {
 	// Check if pane is in main flex
 	itemCount := a.mainFlex.GetItemCount()
@@ -1012,101 +547,4 @@ func (a *App) togglePane(pane tview.Primitive) {
 		a.mainFlex.AddItem(a.gameTree, 0, 1, false).
 			AddItem(a.logView, 0, 2, true)
 	}
-}
-
-func (a *App) displaySelectedCharacter() {
-	// Display character info
-	a.charHandler.DisplayCharacterInfo(a.selectedCharacter)
-
-	// Resize the pane to fit the character info provided
-	a.charInfoView.ScrollToBeginning()
-
-	// Load and display attributes
-	a.charHandler.LoadAndDisplayAttributes(a.selectedCharacter.ID)
-}
-
-func (a *App) loadSelectedCharacter() {
-	// Get the reference from the node
-	if ref := a.charTree.GetCurrentNode().GetReference(); ref != nil {
-		// Check if it's a character (not a system node)
-		if char, ok := ref.(*character.Character); ok {
-
-			// Update selected character
-			a.selectedCharacter = char
-
-			// Display them
-			a.displaySelectedCharacter()
-		}
-	}
-}
-
-// highlightPreviousLog navigates to the previous log entry in the log view
-func (a *App) highlightPreviousLog() {
-	// Log view uses regions which are just the log.ID as a string.
-
-	if len(a.loadedLogIDs) == 0 {
-		return
-	}
-
-	currentHighlights := a.logView.GetHighlights()
-
-	// If nothing is highlighted, highlight the last region
-	if len(currentHighlights) == 0 {
-		a.logView.Highlight(fmt.Sprintf("%d", a.loadedLogIDs[len(a.loadedLogIDs)-1]))
-		a.logView.ScrollToHighlight()
-		return
-	}
-
-	// Find the current region index
-	currentRegion := currentHighlights[0]
-	for i, logID := range a.loadedLogIDs {
-		// Convert the log ID to a string for all the following logic
-		regionID := fmt.Sprintf("%d", logID)
-		if regionID == currentRegion {
-			// Move to previous region (wrap around to end if at beginning)
-			if i > 0 {
-				a.logView.Highlight(fmt.Sprintf("%d", a.loadedLogIDs[i-1]))
-			} else {
-				a.logView.Highlight(fmt.Sprintf("%d", a.loadedLogIDs[len(a.loadedLogIDs)-1]))
-			}
-			a.logView.ScrollToHighlight()
-			return
-		}
-	}
-}
-
-// highlightNextLog navigates to the next log entry in the log view
-func (a *App) highlightNextLog() {
-	// Log view uses regions which are just the log.ID as a string.
-
-	if len(a.loadedLogIDs) == 0 {
-		return
-	}
-
-	currentHighlights := a.logView.GetHighlights()
-
-	// If nothing is highlighted, highlight the first region
-	if len(currentHighlights) == 0 {
-		a.logView.Highlight(fmt.Sprintf("%d", a.loadedLogIDs[0]))
-		a.logView.ScrollToHighlight()
-		return
-	}
-
-	// Find the current region index
-	currentRegion := currentHighlights[0]
-	for i, logID := range a.loadedLogIDs {
-		// Convert the log ID to a string for all the following logic
-		regionID := fmt.Sprintf("%d", logID)
-		if regionID == currentRegion {
-			// Move to previous region (wrap around to end if at beginning)
-			if i < len(a.loadedLogIDs)-1 {
-				a.logView.Highlight(fmt.Sprintf("%d", a.loadedLogIDs[i+1]))
-			} else {
-				a.logView.Highlight(fmt.Sprintf("%d", a.loadedLogIDs[0]))
-			}
-			a.logView.ScrollToHighlight()
-			return
-		}
-	}
-
 }
