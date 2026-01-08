@@ -14,7 +14,7 @@ const (
 	MaxSystemLength         = 50
 	MinAttributeNameLength  = 1
 	MaxAttributeNameLength  = 50
-	MinAttributeValueLength = 1
+	MinAttributeValueLength = 0
 	MaxAttributeValueLength = 50
 	MinRoleLength           = 1
 	MaxRoleLength           = 50
@@ -86,7 +86,6 @@ func (a *Attribute) Validate() *validation.Validator {
 	v := validation.NewValidator()
 	v.Check("name", a.Name != "", "is required")
 	v.Check("name", len(a.Name) >= MinNameLength && len(a.Name) <= MaxNameLength, "must be between %d and %d characters", MinNameLength, MaxNameLength)
-	v.Check("value", a.Value != "", "is required")
 	v.Check("value", len(a.Value) >= MinAttributeValueLength && len(a.Value) <= MaxAttributeValueLength, "must be between %d and %d characters", MinAttributeValueLength, MaxAttributeValueLength)
 	v.Check("character_id", a.CharacterID != 0, "is required")
 	return v
