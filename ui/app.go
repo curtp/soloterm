@@ -19,7 +19,7 @@ const (
 	ATTRIBUTE_MODAL_ID string = "attributeModal"
 	CONFIRM_MODAL_ID   string = "confirm"
 	MAIN_PAGE_ID       string = "main"
-	HELP_MODAL_ID      string = "help"
+	ABOUT_MODAL_ID     string = "about"
 )
 
 // UserAction represents user-triggered application events
@@ -90,7 +90,7 @@ type App struct {
 	charInfoView   *tview.TextView
 	attributeTable *tview.Table
 	logView        *tview.TextView
-	helpModal      *tview.Modal
+	aboutModal     *tview.Modal
 	confirmModal   *ConfirmationModal
 	footer         *tview.TextView
 	gameModal      *tview.Flex
@@ -173,23 +173,14 @@ func (a *App) setupUI() {
 		AddItem(a.footer, 1, 0, false)
 
 	// Help modal
-	a.helpModal = tview.NewModal().
+	a.aboutModal = tview.NewModal().
 		SetText("SoloTerm - Solo RPG Session Logger\n\n" +
-			"Keyboard Shortcuts:\n\n" +
-			"F1          - Show this help\n" +
-			"Ctrl+G      - Create new game\n" +
-			"Ctrl+L		 - Create new log entry\n" +
-			"Ctrl+B      - Toggle sidebar\n" +
-			"Ctrl+S      - Save current entry\n" +
-			"Tab         - Switch between panes\n" +
-			"Ctrl+C      - Quit application\n\n" +
-			"Navigation:\n\n" +
-			"Arrow Keys  - Navigate tree/scroll log\n" +
-			"Enter       - Select game/session/character\n" +
-			"Space       - Expand/collapse tree nodes").
+			"By Squidhead Games\n" +
+			"https://squidhead-games.itch.io\n\n" +
+			"Version 0.0.1").
 		AddButtons([]string{"Close"}).
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-			a.pages.HidePage(HELP_MODAL_ID)
+			a.pages.HidePage(ABOUT_MODAL_ID)
 		})
 
 	// Create confirmation modal
@@ -198,7 +189,7 @@ func (a *App) setupUI() {
 	// Pages for modal overlay (must be created BEFORE notification setup)
 	a.pages = tview.NewPages().
 		AddPage(MAIN_PAGE_ID, mainContent, true, true).
-		AddPage(HELP_MODAL_ID, a.helpModal, true, false).
+		AddPage(ABOUT_MODAL_ID, a.aboutModal, true, false).
 		AddPage(GAME_MODAL_ID, a.gameModal, true, false).
 		AddPage(LOG_MODAL_ID, a.logModal, true, false).
 		AddPage(CHARACTER_MODAL_ID, a.characterModal, true, false).
@@ -292,7 +283,7 @@ func (a *App) setupKeyBindings() {
 }
 
 func (a *App) showHelp() {
-	a.pages.ShowPage(HELP_MODAL_ID)
+	a.pages.ShowPage(ABOUT_MODAL_ID)
 }
 
 // UpdateView orchestrates UI updates based on application events
