@@ -58,8 +58,11 @@ func (gh *GameHandler) HandleDelete() {
 	// Get the game entity from the form
 	gameEntity := gh.app.gameForm.BuildDomain()
 
+	// Capture current focus to return to after cancel
+	gh.app.confirmModal.SetReturnFocus(gh.app.GetFocus())
+
 	// Show confirmation modal
-	gh.app.confirmModal.Show(
+	gh.app.confirmModal.Configure(
 		"Are you sure you want to delete this game and all associated log entries?\n\nThis action cannot be undone.",
 		func() {
 			// Business logic: Delete the game

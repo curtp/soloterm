@@ -1,6 +1,7 @@
 package ui
 
 import (
+	syslog "log"
 	"soloterm/domain/character"
 
 	"github.com/gdamore/tcell/v2"
@@ -47,7 +48,17 @@ func (cv *CharacterViewHelper) setupCharacterTree() {
 
 	// Set up input capture for character tree - Ctrl+N to add character
 	cv.app.charTree.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyCtrlN {
+		switch event.Key() {
+		case tcell.KeyCtrlE:
+			cv.loadSelectedCharacter()
+			cv.app.charHandler.ShowEditCharacterModal()
+			return nil
+		case tcell.KeyCtrlD:
+			cv.loadSelectedCharacter()
+			syslog.Printf("Showing the duplicate modal")
+			cv.app.charHandler.HandleDuplicate()
+			return nil
+		case tcell.KeyCtrlN:
 			cv.app.charHandler.ShowModal()
 			return nil
 		}
@@ -172,6 +183,12 @@ func (cv *CharacterViewHelper) setupFocusHandlers() {
 	cv.app.attributeTable.SetFocusFunc(func() {
 		cv.app.updateFooterHelp("[aqua::b]Sheet[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Ctrl+E[white] Edit  [yellow]Ctrl+N[white] New")
 	})
+}
+
+// Refresh reloads and displays everything character related
+func (cv *CharacterViewHelper) Refresh() {
+	cv.RefreshTree()
+	cv.RefreshDisplay()
 }
 
 // RefreshTree reloads the character tree from the database

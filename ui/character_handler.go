@@ -69,8 +69,16 @@ func (h *CharacterHandler) HandleCancel() {
 }
 
 func (h *CharacterHandler) HandleDuplicate() {
-	// Show confirmation
-	h.app.confirmModal.Show(
+	if h.app.selectedCharacter == nil {
+		h.app.notification.ShowWarning("Select a character to duplicate")
+		return
+	}
+
+	// Capture current focus to return to after cancel
+	h.app.confirmModal.SetReturnFocus(h.app.GetFocus())
+
+	// Configure the confirmation modal for duplicating the character
+	h.app.confirmModal.Configure(
 		"Are you sure you want to duplicate this character and their sheet?",
 		func() {
 			// User confirmed - duplicate the character
@@ -107,8 +115,11 @@ func (h *CharacterHandler) HandleDelete() {
 		return
 	}
 
+	// Capture current focus to return to after cancel
+	h.app.confirmModal.SetReturnFocus(h.app.GetFocus())
+
 	// Show confirmation
-	h.app.confirmModal.Show(
+	h.app.confirmModal.Configure(
 		"Are you sure you want to delete this character?\n\nThis will also delete all associated attributes.",
 		func() {
 			// User confirmed - delete the character
@@ -182,8 +193,11 @@ func (h *CharacterHandler) HandleAttributeDelete() {
 		return
 	}
 
+	// Capture current focus to return to after cancel
+	h.app.confirmModal.SetReturnFocus(h.app.GetFocus())
+
 	// Show confirmation
-	h.app.confirmModal.Show(
+	h.app.confirmModal.Configure(
 		"Are you sure you want to delete this attribute?",
 		func() {
 			// User confirmed - delete the attribute

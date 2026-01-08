@@ -58,8 +58,11 @@ func (lh *LogHandler) HandleDelete() {
 	// Get the log entity from the form
 	logEntry := lh.app.logForm.BuildDomain()
 
+	// Capture current focus to return to after cancel
+	lh.app.confirmModal.SetReturnFocus(lh.app.GetFocus())
+
 	// Show confirmation modal
-	lh.app.confirmModal.Show(
+	lh.app.confirmModal.Configure(
 		"Are you sure you want to delete this log entry?\n\nThis action cannot be undone.",
 		func() {
 			// Business logic: Delete the log entry

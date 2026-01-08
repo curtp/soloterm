@@ -525,5 +525,11 @@ func (a *App) UpdateView(event UserAction) {
 	case CONFIRM_CANCEL:
 		// Reusable across all confirmation cancellations
 		a.pages.HidePage(CONFIRM_MODAL_ID)
+
+		// Restore focus to where user was before modal
+		if a.confirmModal.ReturnFocus != nil {
+			a.SetFocus(a.confirmModal.ReturnFocus)
+			a.confirmModal.ReturnFocus = nil // Clear for next use
+		}
 	}
 }

@@ -8,6 +8,7 @@ type ConfirmationModal struct {
 	onCancel      func()
 	confirmLabel  string
 	currentButton string
+	ReturnFocus   tview.Primitive // Where to return focus after modal closes
 }
 
 func NewConfirmationModal() *ConfirmationModal {
@@ -28,9 +29,10 @@ func NewConfirmationModal() *ConfirmationModal {
 	return cm
 }
 
-// Show updates the message and callbacks for this confirmation
+// Configure updates the message and callbacks for this confirmation
 // Optional confirmButtonLabel parameter allows customizing the confirm button text
-func (cm *ConfirmationModal) Show(message string, onConfirm func(), onCancel func(), confirmButtonLabel ...string) {
+// Optional returnFocus parameter specifies where to return focus after cancel
+func (cm *ConfirmationModal) Configure(message string, onConfirm func(), onCancel func(), confirmButtonLabel ...string) {
 	// Determine confirm button label
 	buttonLabel := "Delete" // Default
 	if len(confirmButtonLabel) > 0 && confirmButtonLabel[0] != "" {
@@ -50,4 +52,9 @@ func (cm *ConfirmationModal) Show(message string, onConfirm func(), onCancel fun
 	cm.SetText(message)
 	cm.onConfirm = onConfirm
 	cm.onCancel = onCancel
+}
+
+// SetReturnFocus sets where focus should return after the modal closes
+func (cm *ConfirmationModal) SetReturnFocus(focus tview.Primitive) {
+	cm.ReturnFocus = focus
 }
