@@ -27,6 +27,41 @@ func (s *Service) Save(c *Character) (*Character, error) {
 	return c, nil
 }
 
+// Duplicate makes a copy of the character including all attributes and returns the character
+func (s *Service) Duplicate(id int64) (*Character, error) {
+
+	// Duplicate the character first
+	char, err := s.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+	char.ID = 0
+	char.Name = char.Name + " (Copy)"
+	char, err = s.Save(char)
+	if err != nil {
+		return nil, err
+	}
+
+	// Loop over the attributes and copy them over as-is
+	attrs, err := s.GetAttributesForCharacter(id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Copy each attribute using existing insert method
+	for _, attr := range attrs {
+		attr.ID = 0
+		attr.CharacterID = char.ID
+		_, err = s.SaveAttribute(attr)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return char, nil
+
+}
+
 // Delete removes a character by ID
 func (s *Service) Delete(id int64) error {
 	_, err := s.repo.Delete(id)

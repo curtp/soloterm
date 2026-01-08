@@ -28,28 +28,29 @@ const (
 type UserAction string
 
 const (
-	GAME_SAVED          UserAction = "game_saved"
-	GAME_DELETED        UserAction = "game_deleted"
-	GAME_CANCEL         UserAction = "game_cancel"
-	GAME_SHOW_NEW       UserAction = "game_show_new"
-	GAME_SHOW_EDIT      UserAction = "game_show_edit"
-	LOG_SAVED           UserAction = "log_saved"
-	LOG_DELETED         UserAction = "log_deleted"
-	LOG_CANCEL          UserAction = "log_cancel"
-	LOG_SHOW_NEW        UserAction = "log_show_new"
-	LOG_SHOW_EDIT       UserAction = "log_show_edit"
-	CHARACTER_SAVED     UserAction = "character_saved"
-	CHARACTER_DELETED   UserAction = "character_deleted"
-	CHARACTER_CANCEL    UserAction = "character_cancel"
-	CHARACTER_SHOW_NEW  UserAction = "character_show_new"
-	CHARACTER_SHOW_EDIT UserAction = "character_show_edit"
-	ATTRIBUTE_SAVED     UserAction = "attribute_saved"
-	ATTRIBUTE_DELETED   UserAction = "attribute_deleted"
-	ATTRIBUTE_CANCEL    UserAction = "attribute_cancel"
-	ATTRIBUTE_SHOW_NEW  UserAction = "attribute_show_new"
-	ATTRIBUTE_SHOW_EDIT UserAction = "attribute_show_edit"
-	CONFIRM_SHOW        UserAction = "confirm_show"
-	CONFIRM_CANCEL      UserAction = "confirm_cancel"
+	GAME_SAVED           UserAction = "game_saved"
+	GAME_DELETED         UserAction = "game_deleted"
+	GAME_CANCEL          UserAction = "game_cancel"
+	GAME_SHOW_NEW        UserAction = "game_show_new"
+	GAME_SHOW_EDIT       UserAction = "game_show_edit"
+	LOG_SAVED            UserAction = "log_saved"
+	LOG_DELETED          UserAction = "log_deleted"
+	LOG_CANCEL           UserAction = "log_cancel"
+	LOG_SHOW_NEW         UserAction = "log_show_new"
+	LOG_SHOW_EDIT        UserAction = "log_show_edit"
+	CHARACTER_SAVED      UserAction = "character_saved"
+	CHARACTER_DELETED    UserAction = "character_deleted"
+	CHARACTER_DUPLICATED UserAction = "character_duplicated"
+	CHARACTER_CANCEL     UserAction = "character_cancel"
+	CHARACTER_SHOW_NEW   UserAction = "character_show_new"
+	CHARACTER_SHOW_EDIT  UserAction = "character_show_edit"
+	ATTRIBUTE_SAVED      UserAction = "attribute_saved"
+	ATTRIBUTE_DELETED    UserAction = "attribute_deleted"
+	ATTRIBUTE_CANCEL     UserAction = "attribute_cancel"
+	ATTRIBUTE_SHOW_NEW   UserAction = "attribute_show_new"
+	ATTRIBUTE_SHOW_EDIT  UserAction = "attribute_show_edit"
+	CONFIRM_SHOW         UserAction = "confirm_show"
+	CONFIRM_CANCEL       UserAction = "confirm_cancel"
 )
 
 type App struct {
@@ -204,8 +205,12 @@ func (a *App) setupUI() {
 
 	// Set up input capture for character info - Enter to edit character
 	a.charInfoView.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyEnter {
+		switch event.Key() {
+		case tcell.KeyEnter:
 			a.charHandler.ShowEditCharacterModal()
+			return nil
+		case tcell.KeyCtrlD:
+			a.charHandler.HandleDuplicate()
 			return nil
 		}
 		return event
@@ -406,7 +411,7 @@ func (a *App) updateFooterHelp(context string) {
 	case "charTree":
 		helpText = globalHelp + "[aqua::b]Characters[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Space/Enter[white] Select/Expand  [yellow]Ctrl+N[white] New"
 	case "charInfo":
-		helpText = globalHelp + "[aqua::b]Character Info[-::-] :: [yellow]Enter[white] Edit"
+		helpText = globalHelp + "[aqua::b]Character Info[-::-] :: [yellow]Enter[white] Edit  [yellow]Ctrl+D[white] Duplicate"
 	case "attributeTable":
 		helpText = globalHelp + "[aqua::b]Sheet[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Enter[white] Edit  [yellow]Ctrl+N[white] New"
 	}
@@ -699,12 +704,17 @@ func (a *App) UpdateView(event UserAction) {
 			a.SetFocus(a.logForm)
 		}
 
-	case CHARACTER_SAVED:
+	case CHARACTER_SAVED, CHARACTER_DUPLICATED:
 		// Clear form errors
 		a.characterForm.ClearFieldErrors()
 
-		// Close modal
-		a.pages.HidePage(CHARACTER_MODAL_ID)
+		if event == CHARACTER_SAVED {
+			a.pages.HidePage(CHARACTER_MODAL_ID)
+		}
+
+		if event == CHARACTER_DUPLICATED {
+			a.pages.HidePage(CONFIRM_MODAL_ID)
+		}
 
 		// Refresh character tree
 		a.refreshCharacterTree()
@@ -972,6 +982,11 @@ func (a *App) refreshCharacterTree() {
 				SetColor(tcell.ColorAqua).
 				SetSelectable(true)
 			systemNode.AddChild(charNode)
+
+			// If this character is currently selected, then select them in the tree
+			if a.selectedCharacter != nil && c.ID == a.selectedCharacter.ID {
+				a.charTree.SetCurrentNode(charNode)
+			}
 		}
 	}
 

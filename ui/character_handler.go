@@ -38,7 +38,6 @@ func (h *CharacterHandler) LoadCharacters() (map[string][]*character.Character, 
 
 	// Group them by system
 	for _, c := range chars {
-		syslog.Printf("char: %v", c)
 		charsBySystem[c.System] = append(charsBySystem[c.System], c)
 	}
 
@@ -70,6 +69,35 @@ func (h *CharacterHandler) HandleSave() {
 // HandleCancel cancels character editing
 func (h *CharacterHandler) HandleCancel() {
 	h.app.UpdateView(CHARACTER_CANCEL)
+}
+
+func (h *CharacterHandler) HandleDuplicate() {
+	// Show confirmation
+	h.app.confirmModal.Show(
+		"Are you sure you want to duplicate this character and their sheet?",
+		func() {
+			// User confirmed - duplicate the character
+			char, err := h.app.charService.Duplicate(h.app.selectedCharacter.ID)
+			if err != nil {
+				h.app.UpdateView(CONFIRM_CANCEL)
+				h.app.notification.ShowError("Failed to duplicate the character: " + err.Error())
+				return
+			}
+
+			// Select the duplicated character
+			h.app.selectedCharacter = char
+
+			// Orchestrate UI updates
+			h.app.UpdateView(CHARACTER_DUPLICATED)
+		},
+		func() {
+			// User cancelled - just close confirmation modal
+			h.app.UpdateView(CONFIRM_CANCEL)
+		},
+		"Duplicate", // Custom confirm button label
+	)
+	h.app.UpdateView(CONFIRM_SHOW)
+
 }
 
 // HandleDelete deletes the current character

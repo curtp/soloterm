@@ -323,3 +323,63 @@ func TestService_DeleteAttribute(t *testing.T) {
 	})
 
 }
+
+func TestService_Duplicate(t *testing.T) {
+	// Setup
+	db := testhelper.SetupTestDBWithMigration(t, Migrate)
+	defer testhelper.TeardownTestDB(t, db)
+
+	repo := NewRepository(db)
+	service := NewService(repo)
+
+	// Create character and attributes to duplicate
+	character, _ := NewCharacter("Test Character", "FlexD6", "Fighter", "Human")
+	character, err := service.Save(character)
+	if err != nil {
+		t.Fatalf("Save() failed: %v", err)
+	}
+
+	attr, _ := NewAttribute(character.ID, 0, 1, "Health: Max", "10")
+	attr, _ = service.SaveAttribute(attr)
+
+	attr, _ = NewAttribute(character.ID, 0, 1, "Health: Current", "8")
+	attr, _ = service.SaveAttribute(attr)
+
+	// Now delete it
+	char, err := service.Duplicate(character.ID)
+	if err != nil {
+		t.Fatalf("Duplicate() failed: %v", err)
+	}
+
+	// Verify it was duplicated - should be 2 characters in the db and the new char should have attributes
+
+	chars, err := service.GetAll()
+	if err != nil {
+		t.Error("Issue retrieving all chars")
+	}
+	if len(chars) != 2 {
+		t.Errorf("Expected 2 characters, got %d", len(chars))
+	}
+
+	if char.Name != "Test Character (Copy)" {
+		t.Error("Name did not change")
+	}
+
+	attrs, err := service.GetAttributesForCharacter(char.ID)
+	if err != nil {
+		t.Error("Issue retrieving attributes")
+	}
+	if len(attrs) != 2 {
+		t.Errorf("Expected 2 attributes, got %d", len(attrs))
+	}
+
+	// Original is still in tact
+	attrs, err = service.GetAttributesForCharacter(character.ID)
+	if err != nil {
+		t.Error("Issue retrieving attributes")
+	}
+	if len(attrs) != 2 {
+		t.Errorf("Expected 2 attributes, got %d", len(attrs))
+	}
+
+}
