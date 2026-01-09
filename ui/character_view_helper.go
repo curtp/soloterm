@@ -266,9 +266,9 @@ func (cv *CharacterViewHelper) RefreshDisplay() {
 // displayCharacterInfo displays character information in the character info view
 func (cv *CharacterViewHelper) displayCharacterInfo(char *character.Character) {
 	charInfo := "[aqua::b]" + char.Name + "[-::-]\n"
-	charInfo += "[yellow::b]      System:[white::-] " + char.System + "\n"
-	charInfo += "[yellow::b]  Role/Class:[white::-] " + char.Role + "\n"
-	charInfo += "[yellow::b]Species/Race:[white::-] " + char.Species
+	charInfo += "[yellow::bi]      System:[white::-] " + char.System + "\n"
+	charInfo += "[yellow::bi]  Role/Class:[white::-] " + char.Role + "\n"
+	charInfo += "[yellow::bi]Species/Race:[white::-] " + char.Species
 	cv.app.charInfoView.SetText(charInfo)
 }
 
