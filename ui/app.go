@@ -337,11 +337,11 @@ func (a *App) UpdateView(event UserAction) {
 		a.pages.HidePage(LOG_MODAL_ID)
 
 		// Clear highlights and refresh
-		a.logView.Highlight()
+		// a.logView.Highlight()
 		a.logViewHelper.Refresh()
 		a.gameViewHelper.Refresh()
 		a.SetFocus(a.logView)
-		a.logView.ScrollToEnd()
+		a.logView.ScrollToHighlight()
 
 		// Show success notification
 		a.notification.ShowSuccess("Log saved successfully")
