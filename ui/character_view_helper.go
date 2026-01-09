@@ -2,7 +2,10 @@ package ui
 
 import (
 	syslog "log"
+	"maps"
+	"slices"
 	"soloterm/domain/character"
+	"sort"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -218,8 +221,12 @@ func (cv *CharacterViewHelper) RefreshTree() {
 		return
 	}
 
-	// Add each system to the tree, then the characters for that system
-	for system, chars := range charsBySystem {
+	// Map access is random. Retrieve the keys from the map (systems), then sort them.
+	keys := slices.Collect(maps.Keys(charsBySystem))
+	sort.Strings(keys)
+
+	// Loop over the keys (systems) and add them and their respective characters to the tree
+	for _, system := range keys {
 		// Create system node
 		systemNode := tview.NewTreeNode(system).
 			SetColor(tcell.ColorLime).
@@ -227,7 +234,7 @@ func (cv *CharacterViewHelper) RefreshTree() {
 		root.AddChild(systemNode)
 
 		// Add character nodes under the system
-		for _, c := range chars {
+		for _, c := range charsBySystem[system] {
 			charNode := tview.NewTreeNode(c.Name).
 				SetReference(c).
 				SetColor(tcell.ColorAqua).
