@@ -230,7 +230,7 @@ func (a *App) setupKeyBindings() {
 			a.Stop()
 			return nil
 		case tcell.KeyF1:
-			a.showHelp()
+			a.showAbout()
 			return nil
 		case tcell.KeyTab:
 			// When tabbing on the main view, capture it and set focus properly.
@@ -282,7 +282,7 @@ func (a *App) setupKeyBindings() {
 	})
 }
 
-func (a *App) showHelp() {
+func (a *App) showAbout() {
 	a.pages.ShowPage(ABOUT_MODAL_ID)
 }
 
@@ -336,8 +336,6 @@ func (a *App) UpdateView(event UserAction) {
 		// Close modal
 		a.pages.HidePage(LOG_MODAL_ID)
 
-		// Clear highlights and refresh
-		// a.logView.Highlight()
 		a.logViewHelper.Refresh()
 		a.gameViewHelper.Refresh()
 		a.SetFocus(a.logView)
@@ -367,8 +365,8 @@ func (a *App) UpdateView(event UserAction) {
 		// Close modal, clear highlights and focus log view
 		a.pages.HidePage(LOG_MODAL_ID)
 		a.pages.SwitchToPage(MAIN_PAGE_ID)
-		a.logView.Highlight()
 		a.SetFocus(a.logView)
+		a.logView.ScrollToHighlight()
 
 	case GAME_SHOW_NEW:
 		// Show modal for creating new game

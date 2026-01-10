@@ -111,6 +111,11 @@ func (cv *CharacterViewHelper) setupAttributeTable() {
 
 	// Set up input capture for attribute table
 	cv.app.attributeTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if cv.app.selectedCharacter == nil {
+			cv.app.notification.ShowWarning("Select a character before editing the sheet")
+			return nil
+		}
+
 		row, _ := cv.app.attributeTable.GetSelection()
 
 		// Handle Ctrl+N or Insert key to add new attribute
@@ -121,12 +126,10 @@ func (cv *CharacterViewHelper) setupAttributeTable() {
 
 		// Handle Ctrl+E to edit selected attribute
 		if event.Key() == tcell.KeyCtrlE {
-			if cv.app.selectedCharacter != nil {
-				attrs, _ := cv.app.charService.GetAttributesForCharacter(cv.app.selectedCharacter.ID)
-				attrIndex := row - 1
-				if attrIndex >= 0 && attrIndex < len(attrs) {
-					cv.app.charHandler.ShowEditAttributeModal(attrs[attrIndex])
-				}
+			attrs, _ := cv.app.charService.GetAttributesForCharacter(cv.app.selectedCharacter.ID)
+			attrIndex := row - 1
+			if attrIndex >= 0 && attrIndex < len(attrs) {
+				cv.app.charHandler.ShowEditAttributeModal(attrs[attrIndex])
 			}
 			return nil
 		}
