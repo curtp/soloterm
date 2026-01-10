@@ -177,11 +177,12 @@ func (cv *CharacterViewHelper) setupAttributeModal() {
 
 // setupFocusHandlers configures focus event handlers
 func (cv *CharacterViewHelper) setupFocusHandlers() {
+	editDupHelp := "[yellow]Ctrl+E[white] Edit  [yellow]Ctrl+D[white] Duplicate"
 	cv.app.charTree.SetFocusFunc(func() {
-		cv.app.updateFooterHelp("[aqua::b]Characters[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Space/Enter[white] Select/Expand  [yellow]Ctrl+N[white] New")
+		cv.app.updateFooterHelp("[aqua::b]Characters[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Space/Enter[white] Select/Expand  [yellow]Ctrl+N[white] New  " + editDupHelp)
 	})
 	cv.app.charInfoView.SetFocusFunc(func() {
-		cv.app.updateFooterHelp("[aqua::b]Character Info[-::-] :: [yellow]Ctrl+E[white] Edit  [yellow]Ctrl+D[white] Duplicate")
+		cv.app.updateFooterHelp("[aqua::b]Character Info[-::-] :: " + editDupHelp)
 	})
 	cv.app.attributeTable.SetFocusFunc(func() {
 		cv.app.updateFooterHelp("[aqua::b]Sheet[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Ctrl+E[white] Edit  [yellow]Ctrl+N[white] New")
