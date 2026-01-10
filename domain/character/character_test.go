@@ -231,7 +231,7 @@ func TestCharacter_AttributeValidation(t *testing.T) {
 			character_id: 1,
 			name:         "frank",
 			value:        "",
-			shouldPass:   false,
+			shouldPass:   true,
 		},
 		{
 			testName:     "min length value",

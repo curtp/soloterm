@@ -3,7 +3,6 @@ package ui
 import (
 	"testing"
 
-	"soloterm/database"
 	"soloterm/domain/game"
 	"soloterm/domain/log"
 	testhelper "soloterm/shared/testing"
@@ -11,13 +10,7 @@ import (
 
 // TestLogHandler_ShowModal verfies the log modal is displayed
 func TestLogHandler_ShowModal(t *testing.T) {
-	// Setup: Create in-memory database with real services
-	db := testhelper.SetupTestDBWithMigration(t, func(db *database.DBStore) error {
-		if err := game.Migrate(db); err != nil {
-			return err
-		}
-		return log.Migrate(db)
-	})
+	db := testhelper.SetupTestDB(t)
 	defer testhelper.TeardownTestDB(t, db)
 
 	// Create the app
@@ -78,13 +71,7 @@ func TestLogHandler_ShowModal(t *testing.T) {
 
 // TestLogHandler_ShowEditModal verfies the log modal is displayed
 func TestLogHandler_ShowEditModal(t *testing.T) {
-	// Setup: Create in-memory database with real services
-	db := testhelper.SetupTestDBWithMigration(t, func(db *database.DBStore) error {
-		if err := game.Migrate(db); err != nil {
-			return err
-		}
-		return log.Migrate(db)
-	})
+	db := testhelper.SetupTestDB(t)
 	defer testhelper.TeardownTestDB(t, db)
 
 	// Create the app
@@ -180,13 +167,7 @@ func TestLogHandler_ShowEditModal(t *testing.T) {
 
 // TestLogHandler_HandleSave verfies logs are saved (both new and edit)
 func TestLogHandler_HandleSave(t *testing.T) {
-	// Setup: Create in-memory database with real services
-	db := testhelper.SetupTestDBWithMigration(t, func(db *database.DBStore) error {
-		if err := game.Migrate(db); err != nil {
-			return err
-		}
-		return log.Migrate(db)
-	})
+	db := testhelper.SetupTestDB(t)
 	defer testhelper.TeardownTestDB(t, db)
 
 	// Create the app
@@ -342,13 +323,7 @@ func TestLogHandler_HandleSave(t *testing.T) {
 
 // TestLogHandler_HandleDelete verfies logs can be deleted with confirmation
 func TestLogHandler_HandleDelete(t *testing.T) {
-	// Setup: Create in-memory database with real services
-	db := testhelper.SetupTestDBWithMigration(t, func(db *database.DBStore) error {
-		if err := game.Migrate(db); err != nil {
-			return err
-		}
-		return log.Migrate(db)
-	})
+	db := testhelper.SetupTestDB(t)
 	defer testhelper.TeardownTestDB(t, db)
 
 	// Create the app

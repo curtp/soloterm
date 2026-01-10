@@ -9,7 +9,7 @@ import (
 
 func TestService_Save(t *testing.T) {
 	// Setup
-	db := testhelper.SetupTestDBWithMigration(t, Migrate)
+	db := testhelper.SetupTestDB(t)
 	defer testhelper.TeardownTestDB(t, db)
 
 	repo := NewRepository(db)
@@ -66,7 +66,7 @@ func TestService_Save(t *testing.T) {
 
 func TestService_GetByID(t *testing.T) {
 	// Setup
-	db := testhelper.SetupTestDBWithMigration(t, Migrate)
+	db := testhelper.SetupTestDB(t)
 	defer testhelper.TeardownTestDB(t, db)
 
 	repo := NewRepository(db)
@@ -100,7 +100,7 @@ func TestService_GetByID(t *testing.T) {
 
 func TestService_GetAll(t *testing.T) {
 	// Setup
-	db := testhelper.SetupTestDBWithMigration(t, Migrate)
+	db := testhelper.SetupTestDB(t)
 	defer testhelper.TeardownTestDB(t, db)
 
 	repo := NewRepository(db)
@@ -128,7 +128,7 @@ func TestService_GetAll(t *testing.T) {
 
 func TestService_Delete(t *testing.T) {
 	// Setup
-	db := testhelper.SetupTestDBWithMigration(t, Migrate)
+	db := testhelper.SetupTestDB(t)
 	defer testhelper.TeardownTestDB(t, db)
 
 	repo := NewRepository(db)

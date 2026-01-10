@@ -46,23 +46,3 @@ func TeardownTestDB(t *testing.T, db *database.DBStore) {
 		t.Errorf("Failed to close test database: %v", err)
 	}
 }
-
-// SetupTestDBWithMigration creates an in-memory SQLite database and runs the provided migration function.
-// This is a convenience wrapper around SetupTestDB() for domain-specific test setup.
-//
-// Example usage:
-//
-//	func setupTestDB(t *testing.T) *sqlx.DB {
-//	    return testhelper.SetupTestDBWithMigration(t, Migrate)
-//	}
-func SetupTestDBWithMigration(t *testing.T, migrateFn func(*database.DBStore) error) *database.DBStore {
-	t.Helper()
-
-	db := SetupTestDB(t)
-
-	if err := migrateFn(db); err != nil {
-		t.Fatalf("Failed to migrate test database: %v", err)
-	}
-
-	return db
-}

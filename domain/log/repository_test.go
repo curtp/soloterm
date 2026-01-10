@@ -9,7 +9,7 @@ import (
 
 func TestRepository_Save(t *testing.T) {
 	// Setup
-	db := testhelper.SetupTestDBWithMigration(t, Migrate)
+	db := testhelper.SetupTestDB(t)
 	defer testhelper.TeardownTestDB(t, db)
 	repo := NewRepository(db)
 
@@ -86,7 +86,7 @@ func TestRepository_Save(t *testing.T) {
 
 func TestRepository_Get(t *testing.T) {
 	// Setup
-	db := testhelper.SetupTestDBWithMigration(t, Migrate)
+	db := testhelper.SetupTestDB(t)
 	defer testhelper.TeardownTestDB(t, db)
 
 	repo := NewRepository(db)
@@ -170,7 +170,7 @@ func TestRepository_Get(t *testing.T) {
 
 func TestRepository_Delete(t *testing.T) {
 	// Setup
-	db := testhelper.SetupTestDBWithMigration(t, Migrate)
+	db := testhelper.SetupTestDB(t)
 	defer testhelper.TeardownTestDB(t, db)
 	repo := NewRepository(db)
 
