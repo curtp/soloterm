@@ -110,61 +110,127 @@ package "domain/log" <<Rectangle>> DOMAIN_COLOR {
     end note
 }
 
+package "domain/character" <<Rectangle>> DOMAIN_COLOR {
+    class Character {
+        + ID: int64
+        + Name: string
+        + System: string
+        + Role: string
+        + Species: string
+        + CreatedAt: time.Time
+        + UpdatedAt: time.Time
+        --
+        + NewCharacter(name: string, system: string): (*Character, error)
+        + Validate(): *Validator
+    }
+
+    class Attribute {
+        + ID: int64
+        + CharacterID: int64
+        + Name: string
+        + Value: string
+        + CreatedAt: time.Time
+        + UpdatedAt: time.Time
+        --
+        + NewAttribute(characterID: int64, name: string, value: string): (*Attribute, error)
+        + Validate(): *Validator
+    }
+
+    class CharacterRepository {
+        - db: *sqlx.DB
+        --
+        + NewRepository(db: *sqlx.DB): *Repository
+        + Save(character: *Character): error
+        + Delete(id: int64): (int64, error)
+        + GetByID(id: int64): (*Character, error)
+        + GetAll(): ([]*Character, error)
+        + Duplicate(id: int64): (*Character, error)
+        + SaveAttribute(attr: *Attribute): error
+        + DeleteAttribute(id: int64): (int64, error)
+        + GetAttributesForCharacter(characterID: int64): ([]*Attribute, error)
+        - insert/update methods
+    }
+
+    class CharacterService {
+        - repo: *CharacterRepository
+        --
+        + NewService(repo: *Repository): *Service
+        + Save(character: *Character): (*Character, error)
+        + Delete(id: int64): error
+        + Duplicate(id: int64): (*Character, error)
+        + GetByID(id: int64): (*Character, error)
+        + GetAll(): ([]*Character, error)
+        + SaveAttribute(attr: *Attribute): (*Attribute, error)
+        + DeleteAttribute(id: int64): error
+        + GetAttributesForCharacter(characterID: int64): ([]*Attribute, error)
+    }
+
+    note right of Character
+        Characters are game-system specific
+        (e.g., D&D, Ironsworn, etc.)
+        Can be duplicated with all attributes
+    end note
+}
+
 ' ==================== UI LAYER ====================
 package "ui" <<Rectangle>> UI_COLOR {
     enum UserAction {
-        GAME_SAVED
-        GAME_DELETED
-        GAME_CANCEL
-        GAME_SHOW_NEW
-        GAME_SHOW_EDIT
-        LOG_SAVED
-        LOG_DELETED
-        LOG_CANCEL
-        LOG_SHOW_NEW
-        LOG_SHOW_EDIT
-        CONFIRM_SHOW
-        CONFIRM_CANCEL
+        GAME_SAVED, GAME_DELETED, GAME_CANCEL
+        GAME_SHOW_NEW, GAME_SHOW_EDIT
+        LOG_SAVED, LOG_DELETED, LOG_CANCEL
+        LOG_SHOW_NEW, LOG_SHOW_EDIT
+        CHARACTER_SAVED, CHARACTER_DELETED
+        CHARACTER_DUPLICATED, CHARACTER_CANCEL
+        CHARACTER_SHOW_NEW, CHARACTER_SHOW_EDIT
+        ATTRIBUTE_SAVED, ATTRIBUTE_DELETED
+        ATTRIBUTE_CANCEL, ATTRIBUTE_SHOW_NEW
+        ATTRIBUTE_SHOW_EDIT
+        CONFIRM_SHOW, CONFIRM_CANCEL
     }
 
     class App {
         + *tview.Application
         --
-        - db: *sqlx.DB
+        <b>Dependencies</b>
+        - db: *DBStore
         - gameService: *game.Service
         - logService: *log.Service
+        - charService: *character.Service
+        --
+        <b>Handlers (Event Coordinators)</b>
         - gameHandler: *GameHandler
         - logHandler: *LogHandler
+        - charHandler: *CharacterHandler
         --
+        <b>View Helpers (Display Logic)</b>
+        - gameViewHelper: *GameViewHelper
+        - logViewHelper: *LogViewHelper
+        - characterViewHelper: *CharacterViewHelper
+        --
+        <b>Application State</b>
         - selectedGame: *Game
         - selectedLog: *Log
+        - selectedCharacter: *Character
+        - loadedLogIDs: []int64
         --
-        - rootFlex: *tview.Flex
-        - mainFlex: *tview.Flex
+        <b>UI Components</b>
         - pages: *tview.Pages
-        - notificationFlex: *tview.Flex
-        --
         - gameTree: *tview.TreeView
+        - charTree: *tview.TreeView
+        - charInfoView: *tview.TextView
+        - attributeTable: *tview.Table
         - logView: *tview.TextView
-        - helpModal: *tview.Modal
+        - aboutModal: *tview.Modal
         - confirmModal: *ConfirmationModal
-        - footer: *tview.TextView
-        - gameModal: *tview.Flex
-        - gameForm: *GameForm
-        - logModal: *tview.Flex
-        - logForm: *LogForm
         - notification: *Notification
         --
-        + NewApp(db: *sqlx.DB): *App
+        + NewApp(db: *DBStore): *App
         + Run(): error
         + UpdateView(event: UserAction)
         - setupUI()
         - setupKeyBindings()
-        - setupGameModal()
-        - setupLogModal()
-        - showHelp()
-        - refreshGameTree()
-        - loadLogsForSelectedGameEntry()
+        - updateFooterHelp(context: string)
+        - showAbout()
         - togglePane(pane: tview.Primitive)
     }
 
@@ -186,24 +252,83 @@ package "ui" <<Rectangle>> UI_COLOR {
         + NewLogHandler(app: *App): *LogHandler
         + HandleSave()
         + HandleCancel()
-        + HandleEdit()
         + HandleDelete()
         + ShowModal()
         + ShowEditModal(logID: int64)
-        + LoadLogsForGame(gameID: int64)
-        + LoadLogsForSession(gameID: int64, sessionDate: string)
-        + DisplayLogs(logs: []*Log)
+    }
+
+    class CharacterHandler {
+        - app: *App
+        --
+        + NewCharacterHandler(app: *App): *CharacterHandler
+        + HandleSave()
+        + HandleCancel()
+        + HandleDelete()
+        + HandleDuplicate()
+        + HandleAttributeSave()
+        + HandleAttributeDelete()
+        + HandleAttributeCancel()
+        + ShowModal()
+        + ShowEditCharacterModal()
+        + ShowEditAttributeModal(attr: *Attribute)
+        + ShowNewAttributeModal()
+        + LoadCharacters(): (map[string][]*Character, error)
+    }
+
+    class GameViewHelper {
+        - app: *App
+        --
+        + NewGameViewHelper(app: *App): *GameViewHelper
+        + Setup()
+        + Refresh()
+        - setupTreeView()
+        - setupModal()
+        - setupKeyBindings()
+        - setupFocusHandlers()
+    }
+
+    class LogViewHelper {
+        - app: *App
+        --
+        + NewLogViewHelper(app: *App): *LogViewHelper
+        + Setup()
+        + Refresh()
+        - setupTextView()
+        - setupModal()
+        - setupKeyBindings()
+        - setupMouseBindings()
+        - setupFocusHandlers()
+        - loadLogsForGame(gameID: int64)
+        - loadLogsForSession(gameID: int64, date: string)
+        - displayLogs(logs: []*Log)
+        - highlightPreviousLog()
+        - highlightNextLog()
+    }
+
+    class CharacterViewHelper {
+        - app: *App
+        + ReturnFocus: tview.Primitive
+        --
+        + NewCharacterViewHelper(app: *App): *CharacterViewHelper
+        + Setup()
+        + SetReturnFocus(focus: tview.Primitive)
+        + Refresh()
+        + RefreshTree()
+        + RefreshDisplay()
+        - setupCharacterTree()
+        - setupCharacterInfo()
+        - setupAttributeTable()
+        - setupCharacterModal()
+        - setupAttributeModal()
+        - setupFocusHandlers()
+        - displayCharacterInfo(char: *Character)
+        - loadAndDisplayAttributes(characterID: int64)
+        - loadSelectedCharacter()
     }
 
     interface ValidatableForm {
         + SetFieldErrors(errors: map[string]string)
     }
-
-    note right of ValidatableForm
-        Forms implement this interface to
-        receive validation errors from
-        handleValidationError() helper.
-    end note
 
     class GameForm {
         + *tview.Form
@@ -211,22 +336,15 @@ package "ui" <<Rectangle>> UI_COLOR {
         - gameID: *int64
         - nameField: *tview.InputField
         - descriptionField: *tview.TextArea
-        - errorMessage: *tview.TextView
         - fieldErrors: map[string]string
-        - onSave: func()
-        - onCancel: func()
-        - onDelete: func()
         --
         + NewGameForm(): *GameForm
         + BuildDomain(): *Game
-        + SetupHandlers(onSave: func(), onCancel: func(), onDelete: func())
+        + SetupHandlers(onSave, onCancel, onDelete: func())
         + PopulateForEdit(game: *Game)
         + Reset()
-        + SetFieldError(field: string, message: string)
         + SetFieldErrors(errors: map[string]string)
-        + UpdateFieldLabels()
         + ClearFieldErrors()
-        - setupForm()
     }
 
     class LogForm {
@@ -238,34 +356,66 @@ package "ui" <<Rectangle>> UI_COLOR {
         - resultField: *tview.InputField
         - narrativeField: *tview.TextArea
         - descriptionField: *tview.InputField
-        - errorMessage: *tview.TextView
         - fieldErrors: map[string]string
-        - onSave: func()
-        - onCancel: func()
-        - onDelete: func()
         --
         + NewLogForm(): *LogForm
         + BuildDomain(): *Log
-        + SetupHandlers(onSave: func(), onCancel: func(), onDelete: func())
+        + SetupHandlers(onSave, onCancel, onDelete: func())
         + PopulateForEdit(log: *Log)
         + Reset(gameID: int64)
-        + SetFieldError(field: string, message: string)
         + SetFieldErrors(errors: map[string]string)
-        + UpdateFieldLabels()
         + ClearFieldErrors()
-        - setupForm()
+    }
+
+    class CharacterForm {
+        + *tview.Form
+        --
+        - characterID: *int64
+        - nameField: *tview.InputField
+        - systemField: *tview.InputField
+        - roleField: *tview.InputField
+        - speciesField: *tview.InputField
+        - fieldErrors: map[string]string
+        --
+        + NewCharacterForm(): *CharacterForm
+        + BuildDomain(): *Character
+        + SetupHandlers(onSave, onCancel, onDelete: func())
+        + PopulateForEdit(char: *Character)
+        + Reset()
+        + SetFieldErrors(errors: map[string]string)
+        + ClearFieldErrors()
+    }
+
+    class AttributeForm {
+        + *tview.Form
+        --
+        - attributeID: *int64
+        - characterID: int64
+        - nameField: *tview.InputField
+        - valueField: *tview.InputField
+        - fieldErrors: map[string]string
+        --
+        + NewAttributeForm(): *AttributeForm
+        + BuildDomain(): *Attribute
+        + SetupHandlers(onSave, onCancel, onDelete: func())
+        + PopulateForEdit(attr: *Attribute)
+        + Reset(characterID: int64)
+        + SetFieldErrors(errors: map[string]string)
+        + ClearFieldErrors()
     }
 
     class ConfirmationModal {
         + *tview.Modal
+        + ReturnFocus: tview.Primitive
         --
-        - message: string
         - onConfirm: func()
         - onCancel: func()
+        - confirmLabel: string
+        - currentButton: string
         --
-        + NewConfirmationModal(message: string, onConfirm: func(), onCancel: func()): *ConfirmationModal
-        + Show(pages: *tview.Pages)
-        + Hide(pages: *tview.Pages)
+        + NewConfirmationModal(): *ConfirmationModal
+        + Configure(message: string, onConfirm, onCancel: func(), confirmButtonLabel: ...string)
+        + SetReturnFocus(focus: tview.Primitive)
     }
 
     enum NotificationType {
@@ -280,9 +430,8 @@ package "ui" <<Rectangle>> UI_COLOR {
         --
         - notificationType: NotificationType
         - duration: time.Duration
-        - hideFunc: func()
         --
-        + NewNotification(hideFunc: func()): *Notification
+        + NewNotification(flex: *tview.Flex, pages: *tview.Pages, app: *tview.Application): *Notification
         + ShowInfo(message: string)
         + ShowSuccess(message: string)
         + ShowWarning(message: string)
@@ -292,35 +441,61 @@ package "ui" <<Rectangle>> UI_COLOR {
     }
 
     note right of App
-        <b>Mediator Pattern Implementation</b>
+        <b>Mediator Pattern - App as Orchestrator</b>
 
         App acts as the central mediator coordinating
         all UI updates via UpdateView(UserAction).
 
-        <b>Responsibilities:</b>
-        - Centralized UI orchestration
-        - Modal showing/hiding
-        - Form error clearing
-        - View refreshing
-        - Focus management
-        - Success notifications
+        <b>Key Design:</b>
+        • Handlers = Event coordinators (respond to user actions)
+        • View Helpers = Display managers (setup, refresh, format)
+        • Bi-directional refs allowed (same package)
 
         <b>Keyboard Shortcuts:</b>
-        - F1: Help
-        - Ctrl+G: New Game
-        - Ctrl+L: New Log Entry
-        - Ctrl+E: Edit Selected
-        - Ctrl+B: Toggle Sidebar
+        - F1: About
+        - Ctrl+N: New (context-sensitive)
+        - Ctrl+E: Edit (context-sensitive)
+        - Ctrl+D: Duplicate character
+        - Tab/Shift+Tab: Navigate panes
         - Ctrl+C: Quit
     end note
 
     note right of GameHandler
         <b>Handler Responsibilities</b>
-        - Business logic execution
-        - Domain state updates
-        - Error handling & notifications
-        - Precondition validation
-        - Calls UpdateView for UI
+        • Respond to user events
+        • Execute business logic via services
+        • Update domain state (selectedGame, etc.)
+        • Show error notifications
+        • Call UpdateView() to orchestrate UI
+
+        <b>Clean Separation:</b>
+        NO display/formatting logic
+        (moved to View Helpers)
+    end note
+
+    note right of GameViewHelper
+        <b>View Helper Responsibilities</b>
+        • Setup UI components
+        • Refresh/reload data from services
+        • Format data for display
+        • Handle focus events
+        • Manage key bindings for view
+        • Private display methods
+
+        <b>Clean Separation:</b>
+        NO event handling logic
+        (stays in Handlers)
+    end note
+
+    note right of ConfirmationModal
+        <b>Focus Management</b>
+        ReturnFocus captures where
+        the user was before opening
+        the modal, allowing proper
+        focus restoration on cancel.
+
+        Set via SetReturnFocus()
+        before showing modal.
     end note
 }
 
@@ -353,10 +528,12 @@ package "shared/validation" <<Rectangle>> SHARED_COLOR {
 
 ' ==================== DATABASE LAYER ====================
 package "database" <<Rectangle>> DB_COLOR {
-    class Database {
-        {static} + Setup(): (*sqlx.DB, error)
-        {static} + Connect(): (*sqlx.DB, error)
-        {static} + ConnectWithPath(dbPath: string): (*sqlx.DB, error)
+    class DBStore {
+        + *sqlx.DB
+        --
+        {static} + Setup(): (*DBStore, error)
+        {static} + Connect(): (*DBStore, error)
+        {static} + ConnectWithPath(dbPath: string): (*DBStore, error)
         {static} + RegisterMigration(fn: MigrationFunc)
         {static} + AddColumn(db: *sqlx.DB, tableName: string, column: string, columnType: string, notnull: bool, defaultValue: *string): error
         {static} - columnExists(db: *sqlx.DB, table: string, column: string): (bool, error)
@@ -375,6 +552,7 @@ package "External Libraries" <<Rectangle>> #F5F5F5 {
 
     class "tview" as tview {
         Terminal UI framework
+        (TreeView, TextView, Table, etc.)
     }
 }
 
@@ -382,14 +560,19 @@ package "External Libraries" <<Rectangle>> #F5F5F5 {
 
 ' Domain relationships
 Game "1" -- "0..*" Log : has
+Character "1" -- "0..*" Attribute : has
 Log --> LogType : uses
+
 LogRepository ..> Session : returns
 
 ' Repository dependencies
 GameRepository --> sqlxDB : uses
 LogRepository --> sqlxDB : uses
+CharacterRepository --> sqlxDB : uses
 GameRepository ..> Game : manages
 LogRepository ..> Log : manages
+CharacterRepository ..> Character : manages
+CharacterRepository ..> Attribute : manages
 
 ' Service dependencies
 GameService --> GameRepository : uses
@@ -397,27 +580,47 @@ GameService ..> Game : creates
 LogService --> LogRepository : uses
 LogService ..> Log : creates
 LogService ..> Session : returns
+CharacterService --> CharacterRepository : uses
+CharacterService ..> Character : creates
+CharacterService ..> Attribute : creates
 
-' UI dependencies
+' UI App dependencies
 App *-- GameForm : contains
 App *-- LogForm : contains
+App *-- CharacterForm : contains
+App *-- AttributeForm : contains
 App *-- ConfirmationModal : contains
 App *-- Notification : contains
 App *-- GameHandler : contains
 App *-- LogHandler : contains
-App --> sqlxDB : uses
+App *-- CharacterHandler : contains
+App *-- GameViewHelper : contains
+App *-- LogViewHelper : contains
+App *-- CharacterViewHelper : contains
+App --> DBStore : uses
 App --> GameService : uses
 App --> LogService : uses
+App --> CharacterService : uses
 App --|> tview : extends
 App ..> UserAction : orchestrates via
 
+' Handler dependencies
 GameHandler --> App : accesses
 LogHandler --> App : accesses
-GameHandler ..> GameService : uses
-LogHandler ..> LogService : uses
+CharacterHandler --> App : accesses
 GameHandler ..> UserAction : sends to UpdateView
 LogHandler ..> UserAction : sends to UpdateView
+CharacterHandler ..> UserAction : sends to UpdateView
 
+' View Helper dependencies
+GameViewHelper --> App : accesses
+LogViewHelper --> App : accesses
+CharacterViewHelper --> App : accesses
+GameViewHelper ..> GameService : uses via app
+LogViewHelper ..> LogService : uses via app
+CharacterViewHelper ..> CharacterService : uses via app
+
+' Form dependencies
 GameForm ..|> ValidatableForm : implements
 GameForm --|> tview : extends
 GameForm ..> Game : populates
@@ -425,7 +628,14 @@ LogForm ..|> ValidatableForm : implements
 LogForm --|> tview : extends
 LogForm ..> LogType : uses
 LogForm ..> Log : populates
+CharacterForm ..|> ValidatableForm : implements
+CharacterForm --|> tview : extends
+CharacterForm ..> Character : populates
+AttributeForm ..|> ValidatableForm : implements
+AttributeForm --|> tview : extends
+AttributeForm ..> Attribute : populates
 
+' Modal dependencies
 ConfirmationModal --|> tview : extends
 Notification --|> tview : extends
 Notification --> NotificationType : uses
@@ -433,21 +643,23 @@ Notification --> NotificationType : uses
 ' Validation relationships
 Game ..> Validator : validates with
 Log ..> Validator : validates with
+Character ..> Validator : validates with
+Attribute ..> Validator : validates with
 ValidatableForm ..> Validator : uses errors from
 
 ' Database relationships
-Database ..> sqlxDB : creates
-Database ..> MigrationFunc : executes
+DBStore ..> sqlxDB : wraps
+DBStore ..> MigrationFunc : executes
 
-' Main entry point (not shown in detail)
+' Main entry point
 note as MainNote
     <b>main.go</b>
-    1. database.Setup() → *sqlx.DB
+    1. database.Setup() → *DBStore
     2. ui.NewApp(db) → *App
     3. app.Run() → event loop
 end note
 
-MainNote .. Database
+MainNote .. DBStore
 MainNote .. App
 
 @enduml
