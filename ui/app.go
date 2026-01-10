@@ -416,7 +416,9 @@ func (a *App) UpdateView(event UserAction) {
 		a.characterViewHelper.RefreshTree()
 
 		// Focus back on character info view
-		a.SetFocus(a.charInfoView)
+		//a.SetFocus(a.charInfoView)
+		// Set the focus back to where the user was when they started
+		a.SetFocus(a.characterViewHelper.ReturnFocus)
 
 		// Display them
 		a.characterViewHelper.RefreshDisplay()
@@ -437,7 +439,9 @@ func (a *App) UpdateView(event UserAction) {
 
 		// Refresh and focus
 		a.characterViewHelper.RefreshTree()
-		a.SetFocus(a.charTree)
+		// Set the focus back to where the user was when they started
+		a.SetFocus(a.characterViewHelper.ReturnFocus)
+		//		a.SetFocus(a.charTree)
 
 		// Show success notification
 		a.notification.ShowSuccess("Character deleted successfully")
@@ -448,7 +452,9 @@ func (a *App) UpdateView(event UserAction) {
 
 		// Close modal and focus tree
 		a.pages.HidePage(CHARACTER_MODAL_ID)
-		a.SetFocus(a.charTree)
+		// Set the focus back to where the user was when they started
+		a.SetFocus(a.characterViewHelper.ReturnFocus)
+		//		a.SetFocus(a.charTree)
 
 	case CHARACTER_SHOW_NEW:
 		// Show modal for creating new character

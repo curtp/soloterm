@@ -1,7 +1,6 @@
 package ui
 
 import (
-	syslog "log"
 	"maps"
 	"slices"
 	"soloterm/domain/character"
@@ -14,6 +13,9 @@ import (
 // CharacterViewHelper provides character and attribute UI operations
 type CharacterViewHelper struct {
 	app *App
+	// ReturnFocus is used to remember which area of the main application
+	// had focus before initiating a process like editing or duplicating a character
+	ReturnFocus tview.Primitive
 }
 
 // NewCharacterViewHelper creates a new character view helper
@@ -29,6 +31,11 @@ func (cv *CharacterViewHelper) Setup() {
 	cv.setupCharacterModal()
 	cv.setupAttributeModal()
 	cv.setupFocusHandlers()
+}
+
+// SetReturnFocus sets where focus should return after the modal closes
+func (cv *CharacterViewHelper) SetReturnFocus(focus tview.Primitive) {
+	cv.ReturnFocus = focus
 }
 
 // setupCharacterTree configures the character tree view
@@ -58,7 +65,6 @@ func (cv *CharacterViewHelper) setupCharacterTree() {
 			return nil
 		case tcell.KeyCtrlD:
 			cv.loadSelectedCharacter()
-			syslog.Printf("Showing the duplicate modal")
 			cv.app.charHandler.HandleDuplicate()
 			return nil
 		case tcell.KeyCtrlN:
@@ -179,12 +185,15 @@ func (cv *CharacterViewHelper) setupAttributeModal() {
 func (cv *CharacterViewHelper) setupFocusHandlers() {
 	editDupHelp := "[yellow]Ctrl+E[white] Edit  [yellow]Ctrl+D[white] Duplicate"
 	cv.app.charTree.SetFocusFunc(func() {
+		cv.SetReturnFocus(cv.app.charTree)
 		cv.app.updateFooterHelp("[aqua::b]Characters[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Space/Enter[white] Select/Expand  [yellow]Ctrl+N[white] New  " + editDupHelp)
 	})
 	cv.app.charInfoView.SetFocusFunc(func() {
+		cv.SetReturnFocus(cv.app.charInfoView)
 		cv.app.updateFooterHelp("[aqua::b]Character Info[-::-] :: " + editDupHelp)
 	})
 	cv.app.attributeTable.SetFocusFunc(func() {
+		cv.SetReturnFocus(cv.app.attributeTable)
 		cv.app.updateFooterHelp("[aqua::b]Sheet[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Ctrl+E[white] Edit  [yellow]Ctrl+N[white] New")
 	})
 }

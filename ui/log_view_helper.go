@@ -26,7 +26,6 @@ func (lv *LogViewHelper) Setup() {
 	lv.setupTextView()
 	lv.setupModal()
 	lv.setupKeyBindings()
-	lv.setupMouseBindings()
 	lv.setupFocusHandlers()
 }
 
@@ -92,22 +91,6 @@ func (lv *LogViewHelper) setupKeyBindings() {
 			return nil
 		}
 		return event
-	})
-}
-
-// setupMouseBindings configures mouse events for the log view
-func (lv *LogViewHelper) setupMouseBindings() {
-	lv.app.logView.SetMouseCapture(func(action tview.MouseAction, event *tcell.EventMouse) (tview.MouseAction, *tcell.EventMouse) {
-		if action == tview.MouseLeftDoubleClick {
-			regions := lv.app.logView.GetHighlights()
-			if len(regions) > 0 {
-				if logID, err := strconv.ParseInt(regions[0], 10, 64); err == nil {
-					lv.app.logHandler.ShowEditModal(logID)
-					lv.app.Draw()
-				}
-			}
-		}
-		return action, event
 	})
 }
 
