@@ -42,13 +42,13 @@ func NewCharacterForm() *CharacterForm {
 
 	// Role field
 	cf.roleField = tview.NewInputField().
-		SetLabel("Role").
+		SetLabel("Role/Class").
 		SetFieldBackgroundColor(tcell.ColorDefault).
 		SetFieldWidth(0)
 
 	// Species field
 	cf.speciesField = tview.NewInputField().
-		SetLabel("Species").
+		SetLabel("Species/Race").
 		SetFieldBackgroundColor(tcell.ColorDefault).
 		SetFieldWidth(0)
 
@@ -133,16 +133,16 @@ func (cf *CharacterForm) updateFieldLabels() {
 
 	// Update role field label
 	if _, hasError := cf.fieldErrors["role"]; hasError {
-		cf.roleField.SetLabel("[red]Role[white]")
+		cf.roleField.SetLabel("[red]Role/Class[white]")
 	} else {
-		cf.roleField.SetLabel("Role")
+		cf.roleField.SetLabel("Role/Class")
 	}
 
 	// Update species field label
 	if _, hasError := cf.fieldErrors["species"]; hasError {
-		cf.speciesField.SetLabel("[red]Species[white]")
+		cf.speciesField.SetLabel("[red]Species/Race[white]")
 	} else {
-		cf.speciesField.SetLabel("Species")
+		cf.speciesField.SetLabel("Species/Race")
 	}
 
 }

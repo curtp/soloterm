@@ -34,14 +34,16 @@ type Character struct {
 }
 
 type Attribute struct {
-	ID              int64     `db:"id"`
-	CharacterID     int64     `db:"character_id"`
-	Group           int       `db:"attribute_group"`
-	PositionInGroup int       `db:"position_in_group"`
-	Name            string    `db:"name"`
-	Value           string    `db:"value"`
-	CreatedAt       time.Time `db:"created_at"`
-	UpdatedAt       time.Time `db:"updated_at"`
+	ID                  int64     `db:"id"`
+	CharacterID         int64     `db:"character_id"`
+	Group               int       `db:"attribute_group"`
+	PositionInGroup     int       `db:"position_in_group"`
+	Name                string    `db:"name"`
+	Value               string    `db:"value"`
+	CreatedAt           time.Time `db:"created_at"`
+	UpdatedAt           time.Time `db:"updated_at"`
+	GroupCount          int       `db:"group_count"`
+	GroupCountAfterZero int       `db:"group_count_after_zero"`
 }
 
 func NewCharacter(name string, system string, role string, species string) (*Character, error) {

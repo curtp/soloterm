@@ -230,6 +230,7 @@ func (h *CharacterHandler) HandleAttributeDelete() {
 // ShowEditAttributeModal displays the attribute form modal for editing an existing attribute
 func (h *CharacterHandler) ShowEditAttributeModal(attr *character.Attribute) {
 	h.app.attributeForm.PopulateForEdit(attr)
+	h.app.attributeModalContent.SetTitle(" Edit Attribute ")
 	h.app.UpdateView(ATTRIBUTE_SHOW_EDIT)
 }
 
@@ -249,6 +250,9 @@ func (h *CharacterHandler) ShowNewAttributeModal() {
 		h.app.attributeForm.groupField.SetText(fmt.Sprintf("%d", attr.Group))
 		h.app.attributeForm.positionField.SetText(fmt.Sprintf("%d", attr.PositionInGroup+1))
 	}
+
+	// Set modal title
+	h.app.attributeModalContent.SetTitle(" New Attribute ")
 
 	// Update the view
 	h.app.UpdateView(ATTRIBUTE_SHOW_NEW)

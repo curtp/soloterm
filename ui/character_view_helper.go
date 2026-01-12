@@ -166,6 +166,26 @@ func (cv *CharacterViewHelper) setupCharacterModal() {
 
 // setupAttributeModal configures the attribute form modal
 func (cv *CharacterViewHelper) setupAttributeModal() {
+	// Create help text view at modal level (no border, will be inside form container)
+	helpTextView := tview.NewTextView()
+	helpTextView.SetDynamicColors(true).
+		SetTextAlign(tview.AlignLeft).
+		SetWrap(true).
+		SetBorder(false)
+
+	// Create container with border that holds both form and help
+	cv.app.attributeModalContent = tview.NewFlex().
+		SetDirection(tview.FlexRow).
+		AddItem(cv.app.attributeForm, 0, 1, true).
+		AddItem(helpTextView, 3, 0, false) // Fixed 3-line height for help
+	cv.app.attributeModalContent.SetBorder(true).
+		SetTitleAlign(tview.AlignLeft)
+
+	// Subscribe to form's help text changes
+	cv.app.attributeForm.SetHelpTextChangeHandler(func(text string) {
+		helpTextView.SetText(text)
+	})
+
 	// Set up handlers
 	cv.app.attributeForm.SetupHandlers(
 		cv.app.charHandler.HandleAttributeSave,
@@ -180,7 +200,7 @@ func (cv *CharacterViewHelper) setupAttributeModal() {
 			tview.NewFlex().
 				SetDirection(tview.FlexRow).
 				AddItem(nil, 0, 1, false).
-				AddItem(cv.app.attributeForm, 13, 1, true). // Fixed height for simple form
+				AddItem(cv.app.attributeModalContent, 16, 1, true). // Increased height for help text
 				AddItem(nil, 0, 1, false),
 			60, 1, true, // Fixed width
 		).
@@ -316,8 +336,18 @@ func (cv *CharacterViewHelper) loadAndDisplayAttributes(characterID int64) {
 		// Put the attribute ID in the attrOrder array to track what attribute is where.
 		cv.attrOrder = append(cv.attrOrder, attr.ID)
 
+		name := attr.Name
+
+		if attr.PositionInGroup > 0 && attr.GroupCount > 1 && attr.GroupCountAfterZero > 0 {
+			name = tview.Escape(" " + name)
+		} else {
+			if attr.PositionInGroup == 0 && attr.GroupCount > 1 && attr.GroupCountAfterZero > 0 {
+				name = "[::u]" + tview.Escape(name) + "[::-]"
+			}
+		}
+
 		row := i + 1
-		cv.app.attributeTable.SetCell(row, 0, tview.NewTableCell(tview.Escape(attr.Name)).
+		cv.app.attributeTable.SetCell(row, 0, tview.NewTableCell(name).
 			SetTextColor(tcell.ColorWhite).
 			SetAlign(tview.AlignLeft).
 			SetExpansion(0))

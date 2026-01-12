@@ -46,6 +46,26 @@ func (lv *LogViewHelper) setupTextView() {
 
 // setupModal configures the log form modal
 func (lv *LogViewHelper) setupModal() {
+	// Create help text view at modal level (no border, will be inside form container)
+	helpTextView := tview.NewTextView()
+	helpTextView.SetDynamicColors(true).
+		SetTextAlign(tview.AlignLeft).
+		SetWrap(true).
+		SetBorder(false)
+
+	// Create container with border that holds both form and help
+	lv.app.logModalContent = tview.NewFlex().
+		SetDirection(tview.FlexRow).
+		AddItem(lv.app.logForm, 0, 1, true).
+		AddItem(helpTextView, 3, 0, false) // Fixed 3-line height for help
+	lv.app.logModalContent.SetBorder(true).
+		SetTitleAlign(tview.AlignLeft)
+
+	// Subscribe to form's help text changes
+	lv.app.logForm.SetHelpTextChangeHandler(func(text string) {
+		helpTextView.SetText(text)
+	})
+
 	// Set up handlers
 	lv.app.logForm.SetupHandlers(
 		lv.app.logHandler.HandleSave,
@@ -60,7 +80,7 @@ func (lv *LogViewHelper) setupModal() {
 			tview.NewFlex().
 				SetDirection(tview.FlexRow).
 				AddItem(nil, 0, 1, false).
-				AddItem(lv.app.logForm, 20, 2, true). // Dynamic height: expands to fit content
+				AddItem(lv.app.logModalContent, 23, 2, true). // Increased height for help text
 				AddItem(nil, 0, 1, false),
 			100, 1, true, // Dynamic width: expands to fit content (up to screen width)
 		).

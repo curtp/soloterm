@@ -92,6 +92,9 @@ func (lh *LogHandler) ShowModal() {
 		return
 	}
 
+	// Set modal title
+	lh.app.logModalContent.SetTitle(" New Log ")
+
 	lh.app.UpdateView(LOG_SHOW_NEW)
 }
 
@@ -106,6 +109,9 @@ func (lh *LogHandler) ShowEditModal(logID int64) {
 
 	// Set the selected log on the app
 	lh.app.selectedLog = logEntry
+
+	// Set modal title
+	lh.app.logModalContent.SetTitle(" Edit Log ")
 
 	// Show the modal
 	lh.app.UpdateView(LOG_SHOW_EDIT)

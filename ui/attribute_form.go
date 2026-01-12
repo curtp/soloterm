@@ -12,16 +12,17 @@ import (
 // AttributeForm represents a form for creating/editing attributes
 type AttributeForm struct {
 	*tview.Form
-	attributeID   *int64
-	characterID   int64
-	nameField     *tview.InputField
-	valueField    *tview.InputField
-	groupField    *tview.InputField
-	positionField *tview.InputField
-	fieldErrors   map[string]string
-	onSave        func()
-	onCancel      func()
-	onDelete      func()
+	attributeID      *int64
+	characterID      int64
+	nameField        *tview.InputField
+	valueField       *tview.InputField
+	groupField       *tview.InputField
+	positionField    *tview.InputField
+	fieldErrors      map[string]string
+	onSave           func()
+	onCancel         func()
+	onDelete         func()
+	onHelpTextChange func(string)
 }
 
 // NewAttributeForm creates a new attribute form
@@ -54,6 +55,7 @@ func NewAttributeForm() *AttributeForm {
 		SetFieldWidth(0)
 
 	af.setupForm()
+	af.setupFieldFocusHandlers()
 	return af
 }
 
@@ -66,12 +68,42 @@ func (af *AttributeForm) setupForm() {
 	af.AddFormItem(af.positionField)
 
 	// Buttons will be set up when handlers are attached
-	af.SetBorder(true).
-		SetTitle(" New Attribute ").
-		SetTitleAlign(tview.AlignLeft)
+	// Note: Border and title managed by modal container
+	af.SetBorder(false)
 
 	af.SetButtonsAlign(tview.AlignCenter)
 	af.SetItemPadding(1)
+}
+
+// SetHelpTextChangeHandler sets a callback for when help text changes
+func (af *AttributeForm) SetHelpTextChangeHandler(handler func(string)) {
+	af.onHelpTextChange = handler
+}
+
+// notifyHelpTextChange notifies the handler when help text changes
+func (af *AttributeForm) notifyHelpTextChange(text string) {
+	if af.onHelpTextChange != nil {
+		af.onHelpTextChange(text)
+	}
+}
+
+// setupFieldFocusHandlers configures focus handlers for each field to show contextual help
+func (af *AttributeForm) setupFieldFocusHandlers() {
+	af.nameField.SetFocusFunc(func() {
+		af.notifyHelpTextChange("[yellow]Name:[white] The display name for this attribute (e.g., Strength, HP, Armor Class)")
+	})
+
+	af.valueField.SetFocusFunc(func() {
+		af.notifyHelpTextChange("[yellow]Value:[white] The current value of this attribute (e.g., 18, 50/100, +5)")
+	})
+
+	af.groupField.SetFocusFunc(func() {
+		af.notifyHelpTextChange("[yellow]Group:[white] Organizes related attributes together. Attributes with the same group number will be displayed in the same section. Use 0 for the first group, 1 for the next, etc.")
+	})
+
+	af.positionField.SetFocusFunc(func() {
+		af.notifyHelpTextChange("[yellow]Position In Group:[white] Controls the order within a group. Position 0 is shown first and will be styled if there are other attributes in the same group.")
+	})
 }
 
 // Reset clears all form fields and sets the character ID for new attribute
@@ -89,8 +121,11 @@ func (af *AttributeForm) Reset(characterID int64) {
 	}
 
 	af.ClearFieldErrors()
-	af.SetTitle(" New Attribute ")
+
 	af.SetFocus(0)
+
+	// Trigger initial help text
+	af.notifyHelpTextChange("[yellow]Name:[white] The display name for this attribute (e.g., Strength, HP, Armor Class)")
 }
 
 // PopulateForEdit fills the form with existing attribute data for editing
@@ -112,8 +147,11 @@ func (af *AttributeForm) PopulateForEdit(attr *character.Attribute) {
 	}
 
 	af.ClearFieldErrors()
-	af.SetTitle(" Edit Attribute ")
+
 	af.SetFocus(0)
+
+	// Trigger initial help text
+	af.notifyHelpTextChange("[yellow]Name:[white] The display name for this attribute (e.g., Strength, HP, Armor Class)")
 }
 
 // SetFieldErrors sets multiple field errors at once and updates labels

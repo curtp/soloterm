@@ -134,7 +134,16 @@ func (r *Repository) GetAttributeByID(id int64) (*Attribute, error) {
 
 func (r *Repository) GetAttributesForCharacter(character_id int64) ([]*Attribute, error) {
 	var attributes []*Attribute
-	err := r.db.Connection.Select(&attributes, "SELECT * FROM attributes where character_id = ? order by attribute_group, position_in_group, created_at", character_id)
+	query := `
+		SELECT *,
+			COUNT(*) OVER (PARTITION BY character_id, attribute_group) as group_count,
+			SUM(CASE WHEN position_in_group > 0 THEN 1 ELSE 0 END)
+				OVER (PARTITION BY character_id, attribute_group) as group_count_after_zero
+		FROM attributes
+		WHERE character_id = ?
+		ORDER BY attribute_group, position_in_group, created_at
+	`
+	err := r.db.Connection.Select(&attributes, query, character_id)
 	if err != nil {
 		return nil, err
 	}

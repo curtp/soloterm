@@ -20,6 +20,7 @@ type LogForm struct {
 	onSave           func()
 	onCancel         func()
 	onDelete         func()
+	onHelpTextChange func(string)
 }
 
 // NewLogForm creates a new log form
@@ -57,6 +58,7 @@ func NewLogForm() *LogForm {
 		SetFieldWidth(0) // 0 means full width
 
 	lf.setupForm()
+	lf.setupFieldFocusHandlers()
 	return lf
 }
 
@@ -69,14 +71,44 @@ func (lf *LogForm) setupForm() {
 	lf.AddFormItem(lf.narrativeField)
 
 	// Buttons will be set up when handlers are attached
-	lf.SetBorder(true).
-		SetTitle(" New Log ").
-		SetTitleAlign(tview.AlignLeft)
+	// Note: Border and title managed by modal container
+	lf.SetBorder(false)
 
 	lf.SetButtonsAlign(tview.AlignCenter)
 
 	// Add spacing between form items (1 line vertical space)
 	lf.SetItemPadding(1)
+}
+
+// SetHelpTextChangeHandler sets a callback for when help text changes
+func (lf *LogForm) SetHelpTextChangeHandler(handler func(string)) {
+	lf.onHelpTextChange = handler
+}
+
+// notifyHelpTextChange notifies the handler when help text changes
+func (lf *LogForm) notifyHelpTextChange(text string) {
+	if lf.onHelpTextChange != nil {
+		lf.onHelpTextChange(text)
+	}
+}
+
+// setupFieldFocusHandlers configures focus handlers for each field to show contextual help
+func (lf *LogForm) setupFieldFocusHandlers() {
+	lf.logTypeField.SetFocusFunc(func() {
+		lf.notifyHelpTextChange("[yellow]Log Type:[white] Choose the type of log entry - Character Action (requires narrative), Oracle Question, Mechanics, or Story (narrative only)")
+	})
+
+	lf.descriptionField.SetFocusFunc(func() {
+		lf.notifyHelpTextChange("[yellow]Description:[white] A brief summary of what happened or what question was asked (required for non-Story entries)")
+	})
+
+	lf.resultField.SetFocusFunc(func() {
+		lf.notifyHelpTextChange("[yellow]Result:[white] The outcome or answer - dice rolls, oracle results, or resolution (required for non-Story entries)")
+	})
+
+	lf.narrativeField.SetFocusFunc(func() {
+		lf.notifyHelpTextChange("[yellow]Narrative:[white] The story description of events as they unfolded (required for Character Action and Story entries)")
+	})
 }
 
 // Reset clears all form fields and sets the game ID for new log entry
@@ -94,8 +126,10 @@ func (lf *LogForm) Reset(gameID int64) {
 	}
 
 	lf.ClearFieldErrors()
-	lf.SetTitle(" New Log ")
 	lf.SetFocus(0)
+
+	// Trigger initial help text
+	lf.notifyHelpTextChange("[yellow]Log Type:[white] Choose the type of log entry - Character Action (requires narrative), Oracle Question, Mechanics, or Story (narrative only)")
 }
 
 // PopulateForEdit fills the form with existing log data for editing
@@ -126,8 +160,10 @@ func (lf *LogForm) PopulateForEdit(logEntry *log.Log) {
 	}
 
 	lf.ClearFieldErrors()
-	lf.SetTitle(" Edit Log ")
 	lf.SetFocus(0)
+
+	// Trigger initial help text
+	lf.notifyHelpTextChange("[yellow]Log Type:[white] Choose the type of log entry - Character Action (requires narrative), Oracle Question, Mechanics, or Story (narrative only)")
 }
 
 // SetFieldErrors sets multiple field errors at once and updates labels

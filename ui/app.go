@@ -85,23 +85,25 @@ type App struct {
 	charPane         *tview.Flex // Character section
 
 	// UI Components
-	gameTree       *tview.TreeView
-	charTree       *tview.TreeView
-	charInfoView   *tview.TextView
-	attributeTable *tview.Table
-	logView        *tview.TextView
-	aboutModal     *tview.Modal
-	confirmModal   *ConfirmationModal
-	footer         *tview.TextView
-	gameModal      *tview.Flex
-	gameForm       *GameForm
-	logModal       *tview.Flex
-	logForm        *LogForm
-	characterModal *tview.Flex
-	characterForm  *CharacterForm
-	attributeModal *tview.Flex
-	attributeForm  *AttributeForm
-	notification   *Notification
+	gameTree              *tview.TreeView
+	charTree              *tview.TreeView
+	charInfoView          *tview.TextView
+	attributeTable        *tview.Table
+	logView               *tview.TextView
+	aboutModal            *tview.Modal
+	confirmModal          *ConfirmationModal
+	footer                *tview.TextView
+	gameModal             *tview.Flex
+	gameForm              *GameForm
+	logModal              *tview.Flex
+	logModalContent       *tview.Flex // Container with border that holds form + help
+	logForm               *LogForm
+	characterModal        *tview.Flex
+	characterForm         *CharacterForm
+	attributeModal        *tview.Flex
+	attributeModalContent *tview.Flex // Container with border that holds form + help
+	attributeForm         *AttributeForm
+	notification          *Notification
 }
 
 func NewApp(db *database.DBStore) *App {
@@ -177,7 +179,7 @@ func (a *App) setupUI() {
 		SetText("SoloTerm - Solo RPG Session Logger\n\n" +
 			"By Squidhead Games\n" +
 			"https://squidhead-games.itch.io\n\n" +
-			"Version 0.2").
+			"Version 0.13").
 		AddButtons([]string{"Close"}).
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 			a.pages.HidePage(ABOUT_MODAL_ID)
