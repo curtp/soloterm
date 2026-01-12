@@ -28,6 +28,7 @@ func main() {
 	defer db.Connection.Close()
 
 	log.Printf("App starting with database: %s", *db.Path)
+	log.Printf("Set the DB_PATH environment variable to change the location or open another database.")
 
 	// Create and run the TUI application
 	app := ui.NewApp(db)
