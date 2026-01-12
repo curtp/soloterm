@@ -40,7 +40,7 @@ func (lv *LogViewHelper) setupTextView() {
 		})
 
 	lv.app.logView.SetBorder(true).
-		SetTitle(" Select Game To View ").
+		SetTitle(" [::b]Select Game To View ").
 		SetTitleAlign(tview.AlignLeft)
 }
 
@@ -212,7 +212,7 @@ func (lv *LogViewHelper) loadLogsForGame(gameID int64) {
 	}
 
 	if len(logs) == 0 {
-		lv.app.logView.SetText("[gray]No logs yet for this game. Press Ctrl+L to create one.")
+		lv.app.logView.SetText("[gray]No Logs Yet. Press Ctrl+N to Add")
 		return
 	}
 
@@ -296,5 +296,5 @@ func (lv *LogViewHelper) displayLogs(logs []*log.Log) {
 	// Write the output to the log
 	lv.app.logView.SetText(output)
 	// Update the title of the text area
-	lv.app.logView.SetTitle(" Session Logs ")
+	lv.app.logView.SetTitle(" [::b]Session Logs ")
 }

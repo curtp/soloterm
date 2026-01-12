@@ -31,7 +31,7 @@ func (gv *GameViewHelper) Setup() {
 func (gv *GameViewHelper) setupTreeView() {
 	gv.app.gameTree = tview.NewTreeView()
 	gv.app.gameTree.SetBorder(true).
-		SetTitle(" Games & Sessions ").
+		SetTitle(" [::b]Games & Sessions ").
 		SetTitleAlign(tview.AlignLeft)
 
 	// Placeholder root node
@@ -143,7 +143,7 @@ func (gv *GameViewHelper) Refresh() {
 
 	if len(games) == 0 {
 		// No games yet
-		placeholder := tview.NewTreeNode("(No games yet - press Ctrl+G to create one)").
+		placeholder := tview.NewTreeNode("(No Games Yet - Press Ctrl+N to Add)").
 			SetColor(tcell.ColorGray)
 		root.AddChild(placeholder)
 		return

@@ -1,7 +1,7 @@
 package ui
 
 import (
-	syslog "log"
+	"fmt"
 	"soloterm/domain/character"
 )
 
@@ -158,9 +158,9 @@ func (h *CharacterHandler) HandleAttributeSave() {
 	attr := h.app.attributeForm.BuildDomain()
 
 	// Validate and save
-	_, err := h.app.charService.SaveAttribute(attr)
+	savedAttr, err := h.app.charService.SaveAttribute(attr)
 	if err != nil {
-		syslog.Printf("Problem saving attribute: %v", err)
+
 		// Check if it's a validation error
 		if handleValidationError(err, h.app.attributeForm) {
 			return
@@ -173,6 +173,9 @@ func (h *CharacterHandler) HandleAttributeSave() {
 	if h.app.selectedCharacter != nil {
 		h.app.characterViewHelper.RefreshDisplay()
 	}
+
+	// Select the saved attribute
+	h.app.characterViewHelper.selectAttribute(savedAttr.ID)
 
 	// Orchestrate UI updates
 	h.app.UpdateView(ATTRIBUTE_SAVED)
@@ -232,8 +235,37 @@ func (h *CharacterHandler) ShowEditAttributeModal(attr *character.Attribute) {
 
 // ShowNewAttributeModal displays the attribute form modal for creating a new attribute
 func (h *CharacterHandler) ShowNewAttributeModal() {
-	if h.app.selectedCharacter != nil {
-		h.app.attributeForm.Reset(h.app.selectedCharacter.ID)
-		h.app.UpdateView(ATTRIBUTE_SHOW_NEW)
+	if h.app.selectedCharacter == nil {
+		return
 	}
+
+	// Set the character ID
+	h.app.attributeForm.Reset(h.app.selectedCharacter.ID)
+
+	// Use the group from the currently selected attribute (if there is one) for the new
+	// attribute.
+	attr := h.GetSelectedAttribute()
+	if attr != nil {
+		h.app.attributeForm.groupField.SetText(fmt.Sprintf("%d", attr.Group))
+		h.app.attributeForm.positionField.SetText(fmt.Sprintf("%d", attr.PositionInGroup+1))
+	}
+
+	// Update the view
+	h.app.UpdateView(ATTRIBUTE_SHOW_NEW)
+}
+
+func (h *CharacterHandler) GetSelectedAttribute() *character.Attribute {
+	if h.app.selectedCharacter == nil {
+		return nil
+	}
+
+	// Load the attribute which is currently selected
+	row, _ := h.app.attributeTable.GetSelection()
+	attrs, _ := h.app.charService.GetAttributesForCharacter(h.app.selectedCharacter.ID)
+	attrIndex := row - 1
+	if attrIndex >= 0 && attrIndex < len(attrs) {
+		return attrs[attrIndex]
+	}
+
+	return nil
 }

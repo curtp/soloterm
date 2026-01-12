@@ -78,7 +78,7 @@ func (r *Repository) DeleteAllForGame(gameID int64) (int64, error) {
 	}
 
 	if rows == 0 {
-		return 0, fmt.Errorf("id '%d' not found", gameID)
+		return 0, fmt.Errorf("No logs for game '%d' found", gameID)
 	}
 
 	return rows, nil

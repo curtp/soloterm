@@ -237,6 +237,82 @@ func TestRepository_Delete(t *testing.T) {
 		}
 	})
 
+	t.Run("0 id throws an error", func(t *testing.T) {
+		// This should return an error
+		count, err := repo.Delete(0)
+		if err == nil {
+			t.Error("Expected error for non-existent key, got nil")
+		}
+
+		if count != 0 {
+			t.Errorf("Expected 0 rows deleted, got %d", count)
+		}
+	})
+}
+
+func TestRepository_DeleteAllForGame(t *testing.T) {
+	// Setup
+	db := testhelper.SetupTestDB(t)
+	defer testhelper.TeardownTestDB(t, db)
+	repo := NewRepository(db)
+
+	log, _ := NewLog(1)
+	log.LogType = CHARACTER_ACTION
+	log.Description = "some description"
+	log.Result = "some result"
+	log.Narrative = "some narrative"
+
+	err := repo.Save(log)
+	if err != nil {
+		t.Fatalf("Save() update failed: %v", err)
+	}
+
+	log2, _ := NewLog(1)
+	log2.LogType = CHARACTER_ACTION
+	log2.Description = "some description"
+	log2.Result = "some result"
+	log2.Narrative = "some narrative"
+
+	err = repo.Save(log2)
+	if err != nil {
+		t.Fatalf("Save() update failed: %v", err)
+	}
+
+	log3, _ := NewLog(1)
+	log3.LogType = CHARACTER_ACTION
+	log3.Description = "some description"
+	log3.Result = "some result"
+	log3.Narrative = "some narrative"
+
+	err = repo.Save(log3)
+	if err != nil {
+		t.Fatalf("Save() update failed: %v", err)
+	}
+
+	t.Run("invalid game id does nothing", func(t *testing.T) {
+		// Now delete it
+		count, err := repo.DeleteAllForGame(9999)
+		if err == nil {
+			t.Fatalf("Error expected, did not recieve one")
+		}
+
+		if count != 0 {
+			t.Errorf("Expected 0 row deleted, got %d", count)
+		}
+	})
+
+	t.Run("0 throws an error", func(t *testing.T) {
+		// This should return an error
+		count, err := repo.DeleteAllForGame(0)
+		if err == nil {
+			t.Error("Expected error for non-existent key, got nil")
+		}
+
+		if count != 0 {
+			t.Errorf("Expected 0 rows deleted, got %d", count)
+		}
+	})
+
 	t.Run("delete all for game", func(t *testing.T) {
 		// Delete them
 		count, err := repo.DeleteAllForGame(1)
@@ -244,8 +320,8 @@ func TestRepository_Delete(t *testing.T) {
 			t.Fatalf("Delete() failed: %v", err)
 		}
 
-		if count != 2 {
-			t.Errorf("Expected 2 row deleted, got %d", count)
+		if count != 3 {
+			t.Errorf("Expected 3 row deleted, got %d", count)
 		}
 
 		// Verify it was deleted

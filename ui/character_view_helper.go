@@ -16,6 +16,9 @@ type CharacterViewHelper struct {
 	// ReturnFocus is used to remember which area of the main application
 	// had focus before initiating a process like editing or duplicating a character
 	ReturnFocus tview.Primitive
+
+	// An array of the attributes IDs in order
+	attrOrder []int64
 }
 
 // NewCharacterViewHelper creates a new character view helper
@@ -42,7 +45,7 @@ func (cv *CharacterViewHelper) SetReturnFocus(focus tview.Primitive) {
 func (cv *CharacterViewHelper) setupCharacterTree() {
 	cv.app.charTree = tview.NewTreeView()
 	cv.app.charTree.SetBorder(true).
-		SetTitle(" Characters ").
+		SetTitle(" [::b]Characters ").
 		SetTitleAlign(tview.AlignLeft)
 
 	// Set up selection handler for the tree
@@ -82,7 +85,7 @@ func (cv *CharacterViewHelper) setupCharacterInfo() {
 		SetScrollable(false).
 		SetText("")
 	cv.app.charInfoView.SetBorder(true).
-		SetTitle(" Character Info ").
+		SetTitle(" [::b]Character Info ").
 		SetTitleAlign(tview.AlignLeft)
 
 	// Set up input capture for character info - Ctrl+E to edit, Ctrl+D to duplicate character
@@ -105,8 +108,11 @@ func (cv *CharacterViewHelper) setupAttributeTable() {
 		SetBorders(false).
 		SetSelectable(true, false). // Make rows selectable
 		SetFixed(1, 0)              // Fix the header and divider rows
+
+	cv.app.attributeTable.SetSelectedStyle(tcell.Style{}.Background(tcell.ColorAqua).Foreground(tcell.ColorBlack))
+
 	cv.app.attributeTable.SetBorder(true).
-		SetTitle(" Sheet ").
+		SetTitle(" [::b]Sheet ").
 		SetTitleAlign(tview.AlignLeft)
 
 	// Set up input capture for attribute table
@@ -116,8 +122,6 @@ func (cv *CharacterViewHelper) setupAttributeTable() {
 			return nil
 		}
 
-		row, _ := cv.app.attributeTable.GetSelection()
-
 		// Handle Ctrl+N or Insert key to add new attribute
 		if event.Key() == tcell.KeyCtrlN {
 			cv.app.charHandler.ShowNewAttributeModal()
@@ -126,10 +130,9 @@ func (cv *CharacterViewHelper) setupAttributeTable() {
 
 		// Handle Ctrl+E to edit selected attribute
 		if event.Key() == tcell.KeyCtrlE {
-			attrs, _ := cv.app.charService.GetAttributesForCharacter(cv.app.selectedCharacter.ID)
-			attrIndex := row - 1
-			if attrIndex >= 0 && attrIndex < len(attrs) {
-				cv.app.charHandler.ShowEditAttributeModal(attrs[attrIndex])
+			attr := cv.app.charHandler.GetSelectedAttribute()
+			if attr != nil {
+				cv.app.charHandler.ShowEditAttributeModal(attr)
 			}
 			return nil
 		}
@@ -228,7 +231,7 @@ func (cv *CharacterViewHelper) RefreshTree() {
 
 	if len(charsBySystem) == 0 {
 		// No characters yet
-		placeholder := tview.NewTreeNode("(No characters yet - press Ctrl+H to create one)").
+		placeholder := tview.NewTreeNode("(No Characters Yet - Press Ctrl+N to Add)").
 			SetColor(tcell.ColorGray)
 		root.AddChild(placeholder)
 		return
@@ -295,6 +298,8 @@ func (cv *CharacterViewHelper) loadAndDisplayAttributes(characterID int64) {
 
 	// Clear and repopulate attribute table
 	cv.app.attributeTable.Clear()
+	// Clear the array of attribute IDs
+	cv.attrOrder = nil
 
 	// Add header row
 	cv.app.attributeTable.SetCell(0, 0, tview.NewTableCell("").
@@ -308,6 +313,9 @@ func (cv *CharacterViewHelper) loadAndDisplayAttributes(characterID int64) {
 
 	// Add attribute rows (starting from row 1)
 	for i, attr := range attrs {
+		// Put the attribute ID in the attrOrder array to track what attribute is where.
+		cv.attrOrder = append(cv.attrOrder, attr.ID)
+
 		row := i + 1
 		cv.app.attributeTable.SetCell(row, 0, tview.NewTableCell(tview.Escape(attr.Name)).
 			SetTextColor(tcell.ColorWhite).
@@ -321,10 +329,20 @@ func (cv *CharacterViewHelper) loadAndDisplayAttributes(characterID int64) {
 
 	// Show message if no attributes
 	if len(attrs) == 0 {
-		cv.app.attributeTable.SetCell(2, 0, tview.NewTableCell("(No attributes - press 'a' to add)").
+		cv.app.attributeTable.SetCell(2, 0, tview.NewTableCell("(No Attributes - Ctrl+N to Add)").
 			SetTextColor(tcell.ColorGray).
 			SetAlign(tview.AlignCenter).
 			SetExpansion(2))
+	}
+}
+
+func (cv *CharacterViewHelper) selectAttribute(attributeID int64) {
+	// Get the index of the attribute ID to select
+	index := slices.Index(cv.attrOrder, attributeID)
+
+	if index != -1 {
+		// Add 1 to the index to account for the header row
+		cv.app.attributeTable.Select(index+1, 0)
 	}
 }
 
