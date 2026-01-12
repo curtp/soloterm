@@ -336,13 +336,13 @@ func (cv *CharacterViewHelper) loadAndDisplayAttributes(characterID int64) {
 		// Put the attribute ID in the attrOrder array to track what attribute is where.
 		cv.attrOrder = append(cv.attrOrder, attr.ID)
 
-		name := attr.Name
+		name := tview.Escape(attr.Name)
 
 		if attr.PositionInGroup > 0 && attr.GroupCount > 1 && attr.GroupCountAfterZero > 0 {
-			name = tview.Escape(" " + name)
+			name = " " + name
 		} else {
 			if attr.PositionInGroup == 0 && attr.GroupCount > 1 && attr.GroupCountAfterZero > 0 {
-				name = "[::u]" + tview.Escape(name) + "[::-]"
+				name = "[::u]" + name + "[::-]"
 			}
 		}
 
