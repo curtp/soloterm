@@ -1,8 +1,6 @@
 package ui
 
 import (
-	syslog "log"
-
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -28,7 +26,6 @@ func NewDataForm() *DataForm {
 // SetFieldErrors sets multiple field errors at once
 // This implements the ValidatableForm interface
 func (df *DataForm) SetFieldErrors(errors map[string]string) {
-	syslog.Print("in DataForm.SetFieldErrors")
 	df.fieldErrors = errors
 }
 
