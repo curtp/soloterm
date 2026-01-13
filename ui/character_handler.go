@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"soloterm/domain/character"
+	sharedui "soloterm/shared/ui"
 )
 
 // CharacterHandler coordinates character-related UI operations
@@ -49,7 +50,7 @@ func (h *CharacterHandler) HandleSave() {
 	savedChar, err := h.app.charService.Save(char)
 	if err != nil {
 		// Check if it's a validation error
-		if handleValidationError(err, h.app.characterForm) {
+		if sharedui.HandleValidationError(err, h.app.characterForm) {
 			return
 		}
 		h.app.notification.ShowError("Failed to save character: " + err.Error())
@@ -162,7 +163,7 @@ func (h *CharacterHandler) HandleAttributeSave() {
 	if err != nil {
 
 		// Check if it's a validation error
-		if handleValidationError(err, h.app.attributeForm) {
+		if sharedui.HandleValidationError(err, h.app.attributeForm) {
 			return
 		}
 		h.app.notification.ShowError("Failed to save attribute: " + err.Error())

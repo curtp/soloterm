@@ -2,13 +2,14 @@ package ui
 
 import (
 	"soloterm/domain/log"
+	sharedui "soloterm/shared/ui"
 
 	"github.com/rivo/tview"
 )
 
 // LogForm represents a form for creating/editing log entries
 type LogForm struct {
-	*tview.Form
+	*sharedui.DataForm
 	id               *int64
 	gameID           int64
 	logTypeField     *tview.DropDown
@@ -16,18 +17,12 @@ type LogForm struct {
 	narrativeField   *tview.TextArea
 	descriptionField *tview.InputField
 	errorMessage     *tview.TextView
-	fieldErrors      map[string]string // Track which fields have errors
-	onSave           func()
-	onCancel         func()
-	onDelete         func()
-	onHelpTextChange func(string)
 }
 
 // NewLogForm creates a new log form
 func NewLogForm() *LogForm {
 	lf := &LogForm{
-		Form:        tview.NewForm(),
-		fieldErrors: make(map[string]string),
+		DataForm: sharedui.NewDataForm(),
 	}
 
 	lf.errorMessage = tview.NewTextView().
@@ -80,34 +75,22 @@ func (lf *LogForm) setupForm() {
 	lf.SetItemPadding(1)
 }
 
-// SetHelpTextChangeHandler sets a callback for when help text changes
-func (lf *LogForm) SetHelpTextChangeHandler(handler func(string)) {
-	lf.onHelpTextChange = handler
-}
-
-// notifyHelpTextChange notifies the handler when help text changes
-func (lf *LogForm) notifyHelpTextChange(text string) {
-	if lf.onHelpTextChange != nil {
-		lf.onHelpTextChange(text)
-	}
-}
-
 // setupFieldFocusHandlers configures focus handlers for each field to show contextual help
 func (lf *LogForm) setupFieldFocusHandlers() {
 	lf.logTypeField.SetFocusFunc(func() {
-		lf.notifyHelpTextChange("[yellow]Log Type:[white] Choose the type of log entry - Character Action (requires narrative), Oracle Question, Mechanics, or Story (narrative only)")
+		lf.NotifyHelpTextChange("[yellow]Log Type:[white] Choose the type of log entry - Character Action (requires narrative), Oracle Question, Mechanics, or Story (narrative only)")
 	})
 
 	lf.descriptionField.SetFocusFunc(func() {
-		lf.notifyHelpTextChange("[yellow]Description:[white] A brief summary of what happened or what question was asked (required for non-Story entries)")
+		lf.NotifyHelpTextChange("[yellow]Description:[white] A brief summary of what happened or what question was asked (required for non-Story entries)")
 	})
 
 	lf.resultField.SetFocusFunc(func() {
-		lf.notifyHelpTextChange("[yellow]Result:[white] The outcome or answer - dice rolls, oracle results, or resolution (required for non-Story entries)")
+		lf.NotifyHelpTextChange("[yellow]Result:[white] The outcome or answer - dice rolls, oracle results, or resolution (required for non-Story entries)")
 	})
 
 	lf.narrativeField.SetFocusFunc(func() {
-		lf.notifyHelpTextChange("[yellow]Narrative:[white] The story description of events as they unfolded (required for Character Action and Story entries)")
+		lf.NotifyHelpTextChange("[yellow]Narrative:[white] The story description of events as they unfolded (required for Character Action and Story entries)")
 	})
 }
 
@@ -129,7 +112,7 @@ func (lf *LogForm) Reset(gameID int64) {
 	lf.SetFocus(0)
 
 	// Trigger initial help text
-	lf.notifyHelpTextChange("[yellow]Log Type:[white] Choose the type of log entry - Character Action (requires narrative), Oracle Question, Mechanics, or Story (narrative only)")
+	lf.NotifyHelpTextChange("[yellow]Log Type:[white] Choose the type of log entry - Character Action (requires narrative), Oracle Question, Mechanics, or Story (narrative only)")
 }
 
 // PopulateForEdit fills the form with existing log data for editing
@@ -150,25 +133,18 @@ func (lf *LogForm) PopulateForEdit(logEntry *log.Log) {
 	lf.resultField.SetText(logEntry.Result)
 	lf.narrativeField.SetText(logEntry.Narrative, false)
 
-	// Add delete button for edit mode (insert at the beginning)
-	if lf.GetButtonCount() == 2 { // Only Save and Cancel exist
-		lf.AddButton("Delete", func() {
-			if lf.onDelete != nil {
-				lf.onDelete()
-			}
-		})
-	}
+	lf.AddDeleteButton()
 
 	lf.ClearFieldErrors()
 	lf.SetFocus(0)
 
 	// Trigger initial help text
-	lf.notifyHelpTextChange("[yellow]Log Type:[white] Choose the type of log entry - Character Action (requires narrative), Oracle Question, Mechanics, or Story (narrative only)")
+	lf.NotifyHelpTextChange("[yellow]Log Type:[white] Choose the type of log entry - Character Action (requires narrative), Oracle Question, Mechanics, or Story (narrative only)")
 }
 
 // SetFieldErrors sets multiple field errors at once and updates labels
 func (lf *LogForm) SetFieldErrors(errors map[string]string) {
-	lf.fieldErrors = errors
+	lf.DataForm.SetFieldErrors(errors)
 	lf.updateFieldLabels()
 }
 
@@ -176,28 +152,28 @@ func (lf *LogForm) SetFieldErrors(errors map[string]string) {
 func (lf *LogForm) updateFieldLabels() {
 
 	// Update log type field label
-	if _, hasError := lf.fieldErrors["log_type"]; hasError {
+	if lf.HasFieldError("log_type") {
 		lf.logTypeField.SetLabel("[red]Log Type[white]")
 	} else {
 		lf.logTypeField.SetLabel("Log Type")
 	}
 
 	// Update description field label
-	if _, hasError := lf.fieldErrors["description"]; hasError {
+	if lf.HasFieldError("description") {
 		lf.descriptionField.SetLabel("[red]Description[white]")
 	} else {
 		lf.descriptionField.SetLabel("Description")
 	}
 
 	// Update result field label
-	if _, hasError := lf.fieldErrors["result"]; hasError {
+	if lf.HasFieldError("result") {
 		lf.resultField.SetLabel("[red]Result[white]")
 	} else {
 		lf.resultField.SetLabel("Result")
 	}
 
 	// Update narrative field label
-	if _, hasError := lf.fieldErrors["narrative"]; hasError {
+	if lf.HasFieldError("narrative") {
 		lf.narrativeField.SetLabel("[red]Narrative[white]")
 	} else {
 		lf.narrativeField.SetLabel("Narrative")
@@ -207,7 +183,7 @@ func (lf *LogForm) updateFieldLabels() {
 
 // ClearFieldErrors removes all error highlights
 func (lf *LogForm) ClearFieldErrors() {
-	lf.fieldErrors = make(map[string]string)
+	lf.DataForm.ClearFieldErrors()
 	lf.updateFieldLabels()
 }
 
@@ -237,26 +213,4 @@ func (lf *LogForm) BuildDomain() *log.Log {
 	}
 
 	return l
-}
-
-// SetupHandlers configures all form button handlers
-func (lf *LogForm) SetupHandlers(onSave, onCancel, onDelete func()) {
-	lf.onSave = onSave
-	lf.onCancel = onCancel
-	lf.onDelete = onDelete
-
-	// Clear and re-add buttons
-	lf.ClearButtons()
-
-	lf.AddButton("Save", func() {
-		if lf.onSave != nil {
-			lf.onSave()
-		}
-	})
-
-	lf.AddButton("Cancel", func() {
-		if lf.onCancel != nil {
-			lf.onCancel()
-		}
-	})
 }

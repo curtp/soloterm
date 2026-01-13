@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	sharedui "soloterm/shared/ui"
 )
 
 // LogHandler coordinates log-related UI operations
@@ -23,7 +24,7 @@ func (lh *LogHandler) HandleSave() {
 	savedLog, err := lh.app.logService.Save(logEntity)
 	if err != nil {
 		// Check if it's a validation error
-		if handleValidationError(err, lh.app.logForm) {
+		if sharedui.HandleValidationError(err, lh.app.logForm) {
 			return
 		}
 

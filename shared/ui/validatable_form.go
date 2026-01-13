@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"errors"
 	"soloterm/shared/validation"
 	"strings"
 )
@@ -10,9 +11,13 @@ type ValidatableForm interface {
 	SetFieldErrors(errors map[string]string)
 }
 
-// handleValidationError processes validation errors and applies them to a form
-func handleValidationError(err error, form ValidatableForm) bool {
-	if validator, ok := err.(*validation.Validator); ok {
+// HandleValidationError processes validation errors and applies them to a form
+func HandleValidationError(err error, form ValidatableForm) bool {
+	var validator *validation.Validator
+
+	// If the error can be cast as a validator, then assign it and continue
+	if errors.As(err, &validator) {
+
 		// Build field errors map from validator
 		fieldErrors := make(map[string]string)
 		for identifier, messages := range validator.Errors {

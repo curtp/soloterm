@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	sharedui "soloterm/shared/ui"
 )
 
 // GameHandler coordinates game-related UI operations
@@ -23,7 +24,7 @@ func (gh *GameHandler) HandleSave() {
 	savedGame, err := gh.app.gameService.Save(gameEntity)
 	if err != nil {
 		// Check if it's a validation error
-		if handleValidationError(err, gh.app.gameForm) {
+		if sharedui.HandleValidationError(err, gh.app.gameForm) {
 			return
 		}
 

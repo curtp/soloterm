@@ -2,6 +2,7 @@ package ui
 
 import (
 	"soloterm/domain/character"
+	sharedui "soloterm/shared/ui"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -9,23 +10,18 @@ import (
 
 // CharacterForm represents a form for creating/editing characters
 type CharacterForm struct {
-	*tview.Form
+	*sharedui.DataForm
 	characterID  *int64
 	nameField    *tview.InputField
 	systemField  *tview.InputField
 	roleField    *tview.InputField
 	speciesField *tview.InputField
-	fieldErrors  map[string]string // Track which fields have errors
-	onSave       func()
-	onCancel     func()
-	onDelete     func()
 }
 
 // NewCharacterForm creates a new character form
 func NewCharacterForm() *CharacterForm {
 	cf := &CharacterForm{
-		Form:        tview.NewForm(),
-		fieldErrors: make(map[string]string),
+		DataForm: sharedui.NewDataForm(),
 	}
 
 	// Name field
@@ -65,14 +61,7 @@ func (cf *CharacterForm) PopulateForEdit(char *character.Character) {
 	cf.roleField.SetText(char.Role)
 	cf.speciesField.SetText(char.Species)
 
-	// Add delete button for edit mode (insert at the beginning)
-	if cf.GetButtonCount() == 2 { // Only Save and Cancel exist
-		cf.AddButton("Delete", func() {
-			if cf.onDelete != nil {
-				cf.onDelete()
-			}
-		})
-	}
+	cf.AddDeleteButton()
 
 	cf.SetFocus(0)
 	cf.SetTitle(" Edit Character ")
@@ -95,6 +84,7 @@ func (cf *CharacterForm) setupForm() {
 
 	// Add spacing between form items (1 line vertical space)
 	cf.SetItemPadding(1)
+
 }
 
 // Reset clears all form fields
@@ -105,12 +95,15 @@ func (cf *CharacterForm) Reset() {
 	cf.roleField.SetText("")
 	cf.speciesField.SetText("")
 	cf.ClearFieldErrors()
+
+	cf.RemoveDeleteButton()
+
 	cf.SetFocus(0)
 }
 
 // SetFieldErrors sets multiple field errors at once and updates labels
 func (cf *CharacterForm) SetFieldErrors(errors map[string]string) {
-	cf.fieldErrors = errors
+	cf.DataForm.SetFieldErrors(errors)
 	cf.updateFieldLabels()
 }
 
@@ -118,28 +111,28 @@ func (cf *CharacterForm) SetFieldErrors(errors map[string]string) {
 func (cf *CharacterForm) updateFieldLabels() {
 
 	// Update name field label
-	if _, hasError := cf.fieldErrors["name"]; hasError {
+	if cf.HasFieldError("name") {
 		cf.nameField.SetLabel("[red]Name[white]")
 	} else {
 		cf.nameField.SetLabel("Name")
 	}
 
 	// Update system field label
-	if _, hasError := cf.fieldErrors["system"]; hasError {
+	if cf.HasFieldError("system") {
 		cf.systemField.SetLabel("[red]System[white]")
 	} else {
 		cf.systemField.SetLabel("System")
 	}
 
 	// Update role field label
-	if _, hasError := cf.fieldErrors["role"]; hasError {
+	if cf.HasFieldError("role") {
 		cf.roleField.SetLabel("[red]Role/Class[white]")
 	} else {
 		cf.roleField.SetLabel("Role/Class")
 	}
 
 	// Update species field label
-	if _, hasError := cf.fieldErrors["species"]; hasError {
+	if cf.HasFieldError("species") {
 		cf.speciesField.SetLabel("[red]Species/Race[white]")
 	} else {
 		cf.speciesField.SetLabel("Species/Race")
@@ -149,7 +142,7 @@ func (cf *CharacterForm) updateFieldLabels() {
 
 // ClearFieldErrors removes all error highlights
 func (cf *CharacterForm) ClearFieldErrors() {
-	cf.fieldErrors = make(map[string]string)
+	cf.DataForm.ClearFieldErrors()
 	cf.updateFieldLabels()
 }
 
@@ -169,26 +162,4 @@ func (cf *CharacterForm) BuildDomain() *character.Character {
 	}
 
 	return c
-}
-
-// SetupHandlers configures all form button handlers
-func (cf *CharacterForm) SetupHandlers(onSave, onCancel, onDelete func()) {
-	cf.onSave = onSave
-	cf.onCancel = onCancel
-	cf.onDelete = onDelete
-
-	// Clear and re-add buttons
-	cf.ClearButtons()
-
-	cf.AddButton("Save", func() {
-		if cf.onSave != nil {
-			cf.onSave()
-		}
-	})
-
-	cf.AddButton("Cancel", func() {
-		if cf.onCancel != nil {
-			cf.onCancel()
-		}
-	})
 }

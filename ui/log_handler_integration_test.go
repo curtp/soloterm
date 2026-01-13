@@ -314,7 +314,7 @@ func TestLogHandler_HandleSave(t *testing.T) {
 		}
 
 		// Verify there are errors on the modal
-		if len(app.logForm.fieldErrors) == 0 {
+		if app.logForm.HasFieldErrors() {
 			t.Error("No field errors")
 		}
 	})

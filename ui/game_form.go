@@ -2,6 +2,7 @@ package ui
 
 import (
 	"soloterm/domain/game"
+	sharedui "soloterm/shared/ui"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -9,22 +10,17 @@ import (
 
 // GameForm represents a form for creating/editing games
 type GameForm struct {
-	*tview.Form
+	*sharedui.DataForm
 	gameID           *int64
 	nameField        *tview.InputField
 	descriptionField *tview.TextArea
 	errorMessage     *tview.TextView
-	fieldErrors      map[string]string // Track which fields have errors
-	onSave           func()
-	onCancel         func()
-	onDelete         func()
 }
 
 // NewGameForm creates a new game form
 func NewGameForm() *GameForm {
 	gf := &GameForm{
-		Form:        tview.NewForm(),
-		fieldErrors: make(map[string]string),
+		DataForm: sharedui.NewDataForm(),
 	}
 
 	gf.errorMessage = tview.NewTextView().
@@ -59,14 +55,7 @@ func (gf *GameForm) PopulateForEdit(game *game.Game) {
 	gf.descriptionField.SetText(description, false)
 	gf.nameField.SetText(game.Name)
 
-	// Add delete button for edit mode (insert at the beginning)
-	if gf.GetButtonCount() == 2 { // Only Save and Cancel exist
-		gf.AddButton("Delete", func() {
-			if gf.onDelete != nil {
-				gf.onDelete()
-			}
-		})
-	}
+	gf.AddDeleteButton()
 
 	gf.SetFocus(0)
 	gf.SetTitle(" Edit Game ")
@@ -95,12 +84,14 @@ func (gf *GameForm) Reset() {
 	gf.nameField.SetText("")
 	gf.descriptionField.SetText("", false)
 	gf.ClearFieldErrors()
+
+	gf.RemoveDeleteButton()
 	gf.SetFocus(0)
 }
 
 // SetFieldErrors sets multiple field errors at once and updates labels
 func (gf *GameForm) SetFieldErrors(errors map[string]string) {
-	gf.fieldErrors = errors
+	gf.DataForm.SetFieldErrors(errors)
 	gf.updateFieldLabels()
 }
 
@@ -108,14 +99,14 @@ func (gf *GameForm) SetFieldErrors(errors map[string]string) {
 func (gf *GameForm) updateFieldLabels() {
 
 	// Update name field label
-	if _, hasError := gf.fieldErrors["name"]; hasError {
+	if gf.HasFieldError("name") {
 		gf.nameField.SetLabel("[red]Name[white]")
 	} else {
 		gf.nameField.SetLabel("Name")
 	}
 
 	// Update description field label
-	if _, hasError := gf.fieldErrors["description"]; hasError {
+	if gf.HasFieldError("description") {
 		gf.descriptionField.SetLabel("[red]Description[white]")
 	} else {
 		gf.descriptionField.SetLabel("Description")
@@ -124,7 +115,7 @@ func (gf *GameForm) updateFieldLabels() {
 
 // ClearFieldErrors removes all error highlights
 func (gf *GameForm) ClearFieldErrors() {
-	gf.fieldErrors = make(map[string]string)
+	gf.DataForm.ClearFieldErrors()
 	gf.updateFieldLabels()
 }
 
@@ -147,26 +138,4 @@ func (gf *GameForm) BuildDomain() *game.Game {
 	}
 
 	return g
-}
-
-// SetupHandlers configures all form button handlers
-func (gf *GameForm) SetupHandlers(onSave, onCancel, onDelete func()) {
-	gf.onSave = onSave
-	gf.onCancel = onCancel
-	gf.onDelete = onDelete
-
-	// Clear and re-add buttons
-	gf.ClearButtons()
-
-	gf.AddButton("Save", func() {
-		if gf.onSave != nil {
-			gf.onSave()
-		}
-	})
-
-	gf.AddButton("Cancel", func() {
-		if gf.onCancel != nil {
-			gf.onCancel()
-		}
-	})
 }
