@@ -89,14 +89,14 @@ func (gv *GameViewHelper) setupKeyBindings() {
 			if node != nil {
 				reference := node.GetReference()
 				// Only open edit modal if it's a game (not a session)
-				if _, ok := reference.(*game.Game); ok {
-					gv.app.logViewHelper.Refresh()
-					gv.app.gameHandler.ShowEditModal()
+				if g, ok := reference.(*game.Game); ok {
+					// Handler will coordinate all UI updates via events
+					gv.app.gameHandler.ShowEditModal(g)
 					return nil
 				}
 			}
 		case tcell.KeyCtrlN:
-			gv.app.gameHandler.ShowModal()
+			gv.app.gameHandler.ShowNewModal()
 			return nil
 		}
 		return event

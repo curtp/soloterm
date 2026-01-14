@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"soloterm/domain/game"
 	sharedui "soloterm/shared/ui"
 )
 
@@ -33,20 +34,18 @@ func (gh *GameHandler) HandleSave() {
 		return
 	}
 
-	// Success - update domain state and orchestrate UI updates
-	gh.app.selectedGame = savedGame
-	gh.app.UpdateView(GAME_SAVED)
+	gh.app.HandleEvent(&GameSavedEvent{
+		BaseEvent: BaseEvent{action: GAME_SAVED},
+		Game:      savedGame,
+	})
+
 }
 
 // HandleCancel processes game form cancellation
 func (gh *GameHandler) HandleCancel() {
-	gh.app.gameForm.Reset()
-	gh.app.UpdateView(GAME_CANCEL)
-}
-
-// HandleEdit prepares form for editing selected game
-func (gh *GameHandler) HandleEdit() {
-	gh.app.UpdateView(GAME_SHOW_EDIT)
+	gh.app.HandleEvent(&GameCancelledEvent{
+		BaseEvent: BaseEvent{action: GAME_CANCEL},
+	})
 }
 
 // HandleDelete processes game deletion with confirmation
@@ -56,49 +55,45 @@ func (gh *GameHandler) HandleDelete() {
 		return
 	}
 
-	// Get the game entity from the form
-	gameEntity := gh.app.gameForm.BuildDomain()
-
-	// Capture current focus to return to after cancel
-	gh.app.confirmModal.SetReturnFocus(gh.app.GetFocus())
-
-	// Show confirmation modal
-	gh.app.confirmModal.Configure(
-		"Are you sure you want to delete this game and all associated log entries?\n\nThis action cannot be undone.",
-		func() {
-			// Business logic: Delete the game
-			err := gh.app.gameService.Delete(gameEntity.ID)
-			if err != nil {
-				gh.app.UpdateView(CONFIRM_CANCEL)
-				gh.app.notification.ShowError(fmt.Sprintf("Error deleting game: %v", err))
-				return
-			}
-
-			// Update domain state
-			gh.app.selectedGame = nil
-
-			// Orchestrate UI updates
-			gh.app.UpdateView(GAME_DELETED)
-		},
-		func() {
-			// Cancel deletion
-			gh.app.UpdateView(CONFIRM_CANCEL)
-		},
-	)
-	gh.app.UpdateView(CONFIRM_SHOW)
+	// Dispatch event to show confirmation
+	gh.app.HandleEvent(&GameDeleteConfirmEvent{
+		BaseEvent: BaseEvent{action: GAME_DELETE_CONFIRM},
+		Game:      gh.app.selectedGame,
+	})
 }
 
-// ShowModal displays the game form modal for creating a new game
-func (gh *GameHandler) ShowModal() {
-	gh.app.UpdateView(GAME_SHOW_NEW)
-}
-
-// ShowEditModal displays the game form modal for editing an existing game
-func (gh *GameHandler) ShowEditModal() {
-	if gh.app.selectedGame == nil {
-		gh.app.notification.ShowError("Please select a game to edit")
+// ConfirmDelete executes the actual deletion after user confirmation
+func (gh *GameHandler) ConfirmDelete(gameID int64) {
+	// Business logic: Delete the game
+	err := gh.app.gameService.Delete(gameID)
+	if err != nil {
+		// Dispatch failure event with error
+		gh.app.HandleEvent(&GameDeleteFailedEvent{
+			BaseEvent: BaseEvent{action: GAME_DELETE_FAILED},
+			Error:     err,
+		})
 		return
 	}
 
-	gh.app.UpdateView(GAME_SHOW_EDIT)
+	// Dispatch success event
+	gh.app.HandleEvent(&GameDeletedEvent{
+		BaseEvent: BaseEvent{action: GAME_DELETED},
+		Game:      gh.app.selectedGame,
+	})
+}
+
+// ShowNewModal displays the game form modal for creating a new game
+func (gh *GameHandler) ShowNewModal() {
+	gh.app.HandleEvent(&GameShowNewEvent{
+		BaseEvent: BaseEvent{action: GAME_SHOW_NEW},
+	})
+}
+
+// ShowEditModal displays the game form modal for editing an existing game
+func (gh *GameHandler) ShowEditModal(game *game.Game) {
+	gh.app.HandleEvent(&GameShowEditEvent{
+		BaseEvent: BaseEvent{action: GAME_SHOW_EDIT},
+		Game:      game,
+	})
+
 }

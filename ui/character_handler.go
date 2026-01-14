@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"fmt"
 	"soloterm/domain/character"
 	sharedui "soloterm/shared/ui"
 )
@@ -57,16 +56,18 @@ func (h *CharacterHandler) HandleSave() {
 		return
 	}
 
-	// Update the app's selected character with the saved version from database
-	h.app.selectedCharacter = savedChar
-
-	// Orchestrate UI updates
-	h.app.UpdateView(CHARACTER_SAVED)
+	// Dispatch event with saved character
+	h.app.HandleEvent(&CharacterSavedEvent{
+		BaseEvent: BaseEvent{action: CHARACTER_SAVED},
+		Character: savedChar,
+	})
 }
 
 // HandleCancel cancels character editing
 func (h *CharacterHandler) HandleCancel() {
-	h.app.UpdateView(CHARACTER_CANCEL)
+	h.app.HandleEvent(&CharacterCancelledEvent{
+		BaseEvent: BaseEvent{action: CHARACTER_CANCEL},
+	})
 }
 
 func (h *CharacterHandler) HandleDuplicate() {
@@ -75,35 +76,31 @@ func (h *CharacterHandler) HandleDuplicate() {
 		return
 	}
 
-	// Capture current focus to return to after cancel
-	h.app.confirmModal.SetReturnFocus(h.app.GetFocus())
+	// Dispatch event to show confirmation
+	h.app.HandleEvent(&CharacterDuplicateConfirmEvent{
+		BaseEvent: BaseEvent{action: CHARACTER_DUPLICATE_CONFIRM},
+		Character: h.app.selectedCharacter,
+	})
+}
 
-	// Configure the confirmation modal for duplicating the character
-	h.app.confirmModal.Configure(
-		"Are you sure you want to duplicate this character and their sheet?",
-		func() {
-			// User confirmed - duplicate the character
-			char, err := h.app.charService.Duplicate(h.app.selectedCharacter.ID)
-			if err != nil {
-				h.app.UpdateView(CONFIRM_CANCEL)
-				h.app.notification.ShowError("Failed to duplicate the character: " + err.Error())
-				return
-			}
+// ConfirmDuplicate executes the actual duplication after user confirmation
+func (h *CharacterHandler) ConfirmDuplicate(characterID int64) {
+	// Business logic: Duplicate the character
+	char, err := h.app.charService.Duplicate(characterID)
+	if err != nil {
+		// Dispatch failure event with error
+		h.app.HandleEvent(&CharacterDuplicateFailedEvent{
+			BaseEvent: BaseEvent{action: CHARACTER_DUPLICATE_FAILED},
+			Error:     err,
+		})
+		return
+	}
 
-			// Select the duplicated character
-			h.app.selectedCharacter = char
-
-			// Orchestrate UI updates
-			h.app.UpdateView(CHARACTER_DUPLICATED)
-		},
-		func() {
-			// User cancelled - just close confirmation modal
-			h.app.UpdateView(CONFIRM_CANCEL)
-		},
-		"Duplicate", // Custom confirm button label
-	)
-	h.app.UpdateView(CONFIRM_SHOW)
-
+	// Dispatch success event
+	h.app.HandleEvent(&CharacterDuplicatedEvent{
+		BaseEvent: BaseEvent{action: CHARACTER_DUPLICATED},
+		Character: char,
+	})
 }
 
 // HandleDelete deletes the current character
@@ -112,46 +109,55 @@ func (h *CharacterHandler) HandleDelete() {
 
 	// Only delete if it has an ID (exists in database)
 	if char.ID == 0 {
-		h.app.UpdateView(CHARACTER_CANCEL)
+		h.app.HandleEvent(&CharacterCancelledEvent{
+			BaseEvent: BaseEvent{action: CHARACTER_CANCEL},
+		})
 		return
 	}
 
-	// Capture current focus to return to after cancel
-	h.app.confirmModal.SetReturnFocus(h.app.GetFocus())
+	// Dispatch event to show confirmation
+	h.app.HandleEvent(&CharacterDeleteConfirmEvent{
+		BaseEvent: BaseEvent{action: CHARACTER_DELETE_CONFIRM},
+		Character: char,
+	})
+}
 
-	// Show confirmation
-	h.app.confirmModal.Configure(
-		"Are you sure you want to delete this character?\n\nThis will also delete all associated attributes.",
-		func() {
-			// User confirmed - delete the character
-			err := h.app.charService.Delete(char.ID)
-			if err != nil {
-				h.app.UpdateView(CONFIRM_CANCEL)
-				h.app.notification.ShowError("Failed to delete character: " + err.Error())
-				return
-			}
+// ConfirmDelete executes the actual deletion after user confirmation
+func (h *CharacterHandler) ConfirmDelete(characterID int64) {
+	// Business logic: Delete the character
+	err := h.app.charService.Delete(characterID)
+	if err != nil {
+		// Dispatch failure event with error
+		h.app.HandleEvent(&CharacterDeleteFailedEvent{
+			BaseEvent: BaseEvent{action: CHARACTER_DELETE_FAILED},
+			Error:     err,
+		})
+		return
+	}
 
-			// Orchestrate UI updates
-			h.app.UpdateView(CHARACTER_DELETED)
-		},
-		func() {
-			// User cancelled - just close confirmation modal
-			h.app.UpdateView(CONFIRM_CANCEL)
-		},
-	)
-	h.app.UpdateView(CONFIRM_SHOW)
+	// Dispatch success event
+	h.app.HandleEvent(&CharacterDeletedEvent{
+		BaseEvent: BaseEvent{action: CHARACTER_DELETED},
+	})
 }
 
 // ShowModal displays the character form modal for creating a new character
 func (h *CharacterHandler) ShowModal() {
-	h.app.UpdateView(CHARACTER_SHOW_NEW)
+	h.app.HandleEvent(&CharacterShowNewEvent{
+		BaseEvent: BaseEvent{action: CHARACTER_SHOW_NEW},
+	})
 }
 
 // ShowEditCharacterModal displays the character form modal for editing the selected character
 func (h *CharacterHandler) ShowEditCharacterModal() {
-	if h.app.selectedCharacter != nil {
-		h.app.UpdateView(CHARACTER_SHOW_EDIT)
+	if h.app.selectedCharacter == nil {
+		return
 	}
+
+	h.app.HandleEvent(&CharacterShowEditEvent{
+		BaseEvent: BaseEvent{action: CHARACTER_SHOW_EDIT},
+		Character: h.app.selectedCharacter,
+	})
 }
 
 // HandleAttributeSave saves the attribute from the form
@@ -161,7 +167,6 @@ func (h *CharacterHandler) HandleAttributeSave() {
 	// Validate and save
 	savedAttr, err := h.app.charService.SaveAttribute(attr)
 	if err != nil {
-
 		// Check if it's a validation error
 		if sharedui.HandleValidationError(err, h.app.attributeForm) {
 			return
@@ -170,21 +175,18 @@ func (h *CharacterHandler) HandleAttributeSave() {
 		return
 	}
 
-	// Reload attributes for the current character
-	if h.app.selectedCharacter != nil {
-		h.app.characterViewHelper.RefreshDisplay()
-	}
-
-	// Select the saved attribute
-	h.app.characterViewHelper.selectAttribute(savedAttr.ID)
-
-	// Orchestrate UI updates
-	h.app.UpdateView(ATTRIBUTE_SAVED)
+	// Dispatch event with saved attribute
+	h.app.HandleEvent(&AttributeSavedEvent{
+		BaseEvent: BaseEvent{action: ATTRIBUTE_SAVED},
+		Attribute: savedAttr,
+	})
 }
 
 // HandleAttributeCancel cancels attribute editing
 func (h *CharacterHandler) HandleAttributeCancel() {
-	h.app.UpdateView(ATTRIBUTE_CANCEL)
+	h.app.HandleEvent(&AttributeCancelledEvent{
+		BaseEvent: BaseEvent{action: ATTRIBUTE_CANCEL},
+	})
 }
 
 // HandleAttributeDelete deletes the current attribute
@@ -193,46 +195,48 @@ func (h *CharacterHandler) HandleAttributeDelete() {
 
 	// Only delete if it has an ID (exists in database)
 	if attr.ID == 0 {
-		h.app.UpdateView(ATTRIBUTE_CANCEL)
+		h.app.HandleEvent(&AttributeCancelledEvent{
+			BaseEvent: BaseEvent{action: ATTRIBUTE_CANCEL},
+		})
 		return
 	}
 
-	// Capture current focus to return to after cancel
-	h.app.confirmModal.SetReturnFocus(h.app.GetFocus())
+	// Dispatch event to show confirmation
+	h.app.HandleEvent(&AttributeDeleteConfirmEvent{
+		BaseEvent: BaseEvent{action: ATTRIBUTE_DELETE_CONFIRM},
+		Attribute: attr,
+	})
+}
 
-	// Show confirmation
-	h.app.confirmModal.Configure(
-		"Are you sure you want to delete this attribute?",
-		func() {
-			// User confirmed - delete the attribute
-			err := h.app.charService.DeleteAttribute(attr.ID)
-			if err != nil {
-				h.app.UpdateView(CONFIRM_CANCEL)
-				h.app.notification.ShowError("Failed to delete attribute: " + err.Error())
-				return
-			}
+// ConfirmAttributeDelete executes the actual deletion after user confirmation
+func (h *CharacterHandler) ConfirmAttributeDelete(attributeID int64) {
+	// Business logic: Delete the attribute
+	err := h.app.charService.DeleteAttribute(attributeID)
+	if err != nil {
+		// Dispatch failure event with error
+		h.app.HandleEvent(&AttributeDeleteFailedEvent{
+			BaseEvent: BaseEvent{action: ATTRIBUTE_DELETE_FAILED},
+			Error:     err,
+		})
+		return
+	}
 
-			// Reload attributes for the current character
-			if h.app.selectedCharacter != nil {
-				h.app.characterViewHelper.RefreshDisplay()
-			}
-
-			// Orchestrate UI updates
-			h.app.UpdateView(ATTRIBUTE_DELETED)
-		},
-		func() {
-			// User cancelled - just close confirmation modal
-			h.app.UpdateView(CONFIRM_CANCEL)
-		},
-	)
-	h.app.UpdateView(CONFIRM_SHOW)
+	// Dispatch success event
+	h.app.HandleEvent(&AttributeDeletedEvent{
+		BaseEvent: BaseEvent{action: ATTRIBUTE_DELETED},
+	})
 }
 
 // ShowEditAttributeModal displays the attribute form modal for editing an existing attribute
 func (h *CharacterHandler) ShowEditAttributeModal(attr *character.Attribute) {
-	h.app.attributeForm.PopulateForEdit(attr)
-	h.app.attributeModalContent.SetTitle(" Edit Attribute ")
-	h.app.UpdateView(ATTRIBUTE_SHOW_EDIT)
+	if attr == nil {
+		return
+	}
+
+	h.app.HandleEvent(&AttributeShowEditEvent{
+		BaseEvent: BaseEvent{action: ATTRIBUTE_SHOW_EDIT},
+		Attribute: attr,
+	})
 }
 
 // ShowNewAttributeModal displays the attribute form modal for creating a new attribute
@@ -241,22 +245,13 @@ func (h *CharacterHandler) ShowNewAttributeModal() {
 		return
 	}
 
-	// Set the character ID
-	h.app.attributeForm.Reset(h.app.selectedCharacter.ID)
-
-	// Use the group from the currently selected attribute (if there is one) for the new
-	// attribute.
+	// Get the currently selected attribute to use its group as default
 	attr := h.GetSelectedAttribute()
-	if attr != nil {
-		h.app.attributeForm.groupField.SetText(fmt.Sprintf("%d", attr.Group))
-		h.app.attributeForm.positionField.SetText(fmt.Sprintf("%d", attr.PositionInGroup+1))
-	}
 
-	// Set modal title
-	h.app.attributeModalContent.SetTitle(" New Attribute ")
-
-	// Update the view
-	h.app.UpdateView(ATTRIBUTE_SHOW_NEW)
+	h.app.HandleEvent(&AttributeShowNewEvent{
+		BaseEvent:         BaseEvent{action: ATTRIBUTE_SHOW_NEW},
+		SelectedAttribute: attr, // Pass selected attribute for default values
+	})
 }
 
 func (h *CharacterHandler) GetSelectedAttribute() *character.Attribute {

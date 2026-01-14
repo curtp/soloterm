@@ -33,15 +33,18 @@ func (lh *LogHandler) HandleSave() {
 		return
 	}
 
-	// Success - update domain state and orchestrate UI updates
-	lh.app.selectedLog = savedLog
-	lh.app.UpdateView(LOG_SAVED)
+	// Dispatch event with saved log
+	lh.app.HandleEvent(&LogSavedEvent{
+		BaseEvent: BaseEvent{action: LOG_SAVED},
+		Log:       savedLog,
+	})
 }
 
 // HandleCancel processes log form cancellation
 func (lh *LogHandler) HandleCancel() {
-	lh.app.logForm.Reset(lh.app.selectedGame.ID)
-	lh.app.UpdateView(LOG_CANCEL)
+	lh.app.HandleEvent(&LogCancelledEvent{
+		BaseEvent: BaseEvent{action: LOG_CANCEL},
+	})
 }
 
 // HandleDelete processes log deletion with confirmation
@@ -56,33 +59,30 @@ func (lh *LogHandler) HandleDelete() {
 		return
 	}
 
-	// Get the log entity from the form
-	logEntry := lh.app.logForm.BuildDomain()
+	// Dispatch event to show confirmation
+	lh.app.HandleEvent(&LogDeleteConfirmEvent{
+		BaseEvent: BaseEvent{action: LOG_DELETE_CONFIRM},
+		Log:       lh.app.selectedLog,
+	})
+}
 
-	// Capture current focus to return to after cancel
-	lh.app.confirmModal.SetReturnFocus(lh.app.GetFocus())
+// ConfirmDelete executes the actual deletion after user confirmation
+func (lh *LogHandler) ConfirmDelete(logID int64) {
+	// Business logic: Delete the log
+	err := lh.app.logService.Delete(logID)
+	if err != nil {
+		// Dispatch failure event with error
+		lh.app.HandleEvent(&LogDeleteFailedEvent{
+			BaseEvent: BaseEvent{action: LOG_DELETE_FAILED},
+			Error:     err,
+		})
+		return
+	}
 
-	// Show confirmation modal
-	lh.app.confirmModal.Configure(
-		"Are you sure you want to delete this log entry?\n\nThis action cannot be undone.",
-		func() {
-			// Business logic: Delete the log entry
-			err := lh.app.logService.Delete(logEntry.ID)
-			if err != nil {
-				lh.app.UpdateView(CONFIRM_CANCEL)
-				lh.app.notification.ShowError("Error deleting log entry: " + err.Error())
-				return
-			}
-
-			// Orchestrate UI updates
-			lh.app.UpdateView(LOG_DELETED)
-		},
-		func() {
-			// Cancel deletion
-			lh.app.UpdateView(CONFIRM_CANCEL)
-		},
-	)
-	lh.app.UpdateView(CONFIRM_SHOW)
+	// Dispatch success event
+	lh.app.HandleEvent(&LogDeletedEvent{
+		BaseEvent: BaseEvent{action: LOG_DELETED},
+	})
 }
 
 // ShowModal displays the log form modal for creating a new log entry
@@ -93,10 +93,9 @@ func (lh *LogHandler) ShowModal() {
 		return
 	}
 
-	// Set modal title
-	lh.app.logModalContent.SetTitle(" New Log ")
-
-	lh.app.UpdateView(LOG_SHOW_NEW)
+	lh.app.HandleEvent(&LogShowNewEvent{
+		BaseEvent: BaseEvent{action: LOG_SHOW_NEW},
+	})
 }
 
 // ShowEditModal displays the log form modal for editing an existing log entry
@@ -108,12 +107,8 @@ func (lh *LogHandler) ShowEditModal(logID int64) {
 		return
 	}
 
-	// Set the selected log on the app
-	lh.app.selectedLog = logEntry
-
-	// Set modal title
-	lh.app.logModalContent.SetTitle(" Edit Log ")
-
-	// Show the modal
-	lh.app.UpdateView(LOG_SHOW_EDIT)
+	lh.app.HandleEvent(&LogShowEditEvent{
+		BaseEvent: BaseEvent{action: LOG_SHOW_EDIT},
+		Log:       logEntry,
+	})
 }

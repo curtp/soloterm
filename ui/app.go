@@ -3,6 +3,7 @@
 package ui
 
 import (
+	"fmt"
 	"soloterm/database"
 	"soloterm/domain/character"
 	"soloterm/domain/game"
@@ -20,35 +21,6 @@ const (
 	CONFIRM_MODAL_ID   string = "confirm"
 	MAIN_PAGE_ID       string = "main"
 	ABOUT_MODAL_ID     string = "about"
-)
-
-// UserAction represents user-triggered application events
-type UserAction string
-
-const (
-	GAME_SAVED           UserAction = "game_saved"
-	GAME_DELETED         UserAction = "game_deleted"
-	GAME_CANCEL          UserAction = "game_cancel"
-	GAME_SHOW_NEW        UserAction = "game_show_new"
-	GAME_SHOW_EDIT       UserAction = "game_show_edit"
-	LOG_SAVED            UserAction = "log_saved"
-	LOG_DELETED          UserAction = "log_deleted"
-	LOG_CANCEL           UserAction = "log_cancel"
-	LOG_SHOW_NEW         UserAction = "log_show_new"
-	LOG_SHOW_EDIT        UserAction = "log_show_edit"
-	CHARACTER_SAVED      UserAction = "character_saved"
-	CHARACTER_DELETED    UserAction = "character_deleted"
-	CHARACTER_DUPLICATED UserAction = "character_duplicated"
-	CHARACTER_CANCEL     UserAction = "character_cancel"
-	CHARACTER_SHOW_NEW   UserAction = "character_show_new"
-	CHARACTER_SHOW_EDIT  UserAction = "character_show_edit"
-	ATTRIBUTE_SAVED      UserAction = "attribute_saved"
-	ATTRIBUTE_DELETED    UserAction = "attribute_deleted"
-	ATTRIBUTE_CANCEL     UserAction = "attribute_cancel"
-	ATTRIBUTE_SHOW_NEW   UserAction = "attribute_show_new"
-	ATTRIBUTE_SHOW_EDIT  UserAction = "attribute_show_edit"
-	CONFIRM_SHOW         UserAction = "confirm_show"
-	CONFIRM_CANCEL       UserAction = "confirm_cancel"
 )
 
 type App struct {
@@ -288,6 +260,449 @@ func (a *App) showAbout() {
 	a.pages.ShowPage(ABOUT_MODAL_ID)
 }
 
+func (a *App) HandleEvent(event Event) {
+	switch event.Action() {
+	case GAME_SAVED:
+		if e, ok := event.(*GameSavedEvent); ok {
+			a.handleGameSaved(e)
+		}
+	case GAME_CANCEL:
+		if e, ok := event.(*GameCancelledEvent); ok {
+			a.handleGameCancel(e)
+		}
+	case GAME_DELETE_CONFIRM:
+		if e, ok := event.(*GameDeleteConfirmEvent); ok {
+			a.handleGameDeleteConfirm(e)
+		}
+	case GAME_DELETED:
+		if e, ok := event.(*GameDeletedEvent); ok {
+			a.handleGameDeleted(e)
+		}
+	case GAME_DELETE_FAILED:
+		if e, ok := event.(*GameDeleteFailedEvent); ok {
+			a.handleGameDeleteFailed(e)
+		}
+	case GAME_SHOW_EDIT:
+		if e, ok := event.(*GameShowEditEvent); ok {
+			a.handleGameShowEdit(e)
+		}
+	case GAME_SHOW_NEW:
+		if e, ok := event.(*GameShowNewEvent); ok {
+			a.handleGameShowNew(e)
+		}
+	case LOG_SAVED:
+		if e, ok := event.(*LogSavedEvent); ok {
+			a.handleLogSaved(e)
+		}
+	case LOG_CANCEL:
+		if e, ok := event.(*LogCancelledEvent); ok {
+			a.handleLogCancel(e)
+		}
+	case LOG_DELETE_CONFIRM:
+		if e, ok := event.(*LogDeleteConfirmEvent); ok {
+			a.handleLogDeleteConfirm(e)
+		}
+	case LOG_DELETED:
+		if e, ok := event.(*LogDeletedEvent); ok {
+			a.handleLogDeleted(e)
+		}
+	case LOG_DELETE_FAILED:
+		if e, ok := event.(*LogDeleteFailedEvent); ok {
+			a.handleLogDeleteFailed(e)
+		}
+	case LOG_SHOW_NEW:
+		if e, ok := event.(*LogShowNewEvent); ok {
+			a.handleLogShowNew(e)
+		}
+	case LOG_SHOW_EDIT:
+		if e, ok := event.(*LogShowEditEvent); ok {
+			a.handleLogShowEdit(e)
+		}
+	case CHARACTER_SAVED:
+		if e, ok := event.(*CharacterSavedEvent); ok {
+			a.handleCharacterSaved(e)
+		}
+	case CHARACTER_CANCEL:
+		if e, ok := event.(*CharacterCancelledEvent); ok {
+			a.handleCharacterCancel(e)
+		}
+	case CHARACTER_DELETE_CONFIRM:
+		if e, ok := event.(*CharacterDeleteConfirmEvent); ok {
+			a.handleCharacterDeleteConfirm(e)
+		}
+	case CHARACTER_DELETED:
+		if e, ok := event.(*CharacterDeletedEvent); ok {
+			a.handleCharacterDeleted(e)
+		}
+	case CHARACTER_DELETE_FAILED:
+		if e, ok := event.(*CharacterDeleteFailedEvent); ok {
+			a.handleCharacterDeleteFailed(e)
+		}
+	case CHARACTER_DUPLICATE_CONFIRM:
+		if e, ok := event.(*CharacterDuplicateConfirmEvent); ok {
+			a.handleCharacterDuplicateConfirm(e)
+		}
+	case CHARACTER_DUPLICATED:
+		if e, ok := event.(*CharacterDuplicatedEvent); ok {
+			a.handleCharacterDuplicated(e)
+		}
+	case CHARACTER_DUPLICATE_FAILED:
+		if e, ok := event.(*CharacterDuplicateFailedEvent); ok {
+			a.handleCharacterDuplicateFailed(e)
+		}
+	case CHARACTER_SHOW_NEW:
+		if e, ok := event.(*CharacterShowNewEvent); ok {
+			a.handleCharacterShowNew(e)
+		}
+	case CHARACTER_SHOW_EDIT:
+		if e, ok := event.(*CharacterShowEditEvent); ok {
+			a.handleCharacterShowEdit(e)
+		}
+	case ATTRIBUTE_SAVED:
+		if e, ok := event.(*AttributeSavedEvent); ok {
+			a.handleAttributeSaved(e)
+		}
+	case ATTRIBUTE_CANCEL:
+		if e, ok := event.(*AttributeCancelledEvent); ok {
+			a.handleAttributeCancel(e)
+		}
+	case ATTRIBUTE_DELETE_CONFIRM:
+		if e, ok := event.(*AttributeDeleteConfirmEvent); ok {
+			a.handleAttributeDeleteConfirm(e)
+		}
+	case ATTRIBUTE_DELETED:
+		if e, ok := event.(*AttributeDeletedEvent); ok {
+			a.handleAttributeDeleted(e)
+		}
+	case ATTRIBUTE_DELETE_FAILED:
+		if e, ok := event.(*AttributeDeleteFailedEvent); ok {
+			a.handleAttributeDeleteFailed(e)
+		}
+	case ATTRIBUTE_SHOW_NEW:
+		if e, ok := event.(*AttributeShowNewEvent); ok {
+			a.handleAttributeShowNew(e)
+		}
+	case ATTRIBUTE_SHOW_EDIT:
+		if e, ok := event.(*AttributeShowEditEvent); ok {
+			a.handleAttributeShowEdit(e)
+		}
+	}
+}
+
+func (a *App) handleGameSaved(e *GameSavedEvent) {
+	a.gameForm.Reset()
+	a.pages.HidePage(GAME_MODAL_ID)
+	a.selectedGame = e.Game
+	a.gameViewHelper.Refresh()
+	a.SetFocus(a.gameTree)
+	a.notification.ShowSuccess("Game saved successfully")
+}
+
+func (a *App) handleGameCancel(_ *GameCancelledEvent) {
+	a.pages.HidePage(GAME_MODAL_ID)
+	a.SetFocus(a.gameTree)
+}
+
+func (a *App) handleGameDeleteConfirm(e *GameDeleteConfirmEvent) {
+	// Capture focus for restoration on cancel
+	returnFocus := a.GetFocus()
+
+	// Configure confirmation modal
+	a.confirmModal.Configure(
+		"Are you sure you want to delete this game and all associated log entries?\n\nThis action cannot be undone.",
+		func() {
+			// On confirm, call handler method to perform deletion
+			a.gameHandler.ConfirmDelete(e.Game.ID)
+		},
+		func() {
+			// On cancel, restore focus
+			a.pages.HidePage(CONFIRM_MODAL_ID)
+			a.SetFocus(returnFocus)
+		},
+	)
+
+	// Show the confirmation modal
+	a.pages.ShowPage(CONFIRM_MODAL_ID)
+}
+
+func (a *App) handleGameDeleted(_ *GameDeletedEvent) {
+	// Close modals
+	a.pages.HidePage(CONFIRM_MODAL_ID)
+	a.pages.HidePage(GAME_MODAL_ID)
+
+	// Reset log view to default state
+	a.logView.Clear()
+	a.logView.SetTitle(" Select Game To View ")
+
+	// Update state
+	a.selectedGame = nil
+	a.selectedLog = nil
+
+	// Refresh and focus
+	a.gameViewHelper.Refresh()
+	a.SetFocus(a.gameTree)
+
+	// Show success notification
+	a.notification.ShowSuccess("Game deleted successfully")
+}
+
+func (a *App) handleGameDeleteFailed(e *GameDeleteFailedEvent) {
+	// Close confirmation modal
+	a.pages.HidePage(CONFIRM_MODAL_ID)
+
+	// Show error notification
+	a.notification.ShowError("Error deleting game: " + e.Error.Error())
+}
+
+func (a *App) handleGameShowEdit(e *GameShowEditEvent) {
+	if e.Game == nil {
+		a.notification.ShowError("Please select a game to edit")
+		return
+	}
+
+	a.selectedGame = e.Game
+	a.logViewHelper.Refresh()
+	a.gameForm.PopulateForEdit(a.selectedGame)
+	a.pages.ShowPage(GAME_MODAL_ID)
+	a.SetFocus(a.gameForm)
+}
+
+func (a *App) handleGameShowNew(_ *GameShowNewEvent) {
+	a.gameForm.Reset()
+	a.pages.ShowPage(GAME_MODAL_ID)
+	a.SetFocus(a.gameForm)
+}
+
+func (a *App) handleLogSaved(e *LogSavedEvent) {
+	a.logForm.ClearFieldErrors()
+	a.pages.HidePage(LOG_MODAL_ID)
+	a.selectedLog = e.Log
+	a.logViewHelper.Refresh()
+	a.gameViewHelper.Refresh()
+	a.SetFocus(a.logView)
+	a.logView.ScrollToHighlight()
+	a.notification.ShowSuccess("Log saved successfully")
+}
+
+func (a *App) handleLogCancel(_ *LogCancelledEvent) {
+	a.logForm.ClearFieldErrors()
+	a.pages.HidePage(LOG_MODAL_ID)
+	a.pages.SwitchToPage(MAIN_PAGE_ID)
+	a.SetFocus(a.logView)
+	a.logView.ScrollToHighlight()
+}
+
+func (a *App) handleLogDeleteConfirm(e *LogDeleteConfirmEvent) {
+	returnFocus := a.GetFocus()
+
+	a.confirmModal.Configure(
+		"Are you sure you want to delete this log entry?\n\nThis action cannot be undone.",
+		func() {
+			a.logHandler.ConfirmDelete(e.Log.ID)
+		},
+		func() {
+			a.pages.HidePage(CONFIRM_MODAL_ID)
+			a.SetFocus(returnFocus)
+		},
+	)
+
+	a.pages.ShowPage(CONFIRM_MODAL_ID)
+}
+
+func (a *App) handleLogDeleted(_ *LogDeletedEvent) {
+	a.pages.HidePage(CONFIRM_MODAL_ID)
+	a.pages.HidePage(LOG_MODAL_ID)
+	a.pages.SwitchToPage(MAIN_PAGE_ID)
+	a.logViewHelper.Refresh()
+	a.gameViewHelper.Refresh()
+	a.SetFocus(a.logView)
+	a.notification.ShowSuccess("Log entry deleted successfully")
+}
+
+func (a *App) handleLogDeleteFailed(e *LogDeleteFailedEvent) {
+	a.pages.HidePage(CONFIRM_MODAL_ID)
+	a.notification.ShowError("Error deleting log entry: " + e.Error.Error())
+}
+
+func (a *App) handleLogShowNew(_ *LogShowNewEvent) {
+	a.logModalContent.SetTitle(" New Log ")
+	a.logForm.Reset(a.selectedGame.ID)
+	a.pages.ShowPage(LOG_MODAL_ID)
+	a.SetFocus(a.logForm)
+}
+
+func (a *App) handleLogShowEdit(e *LogShowEditEvent) {
+	a.selectedLog = e.Log
+	a.logModalContent.SetTitle(" Edit Log ")
+	a.logForm.PopulateForEdit(e.Log)
+	a.pages.ShowPage(LOG_MODAL_ID)
+	a.SetFocus(a.logForm)
+}
+
+func (a *App) handleCharacterSaved(e *CharacterSavedEvent) {
+	a.characterForm.ClearFieldErrors()
+	a.pages.HidePage(CHARACTER_MODAL_ID)
+	a.selectedCharacter = e.Character
+	a.characterViewHelper.RefreshTree()
+	a.characterViewHelper.RefreshDisplay()
+	a.SetFocus(a.characterViewHelper.ReturnFocus)
+	a.notification.ShowSuccess("Character saved successfully")
+}
+
+func (a *App) handleCharacterCancel(_ *CharacterCancelledEvent) {
+	a.characterForm.ClearFieldErrors()
+	a.pages.HidePage(CHARACTER_MODAL_ID)
+	a.SetFocus(a.characterViewHelper.ReturnFocus)
+}
+
+func (a *App) handleCharacterDeleteConfirm(e *CharacterDeleteConfirmEvent) {
+	returnFocus := a.GetFocus()
+
+	a.confirmModal.Configure(
+		"Are you sure you want to delete this character?\n\nThis will also delete all associated attributes.",
+		func() {
+			a.charHandler.ConfirmDelete(e.Character.ID)
+		},
+		func() {
+			a.pages.HidePage(CONFIRM_MODAL_ID)
+			a.SetFocus(returnFocus)
+		},
+	)
+
+	a.pages.ShowPage(CONFIRM_MODAL_ID)
+}
+
+func (a *App) handleCharacterDeleted(_ *CharacterDeletedEvent) {
+	a.pages.HidePage(CONFIRM_MODAL_ID)
+	a.pages.HidePage(CHARACTER_MODAL_ID)
+	a.pages.SwitchToPage(MAIN_PAGE_ID)
+	a.selectedCharacter = nil
+	a.charInfoView.Clear()
+	a.attributeTable.Clear()
+	a.characterViewHelper.RefreshTree()
+	a.SetFocus(a.characterViewHelper.ReturnFocus)
+	a.notification.ShowSuccess("Character deleted successfully")
+}
+
+func (a *App) handleCharacterDeleteFailed(e *CharacterDeleteFailedEvent) {
+	a.pages.HidePage(CONFIRM_MODAL_ID)
+	a.notification.ShowError("Failed to delete character: " + e.Error.Error())
+}
+
+func (a *App) handleCharacterDuplicateConfirm(e *CharacterDuplicateConfirmEvent) {
+	returnFocus := a.GetFocus()
+
+	a.confirmModal.Configure(
+		"Are you sure you want to duplicate this character and their sheet?",
+		func() {
+			a.charHandler.ConfirmDuplicate(e.Character.ID)
+		},
+		func() {
+			a.pages.HidePage(CONFIRM_MODAL_ID)
+			a.SetFocus(returnFocus)
+		},
+		"Duplicate",
+	)
+
+	a.pages.ShowPage(CONFIRM_MODAL_ID)
+}
+
+func (a *App) handleCharacterDuplicated(e *CharacterDuplicatedEvent) {
+	a.pages.HidePage(CONFIRM_MODAL_ID)
+	a.selectedCharacter = e.Character
+	a.characterViewHelper.RefreshTree()
+	a.characterViewHelper.RefreshDisplay()
+	a.SetFocus(a.characterViewHelper.ReturnFocus)
+	a.notification.ShowSuccess("Character duplicated successfully")
+}
+
+func (a *App) handleCharacterDuplicateFailed(e *CharacterDuplicateFailedEvent) {
+	a.pages.HidePage(CONFIRM_MODAL_ID)
+	a.notification.ShowError("Failed to duplicate the character: " + e.Error.Error())
+}
+
+func (a *App) handleCharacterShowNew(_ *CharacterShowNewEvent) {
+	a.characterForm.Reset()
+	a.pages.ShowPage(CHARACTER_MODAL_ID)
+	a.characterForm.SetTitle(" New Character ")
+	a.SetFocus(a.characterForm)
+}
+
+func (a *App) handleCharacterShowEdit(e *CharacterShowEditEvent) {
+	a.selectedCharacter = e.Character
+	a.characterForm.PopulateForEdit(e.Character)
+	a.pages.ShowPage(CHARACTER_MODAL_ID)
+	a.characterForm.SetTitle(" Edit Character ")
+	a.SetFocus(a.characterForm)
+}
+
+func (a *App) handleAttributeSaved(e *AttributeSavedEvent) {
+	a.attributeForm.ClearFieldErrors()
+	a.pages.HidePage(ATTRIBUTE_MODAL_ID)
+	a.characterViewHelper.RefreshDisplay()
+	a.characterViewHelper.selectAttribute(e.Attribute.ID)
+	a.SetFocus(a.attributeTable)
+	a.notification.ShowSuccess("Attribute saved successfully")
+}
+
+func (a *App) handleAttributeCancel(_ *AttributeCancelledEvent) {
+	a.attributeForm.ClearFieldErrors()
+	a.pages.HidePage(ATTRIBUTE_MODAL_ID)
+	a.SetFocus(a.attributeTable)
+}
+
+func (a *App) handleAttributeDeleteConfirm(e *AttributeDeleteConfirmEvent) {
+	returnFocus := a.GetFocus()
+
+	a.confirmModal.Configure(
+		"Are you sure you want to delete this attribute?",
+		func() {
+			a.charHandler.ConfirmAttributeDelete(e.Attribute.ID)
+		},
+		func() {
+			a.pages.HidePage(CONFIRM_MODAL_ID)
+			a.SetFocus(returnFocus)
+		},
+	)
+
+	a.pages.ShowPage(CONFIRM_MODAL_ID)
+}
+
+func (a *App) handleAttributeDeleted(_ *AttributeDeletedEvent) {
+	a.pages.HidePage(CONFIRM_MODAL_ID)
+	a.pages.HidePage(ATTRIBUTE_MODAL_ID)
+	a.pages.SwitchToPage(MAIN_PAGE_ID)
+	a.characterViewHelper.RefreshDisplay()
+	a.SetFocus(a.attributeTable)
+	a.notification.ShowSuccess("Attribute deleted successfully")
+}
+
+func (a *App) handleAttributeDeleteFailed(e *AttributeDeleteFailedEvent) {
+	a.pages.HidePage(CONFIRM_MODAL_ID)
+	a.notification.ShowError("Failed to delete attribute: " + e.Error.Error())
+}
+
+func (a *App) handleAttributeShowNew(e *AttributeShowNewEvent) {
+	a.attributeModalContent.SetTitle(" New Attribute ")
+	a.attributeForm.Reset(a.selectedCharacter.ID)
+
+	// If there's a selected attribute, use its group and position as defaults
+	if e.SelectedAttribute != nil {
+		a.attributeForm.groupField.SetText(fmt.Sprintf("%d", e.SelectedAttribute.Group))
+		a.attributeForm.positionField.SetText(fmt.Sprintf("%d", e.SelectedAttribute.PositionInGroup+1))
+	}
+
+	a.pages.ShowPage(ATTRIBUTE_MODAL_ID)
+	a.SetFocus(a.attributeForm)
+}
+
+func (a *App) handleAttributeShowEdit(e *AttributeShowEditEvent) {
+	a.attributeModalContent.SetTitle(" Edit Attribute ")
+	a.attributeForm.PopulateForEdit(e.Attribute)
+	a.pages.ShowPage(ATTRIBUTE_MODAL_ID)
+	a.SetFocus(a.attributeForm)
+}
+
 // UpdateView orchestrates UI updates based on application events
 func (a *App) UpdateView(event UserAction) {
 	switch event {
@@ -377,6 +792,8 @@ func (a *App) UpdateView(event UserAction) {
 		a.SetFocus(a.gameForm)
 
 	case GAME_SHOW_EDIT:
+		a.logViewHelper.Refresh()
+
 		// Show modal for editing existing game
 		if a.selectedGame != nil {
 			a.gameForm.PopulateForEdit(a.selectedGame)
@@ -515,18 +932,5 @@ func (a *App) UpdateView(event UserAction) {
 		a.pages.ShowPage(ATTRIBUTE_MODAL_ID)
 		a.SetFocus(a.attributeForm)
 
-	case CONFIRM_SHOW:
-		// Show confirmation modal
-		a.pages.ShowPage(CONFIRM_MODAL_ID)
-
-	case CONFIRM_CANCEL:
-		// Reusable across all confirmation cancellations
-		a.pages.HidePage(CONFIRM_MODAL_ID)
-
-		// Restore focus to where user was before modal
-		if a.confirmModal.ReturnFocus != nil {
-			a.SetFocus(a.confirmModal.ReturnFocus)
-			a.confirmModal.ReturnFocus = nil // Clear for next use
-		}
 	}
 }
