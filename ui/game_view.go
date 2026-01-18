@@ -217,15 +217,15 @@ func (gv *GameView) getSelectedGame() *game.Game {
 }
 
 func (gv *GameView) SelectGame(gameID int64) {
-	if gv.app.charTree.GetRoot() == nil {
+	if gv.app.gameTree.GetRoot() == nil {
 		return
 	}
 
 	var foundNode *tview.TreeNode
-	gv.app.charTree.GetRoot().Walk(func(node, parent *tview.TreeNode) bool {
+	gv.app.gameTree.GetRoot().Walk(func(node, parent *tview.TreeNode) bool {
 		ref := node.GetReference()
 		if ref != nil {
-			if id, ok := ref.(int64); ok && id == gameID {
+			if state, ok := ref.(*GameState); ok && state.GameID != nil && *state.GameID == gameID {
 				foundNode = node
 				return false // Stop walking children of this node
 			}
@@ -243,18 +243,22 @@ func (gv *GameView) GetCurrentSelection() *GameState {
 	// was saved. Use it for the current selection so it will be selected when
 	// the game tree is redrawn.
 	if gv.selectedGameID != nil {
+		syslog.Printf("returning new game state with the selectedGameID: %d", *gv.selectedGameID)
 		return &GameState{GameID: gv.selectedGameID}
 	}
 
 	// Pull the data from the tree view
 	treeRef := gv.app.gameTree.GetCurrentNode().GetReference()
+	syslog.Printf("treeRef: %+v", treeRef)
 	if treeRef != nil {
 		ref, ok := treeRef.(*GameState)
 		if ok {
+			syslog.Printf("returning ref: %+v", ref)
 			return ref
 		}
 	}
 
+	syslog.Print("returning nil")
 	return nil
 }
 

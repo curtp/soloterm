@@ -628,6 +628,7 @@ func (a *App) handleCharacterDuplicated(e *CharacterDuplicatedEvent) {
 	a.pages.HidePage(CONFIRM_MODAL_ID)
 	a.characterView.RefreshTree()
 	a.characterView.RefreshDisplay()
+	a.characterView.SelectCharacter(e.Character.ID)
 	a.SetFocus(a.characterView.ReturnFocus)
 	a.notification.ShowSuccess("Character duplicated successfully")
 }

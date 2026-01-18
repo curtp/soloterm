@@ -8,8 +8,8 @@ import (
 	testhelper "soloterm/shared/testing"
 )
 
-// TestLogHandler_ShowModal verfies the log modal is displayed
-func TestLogHandler_ShowModal(t *testing.T) {
+// TestLogView_ShowModal verfies the log modal is displayed
+func TestLogView_ShowModal(t *testing.T) {
 	db := testhelper.SetupTestDB(t)
 	defer testhelper.TeardownTestDB(t, db)
 
@@ -29,11 +29,8 @@ func TestLogHandler_ShowModal(t *testing.T) {
 		// Open the modal
 		app.logView.ShowModal()
 
-		t.Logf("Notification: %s", app.notification.GetText(false))
-
 		// Verify it displays
 		frontPage, _ := app.pages.GetFrontPage()
-		t.Logf("Front Page: %+v", frontPage)
 		if frontPage != LOG_MODAL_ID {
 			t.Error("Log page doesn't have focus")
 		}
@@ -56,8 +53,19 @@ func TestLogHandler_ShowModal(t *testing.T) {
 	})
 
 	t.Run("error message when no game selected", func(t *testing.T) {
+
+		t.Log("        ===== starting test =====")
+
+		// Clear the selection if there is any
+		t.Logf("Current Selection: %+v", app.gameView.GetCurrentSelection())
+		app.gameTree.GetRoot().ClearChildren()
+		app.gameView.Refresh()
+
+		if app.gameView.GetCurrentSelection() != nil {
+			t.Errorf("There is a game state: %+v", app.GetSelectedGameState())
+		}
+
 		// Open the modal
-		app.selectedGame = nil
 		app.logView.ShowModal()
 
 		note := app.notification.GetText(false)
@@ -73,8 +81,8 @@ func TestLogHandler_ShowModal(t *testing.T) {
 	})
 }
 
-// TestLogHandler_ShowEditModal verfies the log modal is displayed
-func TestLogHandler_ShowEditModal(t *testing.T) {
+// TestLog_ShowEditModal verfies the log modal is displayed
+func TestLogView_ShowEditModal(t *testing.T) {
 	db := testhelper.SetupTestDB(t)
 	defer testhelper.TeardownTestDB(t, db)
 
@@ -97,8 +105,8 @@ func TestLogHandler_ShowEditModal(t *testing.T) {
 	}
 
 	t.Run("open edit modal", func(t *testing.T) {
-		// Need an active game to view the modal
-		app.selectedGame = game
+		app.gameView.Refresh()
+		app.gameView.SelectGame(game.ID)
 
 		// Open the modal
 		app.logView.ShowEditModal(1)
@@ -153,6 +161,9 @@ func TestLogHandler_ShowEditModal(t *testing.T) {
 	})
 
 	t.Run("error message when log doesn't exist", func(t *testing.T) {
+		app.gameView.Refresh()
+		app.gameView.SelectGame(game.ID)
+
 		// Open the modal
 		app.logView.ShowEditModal(2)
 
@@ -170,7 +181,7 @@ func TestLogHandler_ShowEditModal(t *testing.T) {
 }
 
 // TestLogHandler_HandleSave verfies logs are saved (both new and edit)
-func TestLogHandler_HandleSave(t *testing.T) {
+func TestLogView_HandleSave(t *testing.T) {
 	db := testhelper.SetupTestDB(t)
 	defer testhelper.TeardownTestDB(t, db)
 
@@ -182,11 +193,10 @@ func TestLogHandler_HandleSave(t *testing.T) {
 		t.Error("game not saved")
 	}
 
-	app.selectedGame = game
-
-	//var logEntry log.Log
-
 	t.Run("save a new log", func(t *testing.T) {
+		app.gameView.Refresh()
+		app.gameView.SelectGame(game.ID)
+
 		// Open the new modal
 		app.logView.ShowModal()
 
@@ -224,6 +234,9 @@ func TestLogHandler_HandleSave(t *testing.T) {
 	})
 
 	t.Run("save an existing log", func(t *testing.T) {
+		app.gameView.Refresh()
+		app.gameView.SelectGame(game.ID)
+
 		// Log to update
 		logEntry, _ := log.NewLog(game.ID)
 		logEntry.LogType = log.CHARACTER_ACTION
@@ -296,6 +309,9 @@ func TestLogHandler_HandleSave(t *testing.T) {
 	})
 
 	t.Run("save a log with validation errors", func(t *testing.T) {
+		app.gameView.Refresh()
+		app.gameView.SelectGame(game.ID)
+
 		// Open the new modal
 		app.logView.ShowModal()
 
@@ -326,7 +342,7 @@ func TestLogHandler_HandleSave(t *testing.T) {
 }
 
 // TestLogHandler_HandleDelete verfies logs can be deleted with confirmation
-func TestLogHandler_HandleDelete(t *testing.T) {
+func TestLogView_HandleDelete(t *testing.T) {
 	db := testhelper.SetupTestDB(t)
 	defer testhelper.TeardownTestDB(t, db)
 
@@ -337,6 +353,9 @@ func TestLogHandler_HandleDelete(t *testing.T) {
 	app.selectedGame = game
 
 	t.Run("delete a log with confirmation", func(t *testing.T) {
+		app.gameView.Refresh()
+		app.gameView.SelectGame(game.ID)
+
 		// Create a log to delete
 		logEntry, _ := log.NewLog(game.ID)
 		logEntry.LogType = log.CHARACTER_ACTION
@@ -389,6 +408,9 @@ func TestLogHandler_HandleDelete(t *testing.T) {
 	})
 
 	t.Run("cancel log deletion", func(t *testing.T) {
+		app.gameView.Refresh()
+		app.gameView.SelectGame(game.ID)
+
 		// Create a log
 		logEntry, _ := log.NewLog(game.ID)
 		logEntry.LogType = log.MECHANICS
