@@ -103,14 +103,13 @@ func getDBPath() (string, error) {
 		return dbPath, nil
 	}
 
-	home, _ := os.UserHomeDir()
-	path := home + "/soloterm"
+	workDir := os.Getenv("SOLOTERM_WORK_DIR")
 
-	err := os.MkdirAll(path, 0755)
+	err := os.MkdirAll(workDir, 0755)
 	if err != nil {
 		log.Printf("Error creating path for database: %s", err)
 		return "", err
 	}
 
-	return filepath.Join(path, "soloterm.db"), nil
+	return filepath.Join(workDir, "soloterm.db"), nil
 }
