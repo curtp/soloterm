@@ -22,14 +22,18 @@ func TestLogHandler_ShowModal(t *testing.T) {
 	}
 
 	t.Run("show log modal requires game", func(t *testing.T) {
-		// Need an active game to view the modal
-		app.selectedGame = game
+		// Select the game
+		app.gameView.Refresh()
+		app.gameView.SelectGame(game.ID)
 
 		// Open the modal
-		app.logHandler.ShowModal()
+		app.logView.ShowModal()
+
+		t.Logf("Notification: %s", app.notification.GetText(false))
 
 		// Verify it displays
 		frontPage, _ := app.pages.GetFrontPage()
+		t.Logf("Front Page: %+v", frontPage)
 		if frontPage != LOG_MODAL_ID {
 			t.Error("Log page doesn't have focus")
 		}
@@ -40,13 +44,13 @@ func TestLogHandler_ShowModal(t *testing.T) {
 		}
 
 		// Close it and verify it is hidden, main page is showing, and log view has focus
-		app.logHandler.HandleCancel()
+		app.logView.HandleCancel()
 		frontPage, _ = app.pages.GetFrontPage()
 		if frontPage != MAIN_PAGE_ID {
 			t.Error("Main page doesn't isn't in front")
 		}
 		inFocus := app.GetFocus()
-		if inFocus != app.logView {
+		if inFocus != app.logTextView {
 			t.Error("log view doesn't have focus")
 		}
 	})
@@ -54,7 +58,7 @@ func TestLogHandler_ShowModal(t *testing.T) {
 	t.Run("error message when no game selected", func(t *testing.T) {
 		// Open the modal
 		app.selectedGame = nil
-		app.logHandler.ShowModal()
+		app.logView.ShowModal()
 
 		note := app.notification.GetText(false)
 		if len(note) == 0 {
@@ -97,7 +101,7 @@ func TestLogHandler_ShowEditModal(t *testing.T) {
 		app.selectedGame = game
 
 		// Open the modal
-		app.logHandler.ShowEditModal(1)
+		app.logView.ShowEditModal(1)
 
 		// Verify it displays
 		frontPage, _ := app.pages.GetFrontPage()
@@ -137,20 +141,20 @@ func TestLogHandler_ShowEditModal(t *testing.T) {
 		}
 
 		// Close it and verify it is hidden, main page is showing, and log view has focus
-		app.logHandler.HandleCancel()
+		app.logView.HandleCancel()
 		frontPage, _ = app.pages.GetFrontPage()
 		if frontPage != MAIN_PAGE_ID {
 			t.Error("Main page doesn't isn't in front")
 		}
 		inFocus := app.GetFocus()
-		if inFocus != app.logView {
+		if inFocus != app.logTextView {
 			t.Error("log view doesn't have focus")
 		}
 	})
 
 	t.Run("error message when log doesn't exist", func(t *testing.T) {
 		// Open the modal
-		app.logHandler.ShowEditModal(2)
+		app.logView.ShowEditModal(2)
 
 		note := app.notification.GetText(false)
 		if len(note) == 0 {
@@ -184,7 +188,7 @@ func TestLogHandler_HandleSave(t *testing.T) {
 
 	t.Run("save a new log", func(t *testing.T) {
 		// Open the new modal
-		app.logHandler.ShowModal()
+		app.logView.ShowModal()
 
 		// Verify it displays
 		frontPage, _ := app.pages.GetFrontPage()
@@ -199,7 +203,7 @@ func TestLogHandler_HandleSave(t *testing.T) {
 		app.logForm.narrativeField.SetText("narrative", false)
 
 		// Save it
-		app.logHandler.HandleSave()
+		app.logView.HandleSave()
 
 		// Close it and verify it is hidden, main page is showing, and log view has focus
 		frontPage, _ = app.pages.GetFrontPage()
@@ -208,7 +212,7 @@ func TestLogHandler_HandleSave(t *testing.T) {
 		}
 
 		inFocus := app.GetFocus()
-		if inFocus != app.logView {
+		if inFocus != app.logTextView {
 			t.Error("log view doesn't have focus")
 		}
 
@@ -241,7 +245,7 @@ func TestLogHandler_HandleSave(t *testing.T) {
 		}
 
 		// Open the new modal
-		app.logHandler.ShowEditModal(logs[0].ID)
+		app.logView.ShowEditModal(logs[0].ID)
 
 		// Verify it displays
 		frontPage, _ := app.pages.GetFrontPage()
@@ -256,7 +260,7 @@ func TestLogHandler_HandleSave(t *testing.T) {
 		app.logForm.narrativeField.SetText("new narrative", false)
 
 		// Save it
-		app.logHandler.HandleSave()
+		app.logView.HandleSave()
 
 		// Close it and verify it is hidden, main page is showing, and log view has focus
 		frontPage, _ = app.pages.GetFrontPage()
@@ -265,7 +269,7 @@ func TestLogHandler_HandleSave(t *testing.T) {
 		}
 
 		inFocus := app.GetFocus()
-		if inFocus != app.logView {
+		if inFocus != app.logTextView {
 			t.Error("log view doesn't have focus")
 		}
 
@@ -293,7 +297,7 @@ func TestLogHandler_HandleSave(t *testing.T) {
 
 	t.Run("save a log with validation errors", func(t *testing.T) {
 		// Open the new modal
-		app.logHandler.ShowModal()
+		app.logView.ShowModal()
 
 		// Verify it displays
 		frontPage, _ := app.pages.GetFrontPage()
@@ -305,7 +309,7 @@ func TestLogHandler_HandleSave(t *testing.T) {
 		app.logForm.logTypeField.SetCurrentOption(1)
 
 		// Save it
-		app.logHandler.HandleSave()
+		app.logView.HandleSave()
 
 		// Close it and verify it is hidden, main page is showing, and log view has focus
 		frontPage, _ = app.pages.GetFrontPage()
@@ -349,7 +353,7 @@ func TestLogHandler_HandleDelete(t *testing.T) {
 		}
 
 		// Open edit modal
-		app.logHandler.ShowEditModal(logEntry.ID)
+		app.logView.ShowEditModal(logEntry.ID)
 
 		// Verify modal is showing
 		frontPage, _ := app.pages.GetFrontPage()
@@ -358,7 +362,7 @@ func TestLogHandler_HandleDelete(t *testing.T) {
 		}
 
 		// Call HandleDelete - this sets up the confirmation modal
-		app.logHandler.HandleDelete()
+		app.logView.HandleDelete()
 
 		// Verify confirmation modal is showing
 		frontPage, _ = app.pages.GetFrontPage()
@@ -398,10 +402,10 @@ func TestLogHandler_HandleDelete(t *testing.T) {
 		initialCount := len(logs)
 
 		// Open edit modal
-		app.logHandler.ShowEditModal(logEntry.ID)
+		app.logView.ShowEditModal(logEntry.ID)
 
 		// Call HandleDelete
-		app.logHandler.HandleDelete()
+		app.logView.HandleDelete()
 
 		// Verify confirmation modal is showing
 		frontPage, _ := app.pages.GetFrontPage()

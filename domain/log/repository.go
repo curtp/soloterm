@@ -115,7 +115,7 @@ func (r *Repository) GetAllForGame(gameID int64) ([]*Log, error) {
 
 // Session represents a logical grouping of logs by date
 type Session struct {
-	GameID   int64
+	GameID   int64  `db:"game_id"`
 	Date     string `db:"session_date"`
 	LogCount int    `db:"log_count"`
 }
@@ -125,11 +125,12 @@ type Session struct {
 func (r *Repository) GetSessionsForGame(gameID int64) ([]*Session, error) {
 	query := `
 		SELECT
+		    game_id,
 			DATE(created_at, 'localtime') as session_date,
 			COUNT(*) as log_count
 		FROM logs
 		WHERE game_id = ?
-		GROUP BY DATE(created_at, 'localtime')
+		GROUP BY session_date
 		ORDER BY session_date ASC
 	`
 
@@ -137,11 +138,6 @@ func (r *Repository) GetSessionsForGame(gameID int64) ([]*Session, error) {
 	err := r.db.Connection.Select(&sessions, query, gameID)
 	if err != nil {
 		return nil, err
-	}
-
-	// Populate the GameID for each session
-	for _, session := range sessions {
-		session.GameID = gameID
 	}
 
 	return sessions, nil

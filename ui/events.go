@@ -17,6 +17,7 @@ const (
 	GAME_CANCEL                 UserAction = "game_cancel"
 	GAME_SHOW_NEW               UserAction = "game_show_new"
 	GAME_SHOW_EDIT              UserAction = "game_show_edit"
+	GAME_SELECTED               UserAction = "game_selected"
 	LOG_SAVED                   UserAction = "log_saved"
 	LOG_DELETED                 UserAction = "log_deleted"
 	LOG_DELETE_CONFIRM          UserAction = "log_delete_confirm"
@@ -69,12 +70,11 @@ type GameCancelledEvent struct {
 
 type GameDeletedEvent struct {
 	BaseEvent
-	Game *game.Game
 }
 
 type GameDeleteConfirmEvent struct {
 	BaseEvent
-	Game *game.Game
+	GameID int64
 }
 
 type GameDeleteFailedEvent struct {
@@ -91,10 +91,13 @@ type GameShowNewEvent struct {
 	BaseEvent
 }
 
+type GameSelectedEvent struct {
+	BaseEvent
+}
+
 // ====== LOG SPECIFIC EVENTS ======
 type LogSavedEvent struct {
 	BaseEvent
-	Log *log.Log
 }
 
 type LogCancelledEvent struct {
@@ -107,7 +110,7 @@ type LogDeletedEvent struct {
 
 type LogDeleteConfirmEvent struct {
 	BaseEvent
-	Log *log.Log
+	LogID int64
 }
 
 type LogDeleteFailedEvent struct {
@@ -198,6 +201,7 @@ type AttributeDeleteFailedEvent struct {
 
 type AttributeShowNewEvent struct {
 	BaseEvent
+	CharacterID       int64
 	SelectedAttribute *character.Attribute // Optional: for default group/position
 }
 

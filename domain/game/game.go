@@ -41,3 +41,7 @@ func (g *Game) Validate() *validation.Validator {
 	}
 	return v
 }
+
+func (g *Game) IsNew() bool {
+	return (g.ID == 0)
+}

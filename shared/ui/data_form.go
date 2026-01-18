@@ -55,7 +55,7 @@ func (df *DataForm) RemoveDeleteButton() {
 func (df *DataForm) AddDeleteButton() {
 	// Add delete button for edit mode (insert at the beginning)
 	if df.GetButtonCount() == 2 { // Only Save and Cancel exist
-		df.AddButton("Delete (Ctrl+D)", func() {
+		df.AddButton("Delete", func() {
 			if df.onDelete != nil {
 				df.onDelete()
 			}
@@ -86,13 +86,13 @@ func (df *DataForm) SetupHandlers(onSave, onCancel, onDelete func()) {
 	// Clear and re-add buttons
 	df.ClearButtons()
 
-	df.AddButton("Save (Ctrl+S)", func() {
+	df.AddButton("Save", func() {
 		if df.onSave != nil {
 			df.onSave()
 		}
 	})
 
-	df.AddButton("Cancel (Esc)", func() {
+	df.AddButton("Cancel", func() {
 		if df.onCancel != nil {
 			df.onCancel()
 		}
