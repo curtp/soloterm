@@ -147,8 +147,6 @@ func (gv *GameView) Refresh() {
 		return
 	}
 
-	var nodeToSelect *tview.TreeNode
-
 	// Add each game to the tree
 	for _, g := range games {
 		reference := &GameState{GameID: &g.Game.ID}
@@ -161,7 +159,8 @@ func (gv *GameView) Refresh() {
 
 		// Check if this game was previously selected
 		if currentSelection != nil && g.Game.ID == *currentSelection.GameID {
-			nodeToSelect = gameNode
+			gv.app.gameTree.SetCurrentNode(gameNode)
+			gameNode.SetExpanded(true)
 		}
 
 		// Load sessions for this game
@@ -186,17 +185,11 @@ func (gv *GameView) Refresh() {
 				// Check if this session was previously selected
 				if currentSelection != nil && currentSelection.SessionDate != nil &&
 					s.GameID == *currentSelection.GameID && s.Date == *currentSelection.SessionDate {
-					nodeToSelect = sessionNode
-					// Expand the parent game node so the session is visible
+					gv.app.gameTree.SetCurrentNode(sessionNode)
 					gameNode.SetExpanded(true)
 				}
 			}
 		}
-	}
-
-	// Restore the selection if we found a matching node
-	if nodeToSelect != nil {
-		gv.app.gameTree.SetCurrentNode(nodeToSelect)
 	}
 }
 
@@ -235,6 +228,7 @@ func (gv *GameView) SelectGame(gameID int64) {
 
 	if foundNode != nil {
 		gv.app.gameTree.SetCurrentNode(foundNode)
+		foundNode.SetExpanded(true)
 	}
 }
 

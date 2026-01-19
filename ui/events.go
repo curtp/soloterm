@@ -98,6 +98,7 @@ type GameSelectedEvent struct {
 // ====== LOG SPECIFIC EVENTS ======
 type LogSavedEvent struct {
 	BaseEvent
+	Log log.Log
 }
 
 type LogCancelledEvent struct {

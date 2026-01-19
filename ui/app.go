@@ -144,7 +144,7 @@ func (a *App) setupUI() {
 		SetText("SoloTerm - Solo RPG Session Logger\n\n" +
 			"By Squidhead Games\n" +
 			"https://squidhead-games.itch.io\n\n" +
-			"Version 1.0.0").
+			"Version 1.0.1").
 		AddButtons([]string{"Close"}).
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 			a.pages.HidePage(ABOUT_MODAL_ID)
@@ -490,7 +490,7 @@ func (a *App) handleGameSelected(_ *GameSelectedEvent) {
 	a.logTextView.ScrollToBeginning()
 }
 
-func (a *App) handleLogSaved(e *LogSavedEvent) {
+func (a *App) handleLogSaved(_ *LogSavedEvent) {
 	a.logForm.ClearFieldErrors()
 	a.pages.HidePage(LOG_MODAL_ID)
 	a.logView.Refresh()

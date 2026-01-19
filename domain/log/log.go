@@ -64,6 +64,17 @@ func NewLog(gameID int64) (*Log, error) {
 	return log, nil
 }
 
+func (l *Log) SessionDate() string {
+	localTime := l.CreatedAt.Local()
+
+	return localTime.Format("2006-01-02")
+}
+
+func (l *Log) SessionTime() string {
+	localTime := l.CreatedAt.Local()
+	return localTime.Format("03:04 PM")
+}
+
 func (l *Log) Validate() *validation.Validator {
 	v := validation.NewValidator()
 	v.Check("log_type", l.LogType == MECHANICS || l.LogType == CHARACTER_ACTION || l.LogType == ORACLE_QUESTION || l.LogType == STORY, "%s type is unknown", l.LogType)

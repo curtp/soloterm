@@ -22,6 +22,9 @@ type CharacterView struct {
 
 	// An array of the attributes IDs in order
 	attrOrder []int64
+
+	// Used to expand the system in the tree after deleting a character in the system
+	expandSystem *string
 }
 
 // NewCharacterView creates a new character view helper
@@ -301,6 +304,11 @@ func (cv *CharacterView) RefreshTree() {
 			SetExpanded(false)
 		root.AddChild(systemNode)
 
+		// If there's an expandSystem set, expand this node if it matches
+		if cv.expandSystem != nil && system == *cv.expandSystem {
+			systemNode.SetExpanded(true)
+		}
+
 		// Add character nodes under the system
 		for _, c := range charsBySystem[system] {
 			charNode := tview.NewTreeNode(c.Name).
@@ -317,7 +325,8 @@ func (cv *CharacterView) RefreshTree() {
 		}
 	}
 
-	//root.SetExpanded(true)
+	// Clean up state variables
+	cv.expandSystem = nil
 }
 
 func (cv *CharacterView) SelectCharacter(charID int64) {
@@ -461,6 +470,9 @@ func (cv *CharacterView) HandleSave() {
 		return
 	}
 
+	// Remember the system so it can be expanded when the tree reloads
+	cv.expandSystem = &char.System
+
 	// Dispatch event with saved character
 	cv.app.HandleEvent(&CharacterSavedEvent{
 		BaseEvent: BaseEvent{action: CHARACTER_SAVED},
@@ -529,8 +541,22 @@ func (cv *CharacterView) HandleDelete() {
 
 // ConfirmDelete executes the actual deletion after user confirmation
 func (cv *CharacterView) ConfirmDelete(characterID int64) {
+	// Load the character to get the system name. This is needed to expand the
+	// section of the tree where the character was displayed, if it still exists
+	char, err := cv.app.charService.GetByID(characterID)
+	if err != nil {
+		// Dispatch failure event with error
+		cv.app.HandleEvent(&CharacterDeleteFailedEvent{
+			BaseEvent: BaseEvent{action: CHARACTER_DELETE_FAILED},
+			Error:     err,
+		})
+		return
+	}
+
+	cv.expandSystem = &char.System
+
 	// Business logic: Delete the character
-	err := cv.app.charService.Delete(characterID)
+	err = cv.app.charService.Delete(characterID)
 	if err != nil {
 		// Dispatch failure event with error
 		cv.app.HandleEvent(&CharacterDeleteFailedEvent{

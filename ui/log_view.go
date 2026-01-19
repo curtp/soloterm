@@ -294,11 +294,7 @@ func (lv *LogView) displayLogs(logs []*log.Log) {
 	for _, l := range logs {
 		lv.loadedLogIDs = append(lv.loadedLogIDs, l.ID)
 
-		// Format timestamp in local timezone
-		localTime := l.CreatedAt.Local()
-
-		// Create time block label (date + hour)
-		blockLabel := localTime.Format(" 2006-01-02 ")
+		blockLabel := " " + l.SessionDate() + " "
 
 		// Print time block header if it changed
 		if blockLabel != lastBlockLabel {
@@ -318,11 +314,10 @@ func (lv *LogView) displayLogs(logs []*log.Log) {
 		}
 
 		// Print the log entry
-		timestamp := localTime.Format("03:04 PM")
 		// Add the region ID so clicking it will open the edit modal
 		output += "[\"" + fmt.Sprintf("%d", l.ID) + "\"][::i]"
 		// Add the timestamp and log type display name
-		output += "[aqua::b]" + timestamp + " - " + l.LogType.LogTypeDisplayName() + "[-::-][\"\"]\n"
+		output += "[aqua::b]" + l.SessionTime() + " - " + l.LogType.LogTypeDisplayName() + "[-::-][\"\"]\n"
 		if len(l.Description) > 0 {
 			output += "[::i][yellow::b]Description:[-::-] " + l.Description + "\n"
 		}
@@ -366,6 +361,7 @@ func (lv *LogView) HandleSave() {
 	// Dispatch event with saved log
 	lv.app.HandleEvent(&LogSavedEvent{
 		BaseEvent: BaseEvent{action: LOG_SAVED},
+		Log:       *savedLog,
 	})
 }
 
