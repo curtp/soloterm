@@ -2,7 +2,6 @@ package ui
 
 import (
 	"fmt"
-	syslog "log"
 	"soloterm/domain/game"
 	sharedui "soloterm/shared/ui"
 	"strconv"
@@ -199,10 +198,8 @@ func (gv *GameView) getSelectedGame() *game.Game {
 		return nil
 	}
 
-	syslog.Printf("Retrieving game: %d", *gameTreeReference.GameID)
 	game, err := gv.app.gameService.GetByID(*gameTreeReference.GameID)
 	if err != nil {
-		syslog.Printf("Issue retrieving game: %s", err)
 		return nil
 	}
 
