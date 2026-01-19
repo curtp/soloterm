@@ -25,6 +25,9 @@ type CharacterView struct {
 
 	// Used to expand the system in the tree after deleting a character in the system
 	expandSystem *string
+
+	// Remember the selected character
+	selectedCharacterID *int64
 }
 
 // NewCharacterView creates a new character view helper
@@ -60,6 +63,15 @@ func (cv *CharacterView) setupCharacterTree() {
 		if len(node.GetChildren()) > 0 {
 			node.SetExpanded(!node.IsExpanded())
 			return
+		}
+
+		// Pull the data from the tree view
+		treeRef := node.GetReference()
+		if treeRef != nil {
+			ref, ok := treeRef.(int64)
+			if ok {
+				cv.selectedCharacterID = &ref
+			}
 		}
 
 		cv.RefreshDisplay()
@@ -250,20 +262,21 @@ func (cv *CharacterView) Refresh() {
 }
 
 func (cv *CharacterView) GetSelectedCharacterID() *int64 {
-	if cv.app.charTree == nil || cv.app.charTree.GetCurrentNode() == nil || cv.app.charTree.GetCurrentNode().GetReference() == nil {
-		return nil
-	}
+	return cv.selectedCharacterID
+	//	if cv.app.charTree == nil || cv.app.charTree.GetCurrentNode() == nil || cv.app.charTree.GetCurrentNode().GetReference() == nil {
+	//		return nil
+	//	}
 
 	// Pull the data from the tree view
-	treeRef := cv.app.charTree.GetCurrentNode().GetReference()
-	if treeRef != nil {
-		ref, ok := treeRef.(int64)
-		if ok {
-			return &ref
-		}
-	}
+	//	treeRef := cv.app.charTree.GetCurrentNode().GetReference()
+	//	if treeRef != nil {
+	//		ref, ok := treeRef.(int64)
+	//		if ok {
+	//			return &ref
+	//		}
+	//	}
 
-	return nil
+	// return nil
 }
 
 // RefreshTree reloads the character tree from the database
