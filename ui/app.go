@@ -409,6 +409,7 @@ func (a *App) handleGameSaved(e *GameSavedEvent) {
 	a.pages.HidePage(GAME_MODAL_ID)
 	a.gameView.SelectGame(e.Game.ID)
 	a.gameView.Refresh()
+	a.logView.Refresh()
 	a.SetFocus(a.gameTree)
 	a.notification.ShowSuccess("Game saved successfully")
 }

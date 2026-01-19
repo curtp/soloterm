@@ -243,22 +243,18 @@ func (gv *GameView) GetCurrentSelection() *GameState {
 	// was saved. Use it for the current selection so it will be selected when
 	// the game tree is redrawn.
 	if gv.selectedGameID != nil {
-		syslog.Printf("returning new game state with the selectedGameID: %d", *gv.selectedGameID)
 		return &GameState{GameID: gv.selectedGameID}
 	}
 
 	// Pull the data from the tree view
 	treeRef := gv.app.gameTree.GetCurrentNode().GetReference()
-	syslog.Printf("treeRef: %+v", treeRef)
 	if treeRef != nil {
 		ref, ok := treeRef.(*GameState)
 		if ok {
-			syslog.Printf("returning ref: %+v", ref)
 			return ref
 		}
 	}
 
-	syslog.Print("returning nil")
 	return nil
 }
 
