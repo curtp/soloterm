@@ -219,6 +219,11 @@ func (cv *CharacterView) setupAttributeModal() {
 			60, 1, true, // Fixed width
 		).
 		AddItem(nil, 0, 1, false)
+
+	cv.app.attributeModal.SetFocusFunc(func() {
+		cv.app.SetModalHelpMessage(*cv.app.attributeForm.DataForm)
+	})
+
 }
 
 // setupFocusHandlers configures focus event handlers
