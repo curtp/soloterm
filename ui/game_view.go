@@ -37,7 +37,7 @@ func (gv *GameView) Setup() {
 func (gv *GameView) setupTreeView() {
 	gv.app.gameTree = tview.NewTreeView()
 	gv.app.gameTree.SetBorder(true).
-		SetTitle(" [::b]Games & Sessions ").
+		SetTitle(" [::b]Games & Sessions (Ctrl+G Jump To)").
 		SetTitleAlign(tview.AlignLeft)
 
 	// Placeholder root node

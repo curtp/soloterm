@@ -426,7 +426,8 @@ func TestLogView_HandleDelete(t *testing.T) {
 			t.Error("Confirm modal should be showing")
 		}
 
-		// The delete button is in focus, so press enter to confirm
+		// Tab to the delete button, then press enter to confirm
+		testhelper.SimulateKey(app.confirmModal, app.Application, tcell.KeyTAB)
 		testhelper.SimulateEnter(app.confirmModal, app.Application)
 
 		// Verify log was deleted from database
@@ -479,8 +480,7 @@ func TestLogView_HandleDelete(t *testing.T) {
 			t.Error("Confirm modal should be showing")
 		}
 
-		// Tab to the cancel button and press enter to cancel the deletion
-		testhelper.SimulateKey(app.confirmModal, app.Application, tcell.KeyTab)
+		// Cancel button is in focus, so just press enter
 		testhelper.SimulateEnter(app.confirmModal, app.Application)
 
 		// Verify log still exists

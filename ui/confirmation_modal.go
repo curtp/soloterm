@@ -17,7 +17,7 @@ func NewConfirmationModal() *ConfirmationModal {
 		confirmLabel: "Delete", // Default
 	}
 
-	cm.AddButtons([]string{"Delete", "Cancel"}).
+	cm.AddButtons([]string{"Cancel", "Delete"}).
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 			if buttonLabel == cm.currentButton && cm.onConfirm != nil {
 				cm.onConfirm()

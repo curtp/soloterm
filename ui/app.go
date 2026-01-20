@@ -4,6 +4,7 @@ package ui
 
 import (
 	"fmt"
+	"slices"
 	"soloterm/database"
 	"soloterm/domain/character"
 	"soloterm/domain/game"
@@ -186,7 +187,7 @@ func (a *App) setupUI() {
 }
 
 func (a *App) updateFooterHelp(helpText string) {
-	globalHelp := " [yellow]Tab/Shift+Tab[white] Navigate  [yellow]Ctrl+C[white] Quit  |  "
+	globalHelp := " [yellow]Tab/Shift+Tab[white] Navigate  [yellow]Ctrl+Q[white] Quit  |  "
 	a.footer.SetText(globalHelp + helpText)
 }
 
@@ -206,10 +207,32 @@ func (a *App) SetModalHelpMessage(form sharedui.DataForm) {
 
 func (a *App) setupKeyBindings() {
 	a.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switchable := []tview.Primitive{a.gameTree, a.logTextView, a.charTree, a.charInfoView, a.attributeTable}
 		switch event.Key() {
-		case tcell.KeyCtrlC:
+		case tcell.KeyCtrlQ:
 			a.Stop()
 			return nil
+		case tcell.KeyCtrlG:
+			if slices.Contains(switchable, a.GetFocus()) {
+				a.SetFocus(a.gameTree)
+				return nil
+			}
+		case tcell.KeyCtrlC:
+			// Always consume Ctrl+C to prevent terminal signal handling
+			if slices.Contains(switchable, a.GetFocus()) {
+				a.SetFocus(a.charTree)
+			}
+			return nil
+		case tcell.KeyCtrlS:
+			if slices.Contains(switchable, a.GetFocus()) {
+				a.SetFocus(a.attributeTable)
+				return nil
+			}
+		case tcell.KeyCtrlL:
+			if slices.Contains(switchable, a.GetFocus()) {
+				a.SetFocus(a.logTextView)
+				return nil
+			}
 		case tcell.KeyF1:
 			a.showAbout()
 			return nil
@@ -579,7 +602,7 @@ func (a *App) handleCharacterDeleteConfirm(e *CharacterDeleteConfirmEvent) {
 	returnFocus := a.GetFocus()
 
 	a.confirmModal.Configure(
-		"Are you sure you want to delete this character?\n\nThis will also delete all associated attributes.",
+		"Are you sure you want to delete this character?\n\nThis will also delete their sheet.",
 		func() {
 			a.characterView.ConfirmDelete(e.Character.ID)
 		},
@@ -660,7 +683,7 @@ func (a *App) handleAttributeSaved(e *AttributeSavedEvent) {
 	a.characterView.RefreshDisplay()
 	a.characterView.selectAttribute(e.Attribute.ID)
 	a.SetFocus(a.attributeTable)
-	a.notification.ShowSuccess("Attribute saved successfully")
+	a.notification.ShowSuccess("Entry saved successfully")
 }
 
 func (a *App) handleAttributeCancel(_ *AttributeCancelledEvent) {
@@ -673,7 +696,7 @@ func (a *App) handleAttributeDeleteConfirm(e *AttributeDeleteConfirmEvent) {
 	returnFocus := a.GetFocus()
 
 	a.confirmModal.Configure(
-		"Are you sure you want to delete this attribute?",
+		"Are you sure you want to delete this entry?",
 		func() {
 			a.characterView.ConfirmAttributeDelete(e.Attribute.ID)
 		},
@@ -692,16 +715,16 @@ func (a *App) handleAttributeDeleted(_ *AttributeDeletedEvent) {
 	a.pages.SwitchToPage(MAIN_PAGE_ID)
 	a.characterView.RefreshDisplay()
 	a.SetFocus(a.attributeTable)
-	a.notification.ShowSuccess("Attribute deleted successfully")
+	a.notification.ShowSuccess("Entry deleted successfully")
 }
 
 func (a *App) handleAttributeDeleteFailed(e *AttributeDeleteFailedEvent) {
 	a.pages.HidePage(CONFIRM_MODAL_ID)
-	a.notification.ShowError("Failed to delete attribute: " + e.Error.Error())
+	a.notification.ShowError("Failed to delete entry: " + e.Error.Error())
 }
 
 func (a *App) handleAttributeShowNew(e *AttributeShowNewEvent) {
-	a.attributeModalContent.SetTitle(" New Attribute ")
+	a.attributeModalContent.SetTitle(" New Entry ")
 	a.attributeForm.Reset(e.CharacterID)
 
 	// If there's a selected attribute, use its group and position as defaults
@@ -715,7 +738,7 @@ func (a *App) handleAttributeShowNew(e *AttributeShowNewEvent) {
 }
 
 func (a *App) handleAttributeShowEdit(e *AttributeShowEditEvent) {
-	a.attributeModalContent.SetTitle(" Edit Attribute ")
+	a.attributeModalContent.SetTitle(" Edit Entry ")
 	a.attributeForm.PopulateForEdit(e.Attribute)
 	a.pages.ShowPage(ATTRIBUTE_MODAL_ID)
 	a.SetFocus(a.attributeForm)

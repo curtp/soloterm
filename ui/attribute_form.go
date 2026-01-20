@@ -74,19 +74,19 @@ func (af *AttributeForm) setupForm() {
 // setupFieldFocusHandlers configures focus handlers for each field to show contextual help
 func (af *AttributeForm) setupFieldFocusHandlers() {
 	af.nameField.SetFocusFunc(func() {
-		af.NotifyHelpTextChange("[yellow]Name:[white] The display name for this attribute (e.g., Strength, HP, Armor Class)")
+		af.NotifyHelpTextChange("[yellow]Name:[white] The display name for this entry (e.g., Strength, HP, Armor Class)")
 	})
 
 	af.valueField.SetFocusFunc(func() {
-		af.NotifyHelpTextChange("[yellow]Value:[white] The current value of this attribute (e.g., 18, 50/100, +5)")
+		af.NotifyHelpTextChange("[yellow]Value:[white] The current value of this entry (e.g., 18, 50/100, +5)")
 	})
 
 	af.groupField.SetFocusFunc(func() {
-		af.NotifyHelpTextChange("[yellow]Group:[white] Organizes related attributes together. Attributes with the same group number will be displayed in the same section. Use 0 for the first group, 1 for the next, etc.")
+		af.NotifyHelpTextChange("[yellow]Group:[white] Organizes related entries together. Entries with the same group number will be displayed in the same section. Use 0 for the first group, 1 for the next, etc.")
 	})
 
 	af.positionField.SetFocusFunc(func() {
-		af.NotifyHelpTextChange("[yellow]Position In Group:[white] Controls the order within a group. Position 0 is shown first and will be styled if there are other attributes in the same group.")
+		af.NotifyHelpTextChange("[yellow]Position In Group:[white] Controls the order within a group. Position 0 is shown first and will be styled if there are other entries in the same group.")
 	})
 }
 

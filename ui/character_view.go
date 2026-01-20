@@ -54,7 +54,7 @@ func (cv *CharacterView) SetReturnFocus(focus tview.Primitive) {
 func (cv *CharacterView) setupCharacterTree() {
 	cv.app.charTree = tview.NewTreeView()
 	cv.app.charTree.SetBorder(true).
-		SetTitle(" [::b]Characters ").
+		SetTitle(" [::b]Characters (Ctrl+C Jump To)").
 		SetTitleAlign(tview.AlignLeft)
 
 	// Set up selection handler for the tree
@@ -134,7 +134,7 @@ func (cv *CharacterView) setupAttributeTable() {
 	cv.app.attributeTable.SetSelectedStyle(tcell.Style{}.Background(tcell.ColorAqua).Foreground(tcell.ColorBlack))
 
 	cv.app.attributeTable.SetBorder(true).
-		SetTitle(" [::b]Sheet ").
+		SetTitle(" [::b]Sheet (Ctrl+S Jump To)").
 		SetTitleAlign(tview.AlignLeft)
 
 	// Set up input capture for attribute table
@@ -263,20 +263,6 @@ func (cv *CharacterView) Refresh() {
 
 func (cv *CharacterView) GetSelectedCharacterID() *int64 {
 	return cv.selectedCharacterID
-	//	if cv.app.charTree == nil || cv.app.charTree.GetCurrentNode() == nil || cv.app.charTree.GetCurrentNode().GetReference() == nil {
-	//		return nil
-	//	}
-
-	// Pull the data from the tree view
-	//	treeRef := cv.app.charTree.GetCurrentNode().GetReference()
-	//	if treeRef != nil {
-	//		ref, ok := treeRef.(int64)
-	//		if ok {
-	//			return &ref
-	//		}
-	//	}
-
-	// return nil
 }
 
 // RefreshTree reloads the character tree from the database
@@ -441,7 +427,7 @@ func (cv *CharacterView) loadAndDisplayAttributes(characterID int64) {
 
 	// Show message if no attributes
 	if len(attrs) == 0 {
-		cv.app.attributeTable.SetCell(2, 0, tview.NewTableCell("(No Attributes - Ctrl+N to Add)").
+		cv.app.attributeTable.SetCell(2, 0, tview.NewTableCell("(No Entries - Ctrl+N to Add)").
 			SetTextColor(tcell.ColorGray).
 			SetAlign(tview.AlignCenter).
 			SetExpansion(2))
@@ -620,7 +606,7 @@ func (cv *CharacterView) HandleAttributeSave() {
 		if sharedui.HandleValidationError(err, cv.app.attributeForm) {
 			return
 		}
-		cv.app.notification.ShowError("Failed to save attribute: " + err.Error())
+		cv.app.notification.ShowError("Failed to save entry: " + err.Error())
 		return
 	}
 
