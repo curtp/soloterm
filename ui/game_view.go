@@ -206,8 +206,15 @@ func (gv *GameView) getSelectedGame() *game.Game {
 	return game
 }
 
-func (gv *GameView) SelectGame(gameID int64) {
+func (gv *GameView) SelectGame(gameID *int64) {
 	if gv.app.gameTree.GetRoot() == nil {
+		return
+	}
+
+	// If nil is provided, clear the selection
+	if gameID == nil {
+		gv.selectedGameID = nil
+		gv.app.gameTree.SetCurrentNode(gv.app.gameTree.GetRoot())
 		return
 	}
 
@@ -215,7 +222,7 @@ func (gv *GameView) SelectGame(gameID int64) {
 	gv.app.gameTree.GetRoot().Walk(func(node, parent *tview.TreeNode) bool {
 		ref := node.GetReference()
 		if ref != nil {
-			if state, ok := ref.(*GameState); ok && state.GameID != nil && *state.GameID == gameID {
+			if state, ok := ref.(*GameState); ok && state.GameID != nil && *state.GameID == *gameID {
 				foundNode = node
 				return false // Stop walking children of this node
 			}

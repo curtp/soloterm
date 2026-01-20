@@ -3,6 +3,8 @@ package ui
 import (
 	"testing"
 
+	"github.com/gdamore/tcell/v2"
+
 	"soloterm/domain/game"
 	"soloterm/domain/log"
 	testhelper "soloterm/shared/testing"
@@ -22,12 +24,19 @@ func TestLogView_ShowModal(t *testing.T) {
 	}
 
 	t.Run("show log modal requires game", func(t *testing.T) {
-		// Select the game
+		// Refresh to load games into tree
 		app.gameView.Refresh()
-		app.gameView.SelectGame(game.ID)
 
-		// Open the modal
-		app.logView.ShowModal()
+		// Navigate down in game tree to select the game
+		testhelper.SelectTreeEntry(app.gameTree, app.Application, 1)
+
+		testhelper.SimulateTab(app.Application)
+		if app.GetFocus() != app.logTextView {
+			t.Error("Expected to be on the LogTextView, but wasn't")
+		}
+
+		// Press Ctrl+N on log view to open new log modal
+		testhelper.SimulateCtrlN(app.logTextView, app.Application)
 
 		// Verify it displays
 		frontPage, _ := app.pages.GetFrontPage()
@@ -40,8 +49,8 @@ func TestLogView_ShowModal(t *testing.T) {
 			t.Error("Should only display 2 buttons")
 		}
 
-		// Close it and verify it is hidden, main page is showing, and log view has focus
-		app.logView.HandleCancel()
+		// Press Escape on the form to close the modal
+		testhelper.SimulateEscape(app.logForm, app.Application)
 		frontPage, _ = app.pages.GetFrontPage()
 		if frontPage != MAIN_PAGE_ID {
 			t.Error("Main page doesn't isn't in front")
@@ -54,19 +63,15 @@ func TestLogView_ShowModal(t *testing.T) {
 
 	t.Run("error message when no game selected", func(t *testing.T) {
 
-		t.Log("        ===== starting test =====")
-
-		// Clear the selection if there is any
-		t.Logf("Current Selection: %+v", app.gameView.GetCurrentSelection())
-		app.gameTree.GetRoot().ClearChildren()
-		app.gameView.Refresh()
+		// Clear the selection
+		app.gameView.SelectGame(nil)
 
 		if app.gameView.GetCurrentSelection() != nil {
 			t.Errorf("There is a game state: %+v", app.GetSelectedGameState())
 		}
 
 		// Open the modal
-		app.logView.ShowModal()
+		testhelper.SimulateCtrlN(app.logTextView, app.Application)
 
 		note := app.notification.GetText(false)
 		if len(note) == 0 {
@@ -106,15 +111,25 @@ func TestLogView_ShowEditModal(t *testing.T) {
 
 	t.Run("open edit modal", func(t *testing.T) {
 		app.gameView.Refresh()
-		app.gameView.SelectGame(game.ID)
 
-		// Open the modal
-		app.logView.ShowEditModal(1)
+		// Navigate down in game tree to select the game
+		testhelper.SelectTreeEntry(app.gameTree, app.Application, 1)
 
-		// Verify it displays
+		testhelper.SimulateTab(app.Application)
+		if app.GetFocus() != app.logTextView {
+			t.Error("Expected to be on the LogTextView, but wasn't")
+		}
+
+		// Select the log to edit
+		testhelper.MoveDown(app.logTextView, app.Application, 1)
+
+		// Hit Ctrl+E
+		testhelper.SimulateCtrlE(app.logTextView, app.Application)
+
+		// Verify the log modal displayed
 		frontPage, _ := app.pages.GetFrontPage()
 		if frontPage != LOG_MODAL_ID {
-			t.Error("Log page doesn't have focus")
+			t.Errorf("Log page doesn't have focus %s", frontPage)
 		}
 
 		// It only has Save, Cancel and Delete buttons
@@ -149,7 +164,7 @@ func TestLogView_ShowEditModal(t *testing.T) {
 		}
 
 		// Close it and verify it is hidden, main page is showing, and log view has focus
-		app.logView.HandleCancel()
+		testhelper.SimulateEscape(app.logForm, app.Application)
 		frontPage, _ = app.pages.GetFrontPage()
 		if frontPage != MAIN_PAGE_ID {
 			t.Error("Main page doesn't isn't in front")
@@ -162,7 +177,7 @@ func TestLogView_ShowEditModal(t *testing.T) {
 
 	t.Run("error message when log doesn't exist", func(t *testing.T) {
 		app.gameView.Refresh()
-		app.gameView.SelectGame(game.ID)
+		app.gameView.SelectGame(&game.ID)
 
 		// Open the modal
 		app.logView.ShowEditModal(2)
@@ -195,10 +210,15 @@ func TestLogView_HandleSave(t *testing.T) {
 
 	t.Run("save a new log", func(t *testing.T) {
 		app.gameView.Refresh()
-		app.gameView.SelectGame(game.ID)
+
+		// Navigate down in game tree to select the game
+		testhelper.SelectTreeEntry(app.gameTree, app.Application, 1)
+
+		// Tab to the logTextView
+		testhelper.SimulateTab(app.Application)
 
 		// Open the new modal
-		app.logView.ShowModal()
+		testhelper.SimulateKey(app.logTextView, app.Application, tcell.KeyCtrlN)
 
 		// Verify it displays
 		frontPage, _ := app.pages.GetFrontPage()
@@ -213,9 +233,9 @@ func TestLogView_HandleSave(t *testing.T) {
 		app.logForm.narrativeField.SetText("narrative", false)
 
 		// Save it
-		app.logView.HandleSave()
+		testhelper.SimulateKey(app.logForm, app.Application, tcell.KeyCtrlS)
 
-		// Close it and verify it is hidden, main page is showing, and log view has focus
+		// Verify the modal closed
 		frontPage, _ = app.pages.GetFrontPage()
 		if frontPage != MAIN_PAGE_ID {
 			t.Error("Main page doesn't isn't in front")
@@ -234,8 +254,10 @@ func TestLogView_HandleSave(t *testing.T) {
 	})
 
 	t.Run("save an existing log", func(t *testing.T) {
+		// start fresh
+		app.gameView.SelectGame(nil)
+		app.SetFocus(app.gameTree)
 		app.gameView.Refresh()
-		app.gameView.SelectGame(game.ID)
 
 		// Log to update
 		logEntry, _ := log.NewLog(game.ID)
@@ -248,17 +270,20 @@ func TestLogView_HandleSave(t *testing.T) {
 			t.Errorf("Issue saving the log: %e", err)
 		}
 
-		t.Logf("Entry: %+v", logEntry)
-
 		// Verify there are no logs for the game
 		logs, _ := app.logService.GetAllForGame(game.ID)
-		t.Logf("Log count: %d", len(logs))
 		if len(logs) == 0 {
 			t.Error("No logs for game")
 		}
 
-		// Open the new modal
-		app.logView.ShowEditModal(logs[0].ID)
+		// Navigate down in game tree to select the game
+		testhelper.SelectTreeEntry(app.gameTree, app.Application, 1)
+
+		// Tab to the logTextView
+		testhelper.SimulateTab(app.Application)
+		// Select the log to edit
+		testhelper.MoveDown(app.logTextView, app.Application, 1)
+		testhelper.SimulateCtrlE(app.logTextView, app.Application)
 
 		// Verify it displays
 		frontPage, _ := app.pages.GetFrontPage()
@@ -273,9 +298,9 @@ func TestLogView_HandleSave(t *testing.T) {
 		app.logForm.narrativeField.SetText("new narrative", false)
 
 		// Save it
-		app.logView.HandleSave()
+		testhelper.SimulateKey(app.logForm, app.Application, tcell.KeyCtrlS)
 
-		// Close it and verify it is hidden, main page is showing, and log view has focus
+		// Verify the modal closed and the data was saved
 		frontPage, _ = app.pages.GetFrontPage()
 		if frontPage != MAIN_PAGE_ID {
 			t.Error("Main page doesn't isn't in front")
@@ -288,32 +313,37 @@ func TestLogView_HandleSave(t *testing.T) {
 
 		// Verify the game has a log
 		logs, _ = app.logService.GetAllForGame(game.ID)
-		t.Logf("logs: %d", len(logs))
 		if len(logs) == 0 {
 			t.Error("No logs for game")
 		}
 
 		// Make sure the narrative is different
-		if logs[0].LogType == logEntry.LogType {
+		if logs[len(logs)-1].LogType == logEntry.LogType {
 			t.Error("log type didn't change")
 		}
-		if logs[0].Description == logEntry.Description {
+		if logs[len(logs)-1].Description == logEntry.Description {
 			t.Error("description didn't change")
 		}
-		if logs[0].Narrative == logEntry.Narrative {
+		if logs[len(logs)-1].Narrative == logEntry.Narrative {
 			t.Error("narrative didn't change")
 		}
-		if logs[0].Result == logEntry.Result {
+		if logs[len(logs)-1].Result == logEntry.Result {
 			t.Error("result didn't change")
 		}
 	})
 
 	t.Run("save a log with validation errors", func(t *testing.T) {
+		// Start Fresh
+		app.gameView.SelectGame(nil)
 		app.gameView.Refresh()
-		app.gameView.SelectGame(game.ID)
 
-		// Open the new modal
-		app.logView.ShowModal()
+		// Select the game, tab to the log view and open the new modal
+		testhelper.SelectTreeEntry(app.gameTree, app.Application, 1)
+		testhelper.SimulateTab(app.Application)
+		if app.GetFocus() != app.logTextView {
+			t.Error("Log Text View not in focus")
+		}
+		testhelper.SimulateCtrlN(app.logTextView, app.Application)
 
 		// Verify it displays
 		frontPage, _ := app.pages.GetFrontPage()
@@ -325,7 +355,7 @@ func TestLogView_HandleSave(t *testing.T) {
 		app.logForm.logTypeField.SetCurrentOption(1)
 
 		// Save it
-		app.logView.HandleSave()
+		testhelper.SimulateCtrlS(app.logForm, app.Application)
 
 		// Close it and verify it is hidden, main page is showing, and log view has focus
 		frontPage, _ = app.pages.GetFrontPage()
@@ -334,7 +364,7 @@ func TestLogView_HandleSave(t *testing.T) {
 		}
 
 		// Verify there are errors on the modal
-		if app.logForm.HasFieldErrors() {
+		if !app.logForm.HasFieldErrors() {
 			t.Error("No field errors")
 		}
 	})
@@ -353,9 +383,6 @@ func TestLogView_HandleDelete(t *testing.T) {
 	app.selectedGame = game
 
 	t.Run("delete a log with confirmation", func(t *testing.T) {
-		app.gameView.Refresh()
-		app.gameView.SelectGame(game.ID)
-
 		// Create a log to delete
 		logEntry, _ := log.NewLog(game.ID)
 		logEntry.LogType = log.CHARACTER_ACTION
@@ -371,8 +398,18 @@ func TestLogView_HandleDelete(t *testing.T) {
 			t.Error("No logs for game")
 		}
 
+		// Reset the game view and select the game
+		app.gameView.Refresh()
+		testhelper.SelectTreeEntry(app.gameTree, app.Application, 1)
+
 		// Open edit modal
-		app.logView.ShowEditModal(logEntry.ID)
+		testhelper.SimulateTab(app.Application)
+		if app.GetFocus() != app.logTextView {
+			t.Error("Log text view not in focus")
+		}
+		// Select the log to edit
+		testhelper.MoveDown(app.logTextView, app.Application, 1)
+		testhelper.SimulateCtrlE(app.logTextView, app.Application)
 
 		// Verify modal is showing
 		frontPage, _ := app.pages.GetFrontPage()
@@ -380,8 +417,8 @@ func TestLogView_HandleDelete(t *testing.T) {
 			t.Error("Log page doesn't have focus")
 		}
 
-		// Call HandleDelete - this sets up the confirmation modal
-		app.logView.HandleDelete()
+		// Delete it - this sets up the confirmation modal
+		testhelper.SimulateCtrlD(app.logForm, app.Application)
 
 		// Verify confirmation modal is showing
 		frontPage, _ = app.pages.GetFrontPage()
@@ -389,10 +426,8 @@ func TestLogView_HandleDelete(t *testing.T) {
 			t.Error("Confirm modal should be showing")
 		}
 
-		// Simulate clicking "Delete" by manually calling the onConfirm callback
-		if app.confirmModal.onConfirm != nil {
-			app.confirmModal.onConfirm()
-		}
+		// The delete button is in focus, so press enter to confirm
+		testhelper.SimulateEnter(app.confirmModal, app.Application)
 
 		// Verify log was deleted from database
 		logs, _ = app.logService.GetAllForGame(game.ID)
@@ -408,9 +443,6 @@ func TestLogView_HandleDelete(t *testing.T) {
 	})
 
 	t.Run("cancel log deletion", func(t *testing.T) {
-		app.gameView.Refresh()
-		app.gameView.SelectGame(game.ID)
-
 		// Create a log
 		logEntry, _ := log.NewLog(game.ID)
 		logEntry.LogType = log.MECHANICS
@@ -423,11 +455,23 @@ func TestLogView_HandleDelete(t *testing.T) {
 		logs, _ := app.logService.GetAllForGame(game.ID)
 		initialCount := len(logs)
 
-		// Open edit modal
-		app.logView.ShowEditModal(logEntry.ID)
+		// Start fresh
+		app.gameView.SelectGame(nil)
+		app.gameView.Refresh()
 
-		// Call HandleDelete
-		app.logView.HandleDelete()
+		testhelper.SelectTreeEntry(app.gameTree, app.Application, 1)
+
+		// Open edit modal
+		testhelper.SimulateTab(app.Application)
+		if app.GetFocus() != app.logTextView {
+			t.Error("Log text view not in focus")
+		}
+		// Select the log to edit
+		testhelper.MoveDown(app.logTextView, app.Application, 1)
+		testhelper.SimulateCtrlE(app.logTextView, app.Application)
+
+		// Delete it - this sets up the confirmation modal
+		testhelper.SimulateCtrlD(app.logForm, app.Application)
 
 		// Verify confirmation modal is showing
 		frontPage, _ := app.pages.GetFrontPage()
@@ -435,10 +479,9 @@ func TestLogView_HandleDelete(t *testing.T) {
 			t.Error("Confirm modal should be showing")
 		}
 
-		// Simulate clicking "Cancel" by calling onCancel callback
-		if app.confirmModal.onCancel != nil {
-			app.confirmModal.onCancel()
-		}
+		// Tab to the cancel button and press enter to cancel the deletion
+		testhelper.SimulateKey(app.confirmModal, app.Application, tcell.KeyTab)
+		testhelper.SimulateEnter(app.confirmModal, app.Application)
 
 		// Verify log still exists
 		logs, _ = app.logService.GetAllForGame(game.ID)

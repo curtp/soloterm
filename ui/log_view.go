@@ -431,6 +431,9 @@ func (lv *LogView) ShowEditModal(logID int64) {
 		return
 	}
 
+	// Set the selected log ID so HandleDelete knows which log to delete
+	lv.selectedLogID = &logID
+
 	lv.app.HandleEvent(&LogShowEditEvent{
 		BaseEvent: BaseEvent{action: LOG_SHOW_EDIT},
 		Log:       logEntry,
