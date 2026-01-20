@@ -54,7 +54,7 @@ func (cv *CharacterView) SetReturnFocus(focus tview.Primitive) {
 func (cv *CharacterView) setupCharacterTree() {
 	cv.app.charTree = tview.NewTreeView()
 	cv.app.charTree.SetBorder(true).
-		SetTitle(" [::b]Characters (Ctrl+C Jump To)").
+		SetTitle(" [::b]Characters (Ctrl+C Jump To) ").
 		SetTitleAlign(tview.AlignLeft)
 
 	// Set up selection handler for the tree
@@ -134,7 +134,7 @@ func (cv *CharacterView) setupAttributeTable() {
 	cv.app.attributeTable.SetSelectedStyle(tcell.Style{}.Background(tcell.ColorAqua).Foreground(tcell.ColorBlack))
 
 	cv.app.attributeTable.SetBorder(true).
-		SetTitle(" [::b]Sheet (Ctrl+S Jump To)").
+		SetTitle(" [::b]Sheet (Ctrl+S Jump To) ").
 		SetTitleAlign(tview.AlignLeft)
 
 	// Set up input capture for attribute table
