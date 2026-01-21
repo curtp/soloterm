@@ -336,7 +336,7 @@ func (lv *LogView) displayLogs(logs []*log.Log) {
 	// Write the output to the log
 	lv.app.logTextView.SetText(output)
 	// Update the title of the text area
-	lv.app.logTextView.SetTitle(" [::b]Session Logs (Ctrl+L Jump To) ")
+	lv.app.logTextView.SetTitle(" [::b]Session Logs (Ctrl+L) ")
 }
 
 // HandleSave processes log save operation
