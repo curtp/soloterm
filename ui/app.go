@@ -145,7 +145,7 @@ func (a *App) setupUI() {
 		SetText("SoloTerm - Solo RPG Session Logger\n\n" +
 			"By Squidhead Games\n" +
 			"https://squidhead-games.itch.io\n\n" +
-			"Version 1.0.4").
+			"Version 1.0.5").
 		AddButtons([]string{"Close"}).
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 			a.pages.HidePage(ABOUT_MODAL_ID)
