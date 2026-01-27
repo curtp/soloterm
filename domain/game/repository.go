@@ -98,7 +98,7 @@ func (r *Repository) insert(game *Game) error {
 	err := r.db.Connection.QueryRowx(query,
 		game.Name,
 		game.Description,
-	).Scan(&game.ID, &game.CreatedAt, &game.UpdatedAt)
+	).StructScan(game)
 
 	return err
 }
@@ -116,7 +116,7 @@ func (r *Repository) update(game *Game) error {
 		game.Name,
 		game.Description,
 		game.ID,
-	).Scan(&game.CreatedAt, &game.UpdatedAt)
+	).StructScan(game)
 
 	return err
 }

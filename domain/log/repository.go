@@ -174,7 +174,7 @@ func (r *Repository) insert(log *Log) error {
 		log.Description,
 		log.Result,
 		log.Narrative,
-	).Scan(&log.ID, &log.CreatedAt, &log.UpdatedAt)
+	).StructScan(log)
 
 	return err
 }
@@ -195,7 +195,7 @@ func (r *Repository) update(log *Log) error {
 		log.Result,
 		log.Narrative,
 		log.ID,
-	).Scan(&log.CreatedAt, &log.UpdatedAt)
+	).StructScan(log)
 
 	return err
 }

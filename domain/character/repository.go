@@ -174,7 +174,7 @@ func (r *Repository) insert(character *Character) error {
 		character.System,
 		character.Role,
 		character.Species,
-	).Scan(&character.ID, &character.CreatedAt, &character.UpdatedAt)
+	).StructScan(character)
 
 	return err
 }
@@ -194,7 +194,7 @@ func (r *Repository) update(character *Character) error {
 		character.Role,
 		character.Species,
 		character.ID,
-	).Scan(&character.CreatedAt, &character.UpdatedAt)
+	).StructScan(character)
 
 	return err
 }
@@ -214,7 +214,7 @@ func (r *Repository) insertAttribute(attribute *Attribute) error {
 		attribute.PositionInGroup,
 		attribute.Name,
 		attribute.Value,
-	).Scan(&attribute.ID, &attribute.CreatedAt, &attribute.UpdatedAt)
+	).StructScan(attribute)
 
 	return err
 }
@@ -234,7 +234,7 @@ func (r *Repository) updateAttribute(attribute *Attribute) error {
 		attribute.Name,
 		attribute.Value,
 		attribute.ID,
-	).Scan(&attribute.CreatedAt, &attribute.UpdatedAt)
+	).StructScan(attribute)
 
 	return err
 }
