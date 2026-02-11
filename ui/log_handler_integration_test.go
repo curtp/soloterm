@@ -16,7 +16,7 @@ func TestLogView_ShowModal(t *testing.T) {
 	defer testhelper.TeardownTestDB(t, db)
 
 	// Create the app
-	app := NewApp(db)
+	app := NewApp(db, nil)
 	game, _ := game.NewGame("a game")
 	app.gameService.Save(game)
 	if game.ID != 1 {
@@ -92,7 +92,7 @@ func TestLogView_ShowEditModal(t *testing.T) {
 	defer testhelper.TeardownTestDB(t, db)
 
 	// Create the app
-	app := NewApp(db)
+	app := NewApp(db, nil)
 	game, _ := game.NewGame("a game")
 	app.gameService.Save(game)
 	if game.ID != 1 {
@@ -201,7 +201,7 @@ func TestLogView_HandleSave(t *testing.T) {
 	defer testhelper.TeardownTestDB(t, db)
 
 	// Create the app
-	app := NewApp(db)
+	app := NewApp(db, nil)
 	game, _ := game.NewGame("a game")
 	app.gameService.Save(game)
 	if game.ID != 1 {
@@ -377,7 +377,7 @@ func TestLogView_HandleDelete(t *testing.T) {
 	defer testhelper.TeardownTestDB(t, db)
 
 	// Create the app
-	app := NewApp(db)
+	app := NewApp(db, nil)
 	game, _ := game.NewGame("a game")
 	app.gameService.Save(game)
 	app.selectedGame = game

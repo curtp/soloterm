@@ -3,9 +3,9 @@ package main
 import (
 	"log"
 	"os"
+	"soloterm/config"
 	"soloterm/database"
 	"soloterm/ui"
-	"time"
 )
 
 func main() {
@@ -13,15 +13,22 @@ func main() {
 
 	setupEnvironment()
 
-	log.Print("Starting...")
-	time.Sleep(3 * time.Second)
-
+	// Load configuration
+	var cfg config.Config
+	loadedCfg, err := cfg.Load(getWorkingDirectory())
+	if err != nil {
+		log.SetOutput(os.Stdout)
+		log.Fatal("Failed to load config: ", err)
+	}
+	log.Printf("Using configuration file: %s", cfg.FullFilePath)
 	// Setup logging to file
 	logFile, err := os.OpenFile(getWorkingDirectory()+"/soloterm.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatal("Failed to open log file: ", err)
 	}
 	defer logFile.Close()
+	log.Printf("Logs are written to: %s", logFile.Name())
+	log.Print("Starting...")
 	log.SetOutput(logFile)
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 
@@ -34,7 +41,7 @@ func main() {
 	defer db.Connection.Close()
 
 	// Create and run the TUI application
-	app := ui.NewApp(db)
+	app := ui.NewApp(db, loadedCfg)
 	if err := app.EnableMouse(false).Run(); err != nil {
 		log.SetOutput(os.Stdout)
 		log.Fatal("Application error:", err)
@@ -52,8 +59,9 @@ func setupEnvironment() {
 		log.Printf("SOLOTERM_WORK_DIR environment variable not found")
 		log.Printf("Setting to: %s", workDir)
 		log.Printf("To change the work dir, set the environment variable and restart the app.")
-		log.Printf("The database files and application log will be located in this directory.\n\n")
+		log.Printf("The database files and application log will be located in this directory.")
 	}
+
 }
 
 func getWorkingDirectory() string {

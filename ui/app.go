@@ -5,10 +5,12 @@ package ui
 import (
 	"fmt"
 	"slices"
+	"soloterm/config"
 	"soloterm/database"
 	"soloterm/domain/character"
 	"soloterm/domain/game"
 	"soloterm/domain/log"
+	"soloterm/domain/tag"
 	sharedui "soloterm/shared/ui"
 
 	"github.com/gdamore/tcell/v2"
@@ -18,6 +20,7 @@ import (
 const (
 	GAME_MODAL_ID      string = "gameModal"
 	LOG_MODAL_ID       string = "logModal"
+	TAG_MODAL_ID       string = "tagModal"
 	CHARACTER_MODAL_ID string = "characterModal"
 	ATTRIBUTE_MODAL_ID string = "attributeModal"
 	CONFIRM_MODAL_ID   string = "confirm"
@@ -35,13 +38,16 @@ type App struct {
 
 	// Dependencies
 	db          *database.DBStore
+	cfg         *config.Config
 	gameService *game.Service
 	logService  *log.Service
 	charService *character.Service
+	tagService  *tag.Service
 
 	// View helpers
 	gameView      *GameView
 	logView       *LogView
+	tagView       *TagView
 	characterView *CharacterView
 
 	// Application State
@@ -69,6 +75,10 @@ type App struct {
 	logModal              *tview.Flex
 	logModalContent       *tview.Flex // Container with border that holds form + help
 	logForm               *LogForm
+	tagModal              *tview.Flex
+	tagModalContent       *tview.Flex
+	tagList               *tview.List
+	tagTable              *tview.Table
 	characterModal        *tview.Flex
 	characterForm         *CharacterForm
 	attributeModal        *tview.Flex
@@ -77,13 +87,15 @@ type App struct {
 	notification          *Notification
 }
 
-func NewApp(db *database.DBStore) *App {
+func NewApp(db *database.DBStore, cfg *config.Config) *App {
 	app := &App{
 		Application: tview.NewApplication(),
 		db:          db,
+		cfg:         cfg,
 		gameService: game.NewService(game.NewRepository(db)),
 		logService:  log.NewService(log.NewRepository(db)),
 		charService: character.NewService(character.NewRepository(db)),
+		tagService:  tag.NewService(log.NewRepository(db)),
 	}
 
 	// Initialize forms
@@ -95,6 +107,7 @@ func NewApp(db *database.DBStore) *App {
 	// Initialize views
 	app.gameView = NewGameView(app)
 	app.logView = NewLogView(app)
+	app.tagView = NewTagView(app)
 	app.characterView = NewCharacterView(app)
 
 	app.setupUI()
@@ -110,6 +123,9 @@ func (a *App) setupUI() {
 
 	// Setup the log view area of the app and everything it needs to work
 	a.logView.Setup()
+
+	// Setup the tag view
+	a.tagView.Setup()
 
 	// Footer with help text
 	a.footer = tview.NewTextView().
@@ -155,6 +171,7 @@ func (a *App) setupUI() {
 	a.confirmModal = NewConfirmationModal()
 
 	// Pages for modal overlay (must be created BEFORE notification setup)
+	// Note: Pages added later appear on top of earlier pages
 	a.pages = tview.NewPages().
 		AddPage(MAIN_PAGE_ID, mainContent, true, true).
 		AddPage(ABOUT_MODAL_ID, a.aboutModal, true, false).
@@ -162,7 +179,8 @@ func (a *App) setupUI() {
 		AddPage(LOG_MODAL_ID, a.logModal, true, false).
 		AddPage(CHARACTER_MODAL_ID, a.characterModal, true, false).
 		AddPage(ATTRIBUTE_MODAL_ID, a.attributeModal, true, false).
-		AddPage(CONFIRM_MODAL_ID, a.confirmModal, true, false)
+		AddPage(TAG_MODAL_ID, a.tagModal, true, false).        // Tag modal on top of forms
+		AddPage(CONFIRM_MODAL_ID, a.confirmModal, true, false) // Confirm always on top
 	a.pages.SetBackgroundColor(tcell.ColorDefault)
 
 	// Create notification flex (initially hidden - just shows pages)
@@ -424,7 +442,20 @@ func (a *App) HandleEvent(event Event) {
 		if e, ok := event.(*AttributeShowEditEvent); ok {
 			a.handleAttributeShowEdit(e)
 		}
+	case TAG_SELECTED:
+		if e, ok := event.(*TagSelectedEvent); ok {
+			a.handleTagSelected(e)
+		}
+	case TAG_CANCEL:
+		if e, ok := event.(*TagCancelledEvent); ok {
+			a.handleTagCancelled(e)
+		}
+	case TAG_SHOW:
+		if e, ok := event.(*TagShowEvent); ok {
+			a.handleTagShow(e)
+		}
 	}
+
 }
 
 func (a *App) handleGameSaved(e *GameSavedEvent) {
@@ -742,4 +773,28 @@ func (a *App) handleAttributeShowEdit(e *AttributeShowEditEvent) {
 	a.attributeForm.PopulateForEdit(e.Attribute)
 	a.pages.ShowPage(ATTRIBUTE_MODAL_ID)
 	a.SetFocus(a.attributeForm)
+}
+
+func (a *App) handleTagSelected(e *TagSelectedEvent) {
+	a.pages.HidePage(TAG_MODAL_ID)
+
+	// Try to insert template into the stored field
+	if !a.tagView.InsertTemplateIntoField(a.tagView.returnFocus, e.TagType.Template) {
+		a.notification.ShowWarning("Tags can only be added to editable areas")
+	} else {
+		// Restore focus to the field
+		a.SetFocus(a.tagView.returnFocus)
+	}
+}
+
+func (a *App) handleTagCancelled(e *TagCancelledEvent) {
+	a.pages.HidePage(TAG_MODAL_ID)
+}
+
+func (a *App) handleTagShow(e *TagShowEvent) {
+	// Store current focus so we can restore it after tag selection
+	a.tagView.returnFocus = a.GetFocus()
+	a.tagView.Refresh()
+	a.pages.ShowPage(TAG_MODAL_ID)
+	a.SetFocus(a.tagTable)
 }

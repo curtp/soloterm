@@ -4,6 +4,7 @@ import (
 	"soloterm/domain/character"
 	"soloterm/domain/game"
 	"soloterm/domain/log"
+	"soloterm/domain/tag"
 )
 
 // UserAction represents user-triggered application events
@@ -42,6 +43,9 @@ const (
 	ATTRIBUTE_CANCEL            UserAction = "attribute_cancel"
 	ATTRIBUTE_SHOW_NEW          UserAction = "attribute_show_new"
 	ATTRIBUTE_SHOW_EDIT         UserAction = "attribute_show_edit"
+	TAG_SELECTED                UserAction = "tag_selected"
+	TAG_CANCEL                  UserAction = "tag_cancel"
+	TAG_SHOW                    UserAction = "tag_show"
 )
 
 // Base event interface
@@ -209,4 +213,18 @@ type AttributeShowNewEvent struct {
 type AttributeShowEditEvent struct {
 	BaseEvent
 	Attribute *character.Attribute
+}
+
+// ====== TAG SPECIFIC EVENTS ======
+type TagSelectedEvent struct {
+	BaseEvent
+	TagType *tag.TagType
+}
+
+type TagCancelledEvent struct {
+	BaseEvent
+}
+
+type TagShowEvent struct {
+	BaseEvent
 }

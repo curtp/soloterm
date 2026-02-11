@@ -5,10 +5,11 @@ FROM golang:1.25
 RUN apt-get update && apt-get install -y \
     nano \
     curl \
+    sqlite3 \
+    libsqlite3-dev \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt install sqlite3 libsqlite3-dev
+    && rm -rf /var/lib/apt/lists/* 
 
 # Set the working directory inside the container
 WORKDIR /app

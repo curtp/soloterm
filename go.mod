@@ -5,6 +5,7 @@ go 1.25.5
 require (
 	github.com/gdamore/tcell/v2 v2.8.1
 	github.com/jmoiron/sqlx v1.4.0
+	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.40.1
 )
 

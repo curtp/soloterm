@@ -107,6 +107,16 @@ func (lv *LogView) setupKeyBindings() {
 		case tcell.KeyDown:
 			lv.highlightNextLog()
 			return nil
+		case tcell.KeyPgUp:
+			// Scroll up within the text view
+			row, col := lv.app.logTextView.GetScrollOffset()
+			lv.app.logTextView.ScrollTo(row-20, col)
+			return nil
+		case tcell.KeyPgDn:
+			// Scroll down within the text view
+			row, col := lv.app.logTextView.GetScrollOffset()
+			lv.app.logTextView.ScrollTo(row+20, col)
+			return nil
 		case tcell.KeyCtrlE:
 			// Get currently highlighted region and open edit modal
 			if lv.selectedLogID != nil {
@@ -117,14 +127,28 @@ func (lv *LogView) setupKeyBindings() {
 			lv.ShowModal()
 			return nil
 		}
+
 		return event
 	})
+
+	lv.app.logModal.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyCtrlT:
+			// Dispatch event with saved log
+			lv.app.HandleEvent(&TagShowEvent{
+				BaseEvent: BaseEvent{action: TAG_SHOW},
+			})
+			return nil
+		}
+		return event
+	})
+
 }
 
 // setupFocusHandlers configures focus event handlers
 func (lv *LogView) setupFocusHandlers() {
 	lv.app.logTextView.SetFocusFunc(func() {
-		lv.app.updateFooterHelp("[aqua::b]Session Logs[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Ctrl+E[white] Edit  [yellow]Ctrl+N[white] New")
+		lv.app.updateFooterHelp("[aqua::b]Session Logs[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]PgUp/PgDn[white] Scroll  [yellow]Ctrl+E[white] Edit  [yellow]Ctrl+N[white] New")
 	})
 }
 
