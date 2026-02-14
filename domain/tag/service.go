@@ -2,23 +2,23 @@ package tag
 
 import (
 	"regexp"
-	"soloterm/domain/log"
+	"soloterm/domain/session"
 	"sort"
 	"strings"
 )
 
 // Service handles tag-related business logic
 type Service struct {
-	logRepo *log.Repository
+	sessionRepo *session.Repository
 }
 
 // NewService creates a new tag service
-func NewService(logRepo *log.Repository) *Service {
-	return &Service{logRepo: logRepo}
+func NewService(sessionRepo *session.Repository) *Service {
+	return &Service{sessionRepo: sessionRepo}
 }
 
-// LoadTagsForGame loads both configured tags and recent tags from logs
-// Returns configured tags first, then recent tags extracted from logs
+// LoadTagsForGame loads both configured tags and recent tags from sessions
+// Returns configured tags first, then recent tags extracted from session content
 func (s *Service) LoadTagsForGame(gameID int64, configTags []TagType, excludeWords []string) ([]TagType, error) {
 	// Sort the config tags by label
 	sort.Slice(configTags, func(i, j int) bool {
@@ -30,15 +30,15 @@ func (s *Service) LoadTagsForGame(gameID int64, configTags []TagType, excludeWor
 		return configTags, nil
 	}
 
-	// Get all logs for the game
-	logs, err := s.logRepo.GetAllForGame(gameID)
+	// Get all session content for the game
+	contents, err := s.sessionRepo.GetAllContentForGame(gameID)
 	if err != nil {
-		// Return configured tags even if log loading fails
+		// Return configured tags even if loading fails
 		return configTags, nil
 	}
 
-	// Extract recent tags from logs
-	recentTags := s.extractRecentTags(logs, excludeWords)
+	// Extract recent tags from session content
+	recentTags := s.extractRecentTags(contents, excludeWords)
 
 	// Combine: configured tags first, then recent tags
 	allTags := make([]TagType, 0, len(configTags)+len(recentTags))
@@ -48,8 +48,8 @@ func (s *Service) LoadTagsForGame(gameID int64, configTags []TagType, excludeWor
 	return allTags, nil
 }
 
-// extractRecentTags extracts tags from logs, deduplicates by type, keeps most recent
-func (s *Service) extractRecentTags(logs []*log.Log, excludeWords []string) []TagType {
+// extractRecentTags extracts tags from session content, deduplicates by type, keeps most recent
+func (s *Service) extractRecentTags(contents []string, excludeWords []string) []TagType {
 	// Map of tag type (identifier) -> most recent full tag
 	// We iterate in reverse order (most recent first) to keep the newest
 	tagMap := make(map[string]string)
@@ -61,17 +61,16 @@ func (s *Service) extractRecentTags(logs []*log.Log, excludeWords []string) []Ta
 	// Captures tag identifier and optional data section separately
 	tagRegex := regexp.MustCompile(`\[([^\]|]+)(\|[^\]\[]*)?\]`)
 
-	// Process logs in reverse order (newest first) since GetAllForGame returns ASC order
-	for i := len(logs) - 1; i >= 0; i-- {
-		log := logs[i]
+	// Process contents in reverse order (newest first)
+	for i := len(contents) - 1; i >= 0; i-- {
+		content := contents[i]
 
-		// Search all text fields for tags
-		allText := log.Description + " " + log.Narrative + " " + log.Result
+		// Find all tags in this content
+		matches := tagRegex.FindAllStringSubmatch(content, -1)
 
-		// Find all tags in this log
-		matches := tagRegex.FindAllStringSubmatch(allText, -1)
-
-		for _, match := range matches {
+		// Iterate matches in reverse so the last occurrence in a session wins
+		for j := len(matches) - 1; j >= 0; j-- {
+			match := matches[j]
 			if len(match) >= 2 {
 				// match[1] is the tag identifier (everything from [ to first | or ])
 				identifier := strings.TrimSpace(match[1])

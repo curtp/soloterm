@@ -2,25 +2,25 @@ package ui
 
 import (
 	"soloterm/domain/game"
-	"soloterm/domain/log"
+	"soloterm/domain/session"
 )
 
 type GameWithSessions struct {
 	Game     *game.Game
-	Sessions []*log.Session
+	Sessions []*session.Session
 }
 
 // GameViewHelper coordinates game-related UI operations
 type GameViewHelper struct {
-	gameService *game.Service
-	logService  *log.Service
+	gameService    *game.Service
+	sessionService *session.Service
 }
 
 // Create a new game helper which uses the game and log services provided
-func NewGameViewHelper(gameService *game.Service, logService *log.Service) *GameViewHelper {
+func NewGameViewHelper(gameService *game.Service, sessionService *session.Service) *GameViewHelper {
 	return &GameViewHelper{
-		gameService: gameService,
-		logService:  logService,
+		gameService:    gameService,
+		sessionService: sessionService,
 	}
 }
 
@@ -36,7 +36,7 @@ func (gh *GameViewHelper) LoadAllGames() ([]*GameWithSessions, error) {
 
 	for _, g := range games {
 		// Load the sessions for the game
-		sessions, err := gh.logService.GetSessionsForGame(g.ID)
+		sessions, err := gh.sessionService.GetAllForGame(g.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -55,11 +55,3 @@ func (gh *GameViewHelper) IsGame(reference any) (*game.Game, bool) {
 	return g, ok
 }
 
-func (gh *GameViewHelper) IsSession(reference any) (*log.Session, bool) {
-	if reference == nil {
-		return nil, false
-	}
-
-	s, ok := reference.(*log.Session)
-	return s, ok
-}

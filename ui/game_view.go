@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"soloterm/domain/game"
 	sharedui "soloterm/shared/ui"
-	"strconv"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -21,7 +20,7 @@ type GameView struct {
 func NewGameView(app *App) *GameView {
 	return &GameView{
 		app:    app,
-		helper: NewGameViewHelper(app.gameService, app.logService),
+		helper: NewGameViewHelper(app.gameService, app.sessionService),
 	}
 }
 
@@ -55,10 +54,16 @@ func (gv *GameView) setupTreeView() {
 		// If node has children (it's a game), expand/collapse it
 		if len(node.GetChildren()) > 0 {
 			node.SetExpanded(!node.IsExpanded())
+			return
 		}
 
-		gv.app.HandleEvent(&GameSelectedEvent{
-			BaseEvent: BaseEvent{action: GAME_SELECTED},
+		selectedGame := gv.getSelectedGame()
+
+		// Selected a session, send the event
+		gv.app.HandleEvent(&SessionSelectedEvent{
+			BaseEvent: BaseEvent{action: SESSION_SELECTED},
+			SessionID: *currentSelection.SessionID,
+			GameName:  selectedGame.Name,
 		})
 	})
 }
@@ -171,10 +176,8 @@ func (gv *GameView) Refresh() {
 		} else {
 			// Add session nodes
 			for _, s := range g.Sessions {
-				reference = &GameState{GameID: &g.Game.ID, SessionDate: &s.Date}
-				// Parse the date to format it nicely
-				sessionLabel := s.Date + " (" + strconv.Itoa(s.LogCount) + " entries)"
-				sessionNode := tview.NewTreeNode(sessionLabel).
+				reference = &GameState{GameID: &g.Game.ID, SessionID: &s.ID}
+				sessionNode := tview.NewTreeNode(s.Name).
 					SetReference(reference).
 					SetColor(tcell.ColorAqua).
 					SetSelectable(true).
@@ -182,8 +185,8 @@ func (gv *GameView) Refresh() {
 				gameNode.AddChild(sessionNode)
 
 				// Check if this session was previously selected
-				if currentSelection != nil && currentSelection.SessionDate != nil &&
-					s.GameID == *currentSelection.GameID && s.Date == *currentSelection.SessionDate {
+				if currentSelection != nil && currentSelection.SessionID != nil &&
+					s.GameID == *currentSelection.GameID && s.ID == *currentSelection.SessionID {
 					gv.app.gameTree.SetCurrentNode(sessionNode)
 					gameNode.SetExpanded(true)
 				}
@@ -233,6 +236,28 @@ func (gv *GameView) SelectGame(gameID *int64) {
 	if foundNode != nil {
 		gv.app.gameTree.SetCurrentNode(foundNode)
 		foundNode.SetExpanded(true)
+	}
+}
+
+func (gv *GameView) SelectSession(sessionID int64) {
+	if gv.app.gameTree.GetRoot() == nil {
+		return
+	}
+
+	var foundNode *tview.TreeNode
+	gv.app.gameTree.GetRoot().Walk(func(node, parent *tview.TreeNode) bool {
+		ref := node.GetReference()
+		if ref != nil {
+			if state, ok := ref.(*GameState); ok && state.SessionID != nil && *state.SessionID == sessionID {
+				foundNode = node
+				return false // Stop walking children of this node
+			}
+		}
+		return true // Continue walking
+	})
+
+	if foundNode != nil {
+		gv.app.gameTree.SetCurrentNode(foundNode)
 	}
 }
 

@@ -9,7 +9,7 @@ import (
 	"soloterm/database"
 	"soloterm/domain/character"
 	"soloterm/domain/game"
-	"soloterm/domain/log"
+	"soloterm/domain/session"
 	"soloterm/domain/tag"
 	sharedui "soloterm/shared/ui"
 
@@ -19,35 +19,36 @@ import (
 
 const (
 	GAME_MODAL_ID      string = "gameModal"
-	LOG_MODAL_ID       string = "logModal"
 	TAG_MODAL_ID       string = "tagModal"
 	CHARACTER_MODAL_ID string = "characterModal"
 	ATTRIBUTE_MODAL_ID string = "attributeModal"
 	CONFIRM_MODAL_ID   string = "confirm"
 	MAIN_PAGE_ID       string = "main"
 	ABOUT_MODAL_ID     string = "about"
+	SESSION_MODAL_ID      string = "sessionModal"
+	SESSION_HELP_MODAL_ID string = "sessionHelpModal"
 )
 
 type GameState struct {
-	GameID      *int64
-	SessionDate *string
+	GameID    *int64
+	SessionID *int64
 }
 
 type App struct {
 	*tview.Application
 
 	// Dependencies
-	db          *database.DBStore
-	cfg         *config.Config
-	gameService *game.Service
-	logService  *log.Service
-	charService *character.Service
-	tagService  *tag.Service
+	db             *database.DBStore
+	cfg            *config.Config
+	gameService    *game.Service
+	sessionService *session.Service
+	charService    *character.Service
+	tagService     *tag.Service
 
 	// View helpers
 	gameView      *GameView
-	logView       *LogView
 	tagView       *TagView
+	sessionView   *SessionView
 	characterView *CharacterView
 
 	// Application State
@@ -66,15 +67,11 @@ type App struct {
 	charTree              *tview.TreeView
 	charInfoView          *tview.TextView
 	attributeTable        *tview.Table
-	logTextView           *tview.TextView
 	aboutModal            *tview.Modal
 	confirmModal          *ConfirmationModal
 	footer                *tview.TextView
 	gameModal             *tview.Flex
 	gameForm              *GameForm
-	logModal              *tview.Flex
-	logModalContent       *tview.Flex // Container with border that holds form + help
-	logForm               *LogForm
 	tagModal              *tview.Flex
 	tagModalContent       *tview.Flex
 	tagList               *tview.List
@@ -85,28 +82,28 @@ type App struct {
 	attributeModalContent *tview.Flex // Container with border that holds form + help
 	attributeForm         *AttributeForm
 	notification          *Notification
+	sessionModal          *tview.Flex
 }
 
 func NewApp(db *database.DBStore, cfg *config.Config) *App {
 	app := &App{
-		Application: tview.NewApplication(),
-		db:          db,
-		cfg:         cfg,
-		gameService: game.NewService(game.NewRepository(db)),
-		logService:  log.NewService(log.NewRepository(db)),
-		charService: character.NewService(character.NewRepository(db)),
-		tagService:  tag.NewService(log.NewRepository(db)),
+		Application:    tview.NewApplication(),
+		db:             db,
+		cfg:            cfg,
+		gameService:    game.NewService(game.NewRepository(db)),
+		charService:    character.NewService(character.NewRepository(db)),
+		tagService:     tag.NewService(session.NewRepository(db)),
+		sessionService: session.NewService(session.NewRepository(db)),
 	}
 
 	// Initialize forms
 	app.gameForm = NewGameForm()
-	app.logForm = NewLogForm()
 	app.characterForm = NewCharacterForm()
 	app.attributeForm = NewAttributeForm()
 
 	// Initialize views
 	app.gameView = NewGameView(app)
-	app.logView = NewLogView(app)
+	app.sessionView = NewSessionView(app, app.sessionService)
 	app.tagView = NewTagView(app)
 	app.characterView = NewCharacterView(app)
 
@@ -121,11 +118,11 @@ func (a *App) setupUI() {
 	// Setup the character view area
 	a.characterView.Setup()
 
-	// Setup the log view area of the app and everything it needs to work
-	a.logView.Setup()
-
 	// Setup the tag view
 	a.tagView.Setup()
+
+	// Setup the Session view
+	a.sessionView.Setup()
 
 	// Footer with help text
 	a.footer = tview.NewTextView().
@@ -135,8 +132,11 @@ func (a *App) setupUI() {
 	// Character pane combining info and attributes
 	a.charPane = tview.NewFlex().
 		SetDirection(tview.FlexRow).
-		AddItem(a.charInfoView, 6, 1, false).  // Proportional height (smaller weight)
+		AddItem(a.charInfoView, 4, 1, false).  // Proportional height (smaller weight)
 		AddItem(a.attributeTable, 0, 2, false) // Proportional height (larger weight - gets 2x space)
+	a.charPane.SetBorder(true).
+		SetTitle(" [::b]Character Sheet (Ctrl+S) ").
+		SetTitleAlign(tview.AlignLeft)
 
 	a.leftSidebar = tview.NewFlex().
 		SetDirection(tview.FlexRow).
@@ -147,8 +147,8 @@ func (a *App) setupUI() {
 	// Main layout: horizontal split of tree (left, narrow) and log view (right)
 	a.mainFlex = tview.NewFlex().
 		SetDirection(tview.FlexColumn).
-		AddItem(a.leftSidebar, 0, 1, false). // 1/3 of the width
-		AddItem(a.logTextView, 0, 2, true)   // 2/3 of the width
+		AddItem(a.leftSidebar, 0, 1, false).        // 1/3 of the width
+		AddItem(a.sessionView.TextArea, 0, 2, true) // 2/3 of the width
 
 	// Main content with footer
 	mainContent := tview.NewFlex().
@@ -161,7 +161,9 @@ func (a *App) setupUI() {
 		SetText("SoloTerm - Solo RPG Session Logger\n\n" +
 			"By Squidhead Games\n" +
 			"https://squidhead-games.itch.io\n\n" +
-			"Version 1.0.5").
+			"Version 1.0.5\n\n" +
+			"Lonelog by Loreseed Workshop\n" +
+			"https://zeruhur.itch.io/lonelog").
 		AddButtons([]string{"Close"}).
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 			a.pages.HidePage(ABOUT_MODAL_ID)
@@ -176,10 +178,11 @@ func (a *App) setupUI() {
 		AddPage(MAIN_PAGE_ID, mainContent, true, true).
 		AddPage(ABOUT_MODAL_ID, a.aboutModal, true, false).
 		AddPage(GAME_MODAL_ID, a.gameModal, true, false).
-		AddPage(LOG_MODAL_ID, a.logModal, true, false).
 		AddPage(CHARACTER_MODAL_ID, a.characterModal, true, false).
 		AddPage(ATTRIBUTE_MODAL_ID, a.attributeModal, true, false).
-		AddPage(TAG_MODAL_ID, a.tagModal, true, false).        // Tag modal on top of forms
+		AddPage(SESSION_MODAL_ID, a.sessionView.Modal, true, false).
+		AddPage(SESSION_HELP_MODAL_ID, a.sessionView.HelpModal, true, false).
+		AddPage(TAG_MODAL_ID, a.tagModal, true, false). // Tag modal on top of forms
 		AddPage(CONFIRM_MODAL_ID, a.confirmModal, true, false) // Confirm always on top
 	a.pages.SetBackgroundColor(tcell.ColorDefault)
 
@@ -225,7 +228,7 @@ func (a *App) SetModalHelpMessage(form sharedui.DataForm) {
 
 func (a *App) setupKeyBindings() {
 	a.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		switchable := []tview.Primitive{a.gameTree, a.logTextView, a.charTree, a.charInfoView, a.attributeTable}
+		switchable := []tview.Primitive{a.gameTree, a.sessionView.TextArea, a.charTree, a.attributeTable}
 		switch event.Key() {
 		case tcell.KeyCtrlQ:
 			a.Stop()
@@ -248,7 +251,7 @@ func (a *App) setupKeyBindings() {
 			}
 		case tcell.KeyCtrlL:
 			if slices.Contains(switchable, a.GetFocus()) {
-				a.SetFocus(a.logTextView)
+				a.SetFocus(a.sessionView.TextArea)
 				return nil
 			}
 		case tcell.KeyF1:
@@ -260,15 +263,12 @@ func (a *App) setupKeyBindings() {
 			currentFocus := a.GetFocus()
 			switch currentFocus {
 			case a.gameTree:
-				a.SetFocus(a.logTextView)
+				a.SetFocus(a.sessionView.TextArea)
 				return nil
-			case a.logTextView:
+			case a.sessionView.TextArea:
 				a.SetFocus(a.charTree)
 				return nil
 			case a.charTree:
-				a.SetFocus(a.charInfoView)
-				return nil
-			case a.charInfoView:
 				a.SetFocus(a.attributeTable)
 				return nil
 			case a.attributeTable:
@@ -283,17 +283,14 @@ func (a *App) setupKeyBindings() {
 			case a.gameTree:
 				a.SetFocus(a.attributeTable)
 				return nil
-			case a.logTextView:
+			case a.sessionView.TextArea:
 				a.SetFocus(a.gameTree)
 				return nil
 			case a.charTree:
-				a.SetFocus(a.logTextView)
-				return nil
-			case a.charInfoView:
-				a.SetFocus(a.charTree)
+				a.SetFocus(a.sessionView.TextArea)
 				return nil
 			case a.attributeTable:
-				a.SetFocus(a.charInfoView)
+				a.SetFocus(a.charTree)
 				return nil
 			}
 			// If focus is not on main views (ie. in a modal), let Tab work normally
@@ -345,34 +342,6 @@ func (a *App) HandleEvent(event Event) {
 	case GAME_SELECTED:
 		if e, ok := event.(*GameSelectedEvent); ok {
 			a.handleGameSelected(e)
-		}
-	case LOG_SAVED:
-		if e, ok := event.(*LogSavedEvent); ok {
-			a.handleLogSaved(e)
-		}
-	case LOG_CANCEL:
-		if e, ok := event.(*LogCancelledEvent); ok {
-			a.handleLogCancel(e)
-		}
-	case LOG_DELETE_CONFIRM:
-		if e, ok := event.(*LogDeleteConfirmEvent); ok {
-			a.handleLogDeleteConfirm(e)
-		}
-	case LOG_DELETED:
-		if e, ok := event.(*LogDeletedEvent); ok {
-			a.handleLogDeleted(e)
-		}
-	case LOG_DELETE_FAILED:
-		if e, ok := event.(*LogDeleteFailedEvent); ok {
-			a.handleLogDeleteFailed(e)
-		}
-	case LOG_SHOW_NEW:
-		if e, ok := event.(*LogShowNewEvent); ok {
-			a.handleLogShowNew(e)
-		}
-	case LOG_SHOW_EDIT:
-		if e, ok := event.(*LogShowEditEvent); ok {
-			a.handleLogShowEdit(e)
 		}
 	case CHARACTER_SAVED:
 		if e, ok := event.(*CharacterSavedEvent); ok {
@@ -454,6 +423,46 @@ func (a *App) HandleEvent(event Event) {
 		if e, ok := event.(*TagShowEvent); ok {
 			a.handleTagShow(e)
 		}
+	case SESSION_SHOW_NEW:
+		if e, ok := event.(*SessionShowNewEvent); ok {
+			a.handleSessionShowNew(e)
+		}
+	case SESSION_CANCEL:
+		if e, ok := event.(*SessionCancelledEvent); ok {
+			a.handleSessionCancelled(e)
+		}
+	case SESSION_SELECTED:
+		if e, ok := event.(*SessionSelectedEvent); ok {
+			a.handleSessionSelected(e)
+		}
+	case SESSION_SAVED:
+		if e, ok := event.(*SessionSavedEvent); ok {
+			a.handleSessionSaved(e)
+		}
+	case SESSION_SHOW_EDIT:
+		if e, ok := event.(*SessionShowEditEvent); ok {
+			a.handleSessionShowEdit(e)
+		}
+	case SESSION_DELETE_CONFIRM:
+		if e, ok := event.(*SessionDeleteConfirmEvent); ok {
+			a.handleSessionDeleteConfirm(e)
+		}
+	case SESSION_DELETED:
+		if e, ok := event.(*SessionDeletedEvent); ok {
+			a.handleSessionDeleted(e)
+		}
+	case SESSION_DELETE_FAILED:
+		if e, ok := event.(*SessionDeleteFailedEvent); ok {
+			a.handleSessionDeleteFailed(e)
+		}
+	case SESSION_SHOW_HELP:
+		if e, ok := event.(*SessionShowHelpEvent); ok {
+			a.handleSessionShowHelp(e)
+		}
+	case SESSION_CLOSE_HELP:
+		if e, ok := event.(*SessionCloseHelpEvent); ok {
+			a.handleSessionCloseHelp(e)
+		}
 	}
 
 }
@@ -463,7 +472,6 @@ func (a *App) handleGameSaved(e *GameSavedEvent) {
 	a.pages.HidePage(GAME_MODAL_ID)
 	a.gameView.SelectGame(&e.Game.ID)
 	a.gameView.Refresh()
-	a.logView.Refresh()
 	a.SetFocus(a.gameTree)
 	a.notification.ShowSuccess("Game saved successfully")
 }
@@ -479,7 +487,7 @@ func (a *App) handleGameDeleteConfirm(e *GameDeleteConfirmEvent) {
 
 	// Configure confirmation modal
 	a.confirmModal.Configure(
-		"Are you sure you want to delete this game and all associated log entries?\n\nThis action cannot be undone.",
+		"Are you sure you want to delete this game and all associated sessions?\n\nThis action cannot be undone.",
 		func() {
 			// On confirm, call handler method to perform deletion
 			a.gameView.ConfirmDelete(e.GameID)
@@ -499,11 +507,6 @@ func (a *App) handleGameDeleted(_ *GameDeletedEvent) {
 	// Close modals
 	a.pages.HidePage(CONFIRM_MODAL_ID)
 	a.pages.HidePage(GAME_MODAL_ID)
-
-	// Reset log view to default state
-	a.logView.Refresh()
-	a.logTextView.Clear()
-	a.logTextView.SetTitle(" Select Game To View ")
 
 	// Refresh and focus
 	a.gameView.Refresh()
@@ -527,7 +530,6 @@ func (a *App) handleGameShowEdit(e *GameShowEditEvent) {
 		return
 	}
 
-	a.logView.Refresh()
 	a.gameForm.PopulateForEdit(e.Game)
 	a.pages.ShowPage(GAME_MODAL_ID)
 	a.SetFocus(a.gameForm)
@@ -540,77 +542,6 @@ func (a *App) handleGameShowNew(_ *GameShowNewEvent) {
 }
 
 func (a *App) handleGameSelected(_ *GameSelectedEvent) {
-	a.logView.Refresh()
-	a.logTextView.ScrollToBeginning()
-}
-
-func (a *App) handleLogSaved(_ *LogSavedEvent) {
-	a.logForm.ClearFieldErrors()
-	a.pages.HidePage(LOG_MODAL_ID)
-	a.logView.Refresh()
-	a.gameView.Refresh()
-	a.SetFocus(a.logTextView)
-	a.notification.ShowSuccess("Log saved successfully")
-}
-
-func (a *App) handleLogCancel(_ *LogCancelledEvent) {
-	a.logForm.ClearFieldErrors()
-	a.pages.HidePage(LOG_MODAL_ID)
-	a.pages.SwitchToPage(MAIN_PAGE_ID)
-	a.SetFocus(a.logTextView)
-	a.logTextView.ScrollToHighlight()
-}
-
-func (a *App) handleLogDeleteConfirm(e *LogDeleteConfirmEvent) {
-	returnFocus := a.GetFocus()
-
-	a.confirmModal.Configure(
-		"Are you sure you want to delete this log entry?\n\nThis action cannot be undone.",
-		func() {
-			a.logView.ConfirmDelete(e.LogID)
-		},
-		func() {
-			a.pages.HidePage(CONFIRM_MODAL_ID)
-			a.SetFocus(returnFocus)
-		},
-	)
-
-	a.pages.ShowPage(CONFIRM_MODAL_ID)
-	// a.pages.SwitchToPage(CONFIRM_MODAL_ID)
-}
-
-func (a *App) handleLogDeleted(_ *LogDeletedEvent) {
-	a.pages.HidePage(CONFIRM_MODAL_ID)
-	a.pages.HidePage(LOG_MODAL_ID)
-	a.pages.SwitchToPage(MAIN_PAGE_ID)
-	a.logView.Refresh()
-	a.gameView.Refresh()
-	a.SetFocus(a.logTextView)
-	a.notification.ShowSuccess("Log entry deleted successfully")
-}
-
-func (a *App) handleLogDeleteFailed(e *LogDeleteFailedEvent) {
-	a.pages.HidePage(CONFIRM_MODAL_ID)
-	a.notification.ShowError("Error deleting log entry: " + e.Error.Error())
-}
-
-func (a *App) handleLogShowNew(_ *LogShowNewEvent) {
-	a.logModalContent.SetTitle(" New Log ")
-	selectedGameState := a.GetSelectedGameState()
-	if selectedGameState == nil {
-		a.notification.ShowWarning("Select a game before adding a session log.")
-		return
-	}
-	a.logForm.Reset(*selectedGameState.GameID)
-	a.pages.ShowPage(LOG_MODAL_ID)
-	a.SetFocus(a.logForm)
-}
-
-func (a *App) handleLogShowEdit(e *LogShowEditEvent) {
-	a.logModalContent.SetTitle(" Edit Log ")
-	a.logForm.PopulateForEdit(e.Log)
-	a.pages.ShowPage(LOG_MODAL_ID)
-	a.SetFocus(a.logForm)
 }
 
 func (a *App) handleCharacterSaved(e *CharacterSavedEvent) {
@@ -777,14 +708,8 @@ func (a *App) handleAttributeShowEdit(e *AttributeShowEditEvent) {
 
 func (a *App) handleTagSelected(e *TagSelectedEvent) {
 	a.pages.HidePage(TAG_MODAL_ID)
-
-	// Try to insert template into the stored field
-	if !a.tagView.InsertTemplateIntoField(a.tagView.returnFocus, e.TagType.Template) {
-		a.notification.ShowWarning("Tags can only be added to editable areas")
-	} else {
-		// Restore focus to the field
-		a.SetFocus(a.tagView.returnFocus)
-	}
+	a.sessionView.InsertAtCursor(e.TagType.Template)
+	a.SetFocus(a.sessionView.TextArea)
 }
 
 func (a *App) handleTagCancelled(e *TagCancelledEvent) {
@@ -797,4 +722,93 @@ func (a *App) handleTagShow(e *TagShowEvent) {
 	a.tagView.Refresh()
 	a.pages.ShowPage(TAG_MODAL_ID)
 	a.SetFocus(a.tagTable)
+}
+
+func (a *App) handleSessionShowNew(e *SessionShowNewEvent) {
+	a.sessionView.Modal.SetTitle(" New Session ")
+	selectedGameState := a.GetSelectedGameState()
+	if selectedGameState == nil {
+		a.notification.ShowWarning("Select a game before adding a session.")
+		return
+	}
+	a.sessionView.Form.Reset(*selectedGameState.GameID)
+	a.pages.ShowPage(SESSION_MODAL_ID)
+	a.SetFocus(a.sessionView.Form)
+}
+
+func (a *App) handleSessionCancelled(e *SessionCancelledEvent) {
+	a.pages.HidePage(SESSION_MODAL_ID)
+}
+
+func (a *App) handleSessionSelected(e *SessionSelectedEvent) {
+	a.sessionView.currentSessionID = &e.SessionID
+	a.sessionView.gameName = e.GameName
+	a.sessionView.Refresh()
+}
+
+func (a *App) handleSessionSaved(e *SessionSavedEvent) {
+	a.sessionView.Form.ClearFieldErrors()
+	a.pages.HidePage(SESSION_MODAL_ID)
+	a.sessionView.currentSessionID = &e.Session.ID
+	// Load the game to the name can be set
+	game := a.gameView.getSelectedGame()
+	a.sessionView.gameName = game.Name
+	a.sessionView.Refresh()
+	a.gameView.Refresh()
+	a.gameView.SelectSession(e.Session.ID)
+	a.SetFocus(a.sessionView.TextArea)
+	a.notification.ShowSuccess("Session saved successfully")
+}
+
+func (a *App) handleSessionShowEdit(e *SessionShowEditEvent) {
+	if e.Session == nil {
+		a.notification.ShowError("Please select a session to edit")
+		return
+	}
+
+	a.sessionView.Form.PopulateForEdit(e.Session)
+	a.pages.ShowPage(SESSION_MODAL_ID)
+	a.SetFocus(a.sessionView.Form)
+}
+
+func (a *App) handleSessionDeleteConfirm(e *SessionDeleteConfirmEvent) {
+	returnFocus := a.GetFocus()
+
+	a.confirmModal.Configure(
+		"Are you sure you want to delete this session?",
+		func() {
+			a.sessionView.ConfirmDelete(e.Session.ID)
+		},
+		func() {
+			a.pages.HidePage(CONFIRM_MODAL_ID)
+			a.SetFocus(returnFocus)
+		},
+	)
+
+	a.pages.ShowPage(CONFIRM_MODAL_ID)
+}
+
+func (a *App) handleSessionDeleted(_ *SessionDeletedEvent) {
+	a.pages.HidePage(CONFIRM_MODAL_ID)
+	a.pages.HidePage(SESSION_MODAL_ID)
+	a.pages.SwitchToPage(MAIN_PAGE_ID)
+	a.gameView.Refresh()
+	a.sessionView.Refresh()
+	a.SetFocus(a.gameTree)
+	a.notification.ShowSuccess("Session deleted successfully")
+}
+
+func (a *App) handleSessionDeleteFailed(e *SessionDeleteFailedEvent) {
+	a.pages.HidePage(CONFIRM_MODAL_ID)
+	a.notification.ShowError("Failed to delete session: " + e.Error.Error())
+}
+
+func (a *App) handleSessionShowHelp(e *SessionShowHelpEvent) {
+	a.pages.ShowPage(SESSION_HELP_MODAL_ID)
+	a.SetFocus(a.sessionView.HelpModal)
+}
+
+func (a *App) handleSessionCloseHelp(e *SessionCloseHelpEvent) {
+	a.pages.HidePage(SESSION_HELP_MODAL_ID)
+	a.SetFocus(a.sessionView.TextArea)
 }

@@ -3,7 +3,7 @@ package ui
 import (
 	"soloterm/domain/character"
 	"soloterm/domain/game"
-	"soloterm/domain/log"
+	"soloterm/domain/session"
 	"soloterm/domain/tag"
 )
 
@@ -19,13 +19,6 @@ const (
 	GAME_SHOW_NEW               UserAction = "game_show_new"
 	GAME_SHOW_EDIT              UserAction = "game_show_edit"
 	GAME_SELECTED               UserAction = "game_selected"
-	LOG_SAVED                   UserAction = "log_saved"
-	LOG_DELETED                 UserAction = "log_deleted"
-	LOG_DELETE_CONFIRM          UserAction = "log_delete_confirm"
-	LOG_DELETE_FAILED           UserAction = "log_delete_failed"
-	LOG_CANCEL                  UserAction = "log_cancel"
-	LOG_SHOW_NEW                UserAction = "log_show_new"
-	LOG_SHOW_EDIT               UserAction = "log_show_edit"
 	CHARACTER_SAVED             UserAction = "character_saved"
 	CHARACTER_DELETED           UserAction = "character_deleted"
 	CHARACTER_DELETE_CONFIRM    UserAction = "character_delete_confirm"
@@ -46,6 +39,16 @@ const (
 	TAG_SELECTED                UserAction = "tag_selected"
 	TAG_CANCEL                  UserAction = "tag_cancel"
 	TAG_SHOW                    UserAction = "tag_show"
+	SESSION_SHOW_NEW            UserAction = "session_show_new"
+	SESSION_SHOW_EDIT           UserAction = "session_show_edit"
+	SESSION_SAVED               UserAction = "session_saved"
+	SESSION_CANCEL              UserAction = "session_cancel"
+	SESSION_SELECTED            UserAction = "session_selected"
+	SESSION_DELETE_CONFIRM      UserAction = "session_delete_confirm"
+	SESSION_DELETE_FAILED       UserAction = "session_delete_failed"
+	SESSION_DELETED             UserAction = "session_deleted"
+	SESSION_SHOW_HELP           UserAction = "session_show_help"
+	SESSION_CLOSE_HELP          UserAction = "session_close_help"
 )
 
 // Base event interface
@@ -97,39 +100,6 @@ type GameShowNewEvent struct {
 
 type GameSelectedEvent struct {
 	BaseEvent
-}
-
-// ====== LOG SPECIFIC EVENTS ======
-type LogSavedEvent struct {
-	BaseEvent
-	Log log.Log
-}
-
-type LogCancelledEvent struct {
-	BaseEvent
-}
-
-type LogDeletedEvent struct {
-	BaseEvent
-}
-
-type LogDeleteConfirmEvent struct {
-	BaseEvent
-	LogID int64
-}
-
-type LogDeleteFailedEvent struct {
-	BaseEvent
-	Error error
-}
-
-type LogShowNewEvent struct {
-	BaseEvent
-}
-
-type LogShowEditEvent struct {
-	BaseEvent
-	Log *log.Log
 }
 
 // ====== CHARACTER SPECIFIC EVENTS ======
@@ -226,5 +196,52 @@ type TagCancelledEvent struct {
 }
 
 type TagShowEvent struct {
+	BaseEvent
+}
+
+// ====== SESSION SPECIFIC EVENTS ======
+type SessionShowNewEvent struct {
+	BaseEvent
+}
+
+type SessionShowEditEvent struct {
+	BaseEvent
+	Session *session.Session
+}
+
+type SessionSavedEvent struct {
+	BaseEvent
+	Session session.Session
+}
+
+type SessionCancelledEvent struct {
+	BaseEvent
+}
+
+type SessionSelectedEvent struct {
+	BaseEvent
+	SessionID int64
+	GameName  string
+}
+
+type SessionDeleteConfirmEvent struct {
+	BaseEvent
+	Session *session.Session
+}
+
+type SessionDeletedEvent struct {
+	BaseEvent
+}
+
+type SessionDeleteFailedEvent struct {
+	BaseEvent
+	Error error
+}
+
+type SessionShowHelpEvent struct {
+	BaseEvent
+}
+
+type SessionCloseHelpEvent struct {
 	BaseEvent
 }

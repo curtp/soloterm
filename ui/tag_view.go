@@ -210,35 +210,3 @@ func (tv *TagView) buildExclusionHelpText() string {
 
 	return "[gray]To hide a tag from this list, add " + wordList + " to its data section.[-]"
 }
-
-// InsertTemplateIntoField attempts to insert the template into the given field
-// Returns true if successful, false if the field type is not supported
-func (tv *TagView) InsertTemplateIntoField(field tview.Primitive, template string) bool {
-	if field == nil {
-		return false
-	}
-
-	// Try to type assert to InputField
-	if inputField, ok := field.(*tview.InputField); ok {
-		// Get current text and append template
-		// Note: This version of tview doesn't support cursor position methods,
-		// so we append to the end
-		currentText := inputField.GetText()
-		newText := currentText + template
-		inputField.SetText(newText)
-		return true
-	}
-
-	// Try to type assert to TextArea
-	if textArea, ok := field.(*tview.TextArea); ok {
-		// Get current text and append template
-		// Note: This version of tview doesn't support cursor position methods,
-		// so we append to the end
-		currentText := textArea.GetText()
-		newText := currentText + template
-		textArea.SetText(newText, true)
-		return true
-	}
-
-	return false
-}

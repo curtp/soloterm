@@ -1,4 +1,4 @@
-package log
+package session
 
 import (
 	"soloterm/database"
@@ -22,19 +22,17 @@ func Migrate(db *database.DBStore) error {
 // createTable creates the initial logs table and index
 func createTable(db *database.DBStore) error {
 	schema := `
-		CREATE TABLE IF NOT EXISTS logs (
+		CREATE TABLE IF NOT EXISTS sessions (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			game_id INTEGER NOT NULL,
-			log_type STRING NOT NULL,
-			description TEXT NOT NULL,
-			result STRING NOT NULL,
-			narrative STRING NOT NULL,
+			name STRING NOT NULL,
+			content TEXT NOT NULL,
 			created_at DATETIME NOT NULL,
 			updated_at DATETIME NOT NULL,
 			FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE
 		);
 
-		CREATE INDEX IF NOT EXISTS idx_logs_by_game_id ON logs (game_id);
+		CREATE INDEX IF NOT EXISTS idx_sessions_by_game_id ON sessions (game_id);
 	`
 	_, err := db.Connection.Exec(schema)
 	return err

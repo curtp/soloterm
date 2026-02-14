@@ -75,6 +75,7 @@ func (cv *CharacterView) setupCharacterTree() {
 		}
 
 		cv.RefreshDisplay()
+		cv.app.attributeTable.ScrollToBeginning()
 	})
 
 	// Set up input capture for character tree - Ctrl+N to add character
@@ -106,22 +107,6 @@ func (cv *CharacterView) setupCharacterInfo() {
 		SetDynamicColors(true).
 		SetScrollable(false).
 		SetText("")
-	cv.app.charInfoView.SetBorder(true).
-		SetTitle(" [::b]Character Info ").
-		SetTitleAlign(tview.AlignLeft)
-
-	// Set up input capture for character info - Ctrl+E to edit, Ctrl+D to duplicate character
-	cv.app.charInfoView.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		switch event.Key() {
-		case tcell.KeyCtrlE:
-			cv.ShowEditCharacterModal()
-			return nil
-		case tcell.KeyCtrlD:
-			cv.HandleDuplicate()
-			return nil
-		}
-		return event
-	})
 }
 
 // setupAttributeTable configures the attribute table
@@ -133,9 +118,7 @@ func (cv *CharacterView) setupAttributeTable() {
 
 	cv.app.attributeTable.SetSelectedStyle(tcell.Style{}.Background(tcell.ColorAqua).Foreground(tcell.ColorBlack))
 
-	cv.app.attributeTable.SetBorder(true).
-		SetTitle(" [::b]Sheet (Ctrl+S) ").
-		SetTitleAlign(tview.AlignLeft)
+	cv.app.attributeTable.SetBorder(false)
 
 	// Set up input capture for attribute table
 	cv.app.attributeTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -244,10 +227,6 @@ func (cv *CharacterView) setupFocusHandlers() {
 	cv.app.charTree.SetFocusFunc(func() {
 		cv.SetReturnFocus(cv.app.charTree)
 		cv.app.updateFooterHelp("[aqua::b]Characters[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Space/Enter[white] Select/Expand  [yellow]Ctrl+N[white] New  " + editDupHelp)
-	})
-	cv.app.charInfoView.SetFocusFunc(func() {
-		cv.SetReturnFocus(cv.app.charInfoView)
-		cv.app.updateFooterHelp("[aqua::b]Character Info[-::-] :: " + editDupHelp)
 	})
 	cv.app.attributeTable.SetFocusFunc(func() {
 		cv.SetReturnFocus(cv.app.attributeTable)
