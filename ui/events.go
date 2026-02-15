@@ -228,7 +228,6 @@ type SessionCancelledEvent struct {
 type SessionSelectedEvent struct {
 	BaseEvent
 	SessionID int64
-	GameName  string
 }
 
 type SessionDeleteConfirmEvent struct {

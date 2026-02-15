@@ -92,7 +92,10 @@ func (r *Repository) GetByID(id int64) (*Session, error) {
 	}
 
 	var session Session
-	err := r.db.Connection.Get(&session, "SELECT * FROM sessions WHERE id = ?", id)
+	query := `SELECT s.*, g.name AS game_name FROM sessions s
+		JOIN games g ON s.game_id = g.id
+		WHERE s.id = ?`
+	err := r.db.Connection.Get(&session, query, id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, errors.New("session not found")
@@ -106,7 +109,11 @@ func (r *Repository) GetByID(id int64) (*Session, error) {
 // GetAllForGame retrieves all sessions for the game ordered by created_at. Excludes content for performance reasons
 func (r *Repository) GetAllForGame(gameID int64) ([]*Session, error) {
 	var sessions []*Session
-	err := r.db.Connection.Select(&sessions, "SELECT id, game_id, name, created_at, updated_at FROM sessions WHERE game_id = ? ORDER BY created_at ASC", gameID)
+	query := `SELECT s.id, s.game_id, s.name, s.created_at, s.updated_at, g.name AS game_name
+		FROM sessions s
+		JOIN games g ON s.game_id = g.id
+		WHERE s.game_id = ? ORDER BY s.created_at ASC`
+	err := r.db.Connection.Select(&sessions, query, gameID)
 	if err != nil {
 		return nil, err
 	}

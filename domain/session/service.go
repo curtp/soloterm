@@ -1,6 +1,6 @@
 package session
 
-// Service handles session business sessionic
+// Service handles session business logic
 type Service struct {
 	repo *Repository
 }

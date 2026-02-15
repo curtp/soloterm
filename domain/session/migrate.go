@@ -9,9 +9,9 @@ func init() {
 	database.RegisterMigration(Migrate)
 }
 
-// Migrate runs all migrations for the logs domain
+// Migrate runs all migrations for the sessions domain
 func Migrate(db *database.DBStore) error {
-	// Migration: Create log table
+	// Migration: Create sessions table
 	if err := createTable(db); err != nil {
 		return err
 	}
@@ -19,7 +19,7 @@ func Migrate(db *database.DBStore) error {
 	return nil
 }
 
-// createTable creates the initial logs table and index
+// createTable creates the initial sessions table and index
 func createTable(db *database.DBStore) error {
 	schema := `
 		CREATE TABLE IF NOT EXISTS sessions (

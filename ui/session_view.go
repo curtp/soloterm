@@ -21,7 +21,6 @@ type SessionView struct {
 	helper           *SessionViewHelper
 	currentSessionID *int64
 	currentSession   *session.Session
-	gameName         string
 	isLoading        bool
 	isDirty          bool
 	autosaveTicker   *time.Ticker
@@ -32,13 +31,12 @@ const (
 	DEFAULT_SECTION_TITLE = " [::b]Select/Add Session To View (Ctrl+L)"
 )
 
-// NewGameView creates a new session view helper
+// NewSessionView creates a new session view helper
 func NewSessionView(app *App, service *session.Service) *SessionView {
 	sessionView := &SessionView{
 		app:            app,
 		sessionService: service,
 		isDirty:        false,
-		gameName:       "",
 		helper:         NewSessionViewHelper(service),
 	}
 
@@ -238,7 +236,6 @@ func (sv *SessionView) Refresh() {
 		sv.TextArea.SetTitle(DEFAULT_SECTION_TITLE)
 		sv.TextArea.SetText("", true)
 		sv.currentSession = nil
-		sv.gameName = ""
 		return
 	}
 
@@ -364,9 +361,9 @@ func (sv *SessionView) updateTitle() {
 	if sv.currentSession == nil {
 		return
 	}
-	title := " [::b]" + sv.gameName + ": " + sv.currentSession.Name + " (Ctrl+L) "
+	title := " [::b]" + sv.currentSession.GameName + ": " + sv.currentSession.Name + " (Ctrl+L) "
 	if sv.isDirty {
-		title = " [red]●[-] [::b]" + sv.gameName + ": " + sv.currentSession.Name + " (Ctrl+L) "
+		title = " [red]●[-] [::b]" + sv.currentSession.GameName + ": " + sv.currentSession.Name + " (Ctrl+L) "
 	}
 	sv.TextArea.SetTitle(title)
 }

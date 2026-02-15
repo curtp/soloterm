@@ -10,6 +10,7 @@ type Session struct {
 	GameID    int64     `db:"game_id"`
 	Name      string    `db:"name"`
 	Content   string    `db:"content"`
+	GameName  string    `db:"game_name"`
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
 }

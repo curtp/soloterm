@@ -78,13 +78,10 @@ func (gv *GameView) setupTreeView() {
 			return
 		}
 
-		selectedGame := gv.getSelectedGame()
-
 		// Selected a session, send the event
 		gv.app.HandleEvent(&SessionSelectedEvent{
 			BaseEvent: BaseEvent{action: SESSION_SELECTED},
 			SessionID: *currentSelection.SessionID,
-			GameName:  selectedGame.Name,
 		})
 	})
 }

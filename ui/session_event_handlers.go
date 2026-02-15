@@ -18,7 +18,6 @@ func (a *App) handleSessionCancelled(e *SessionCancelledEvent) {
 
 func (a *App) handleSessionSelected(e *SessionSelectedEvent) {
 	a.sessionView.currentSessionID = &e.SessionID
-	a.sessionView.gameName = e.GameName
 	a.sessionView.Refresh()
 }
 
@@ -26,9 +25,6 @@ func (a *App) handleSessionSaved(e *SessionSavedEvent) {
 	a.sessionView.Form.ClearFieldErrors()
 	a.pages.HidePage(SESSION_MODAL_ID)
 	a.sessionView.currentSessionID = &e.Session.ID
-	// Load the game to the name can be set
-	game := a.gameView.getSelectedGame()
-	a.sessionView.gameName = game.Name
 	a.sessionView.Refresh()
 	a.gameView.Refresh()
 	a.gameView.SelectSession(e.Session.ID)

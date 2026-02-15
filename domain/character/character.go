@@ -76,10 +76,10 @@ func (c *Character) Validate() *validation.Validator {
 	v.Check("name", len(c.Name) >= MinNameLength && len(c.Name) <= MaxNameLength, "must be between %d and %d characters", MinNameLength, MaxNameLength)
 	v.Check("system", c.System != "", "is required")
 	v.Check("system", len(c.System) >= MinSystemLength && len(c.System) <= MaxSystemLength, "must be between %d and %d characters", MinSystemLength, MaxSystemLength)
-	v.Check("role", c.System != "", "is required")
+	v.Check("role", c.Role != "", "is required")
 	v.Check("role", len(c.Role) >= MinRoleLength && len(c.Role) <= MaxRoleLength, "must be between %d and %d characters", MinRoleLength, MaxRoleLength)
 	v.Check("species", c.Species != "", "is required")
-	v.Check("species", len(c.Species) >= MinSpeciesLength && len(c.Species) <= MaxSystemLength, "must be between %d and %d characters", MinSpeciesLength, MaxSpeciesLength)
+	v.Check("species", len(c.Species) >= MinSpeciesLength && len(c.Species) <= MaxSpeciesLength, "must be between %d and %d characters", MinSpeciesLength, MaxSpeciesLength)
 
 	return v
 }
