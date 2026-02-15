@@ -5,6 +5,8 @@ import (
 	"soloterm/domain/game"
 	"soloterm/domain/session"
 	"soloterm/domain/tag"
+
+	"github.com/rivo/tview"
 )
 
 // UserAction represents user-triggered application events
@@ -36,19 +38,19 @@ const (
 	ATTRIBUTE_CANCEL            UserAction = "attribute_cancel"
 	ATTRIBUTE_SHOW_NEW          UserAction = "attribute_show_new"
 	ATTRIBUTE_SHOW_EDIT         UserAction = "attribute_show_edit"
-	TAG_SELECTED                UserAction = "tag_selected"
-	TAG_CANCEL                  UserAction = "tag_cancel"
-	TAG_SHOW                    UserAction = "tag_show"
-	SESSION_SHOW_NEW            UserAction = "session_show_new"
-	SESSION_SHOW_EDIT           UserAction = "session_show_edit"
-	SESSION_SAVED               UserAction = "session_saved"
-	SESSION_CANCEL              UserAction = "session_cancel"
-	SESSION_SELECTED            UserAction = "session_selected"
-	SESSION_DELETE_CONFIRM      UserAction = "session_delete_confirm"
-	SESSION_DELETE_FAILED       UserAction = "session_delete_failed"
-	SESSION_DELETED             UserAction = "session_deleted"
-	SESSION_SHOW_HELP           UserAction = "session_show_help"
-	SESSION_CLOSE_HELP          UserAction = "session_close_help"
+	TAG_SELECTED           UserAction = "tag_selected"
+	TAG_CANCEL             UserAction = "tag_cancel"
+	TAG_SHOW               UserAction = "tag_show"
+	SESSION_SHOW_NEW       UserAction = "session_show_new"
+	SESSION_SHOW_EDIT      UserAction = "session_show_edit"
+	SESSION_SAVED          UserAction = "session_saved"
+	SESSION_CANCEL         UserAction = "session_cancel"
+	SESSION_SELECTED       UserAction = "session_selected"
+	SESSION_DELETE_CONFIRM UserAction = "session_delete_confirm"
+	SESSION_DELETE_FAILED  UserAction = "session_delete_failed"
+	SESSION_DELETED        UserAction = "session_deleted"
+	SHOW_HELP              UserAction = "show_help"
+	CLOSE_HELP             UserAction = "close_help"
 )
 
 // Base event interface
@@ -206,6 +208,18 @@ type TagShowEvent struct {
 	BaseEvent
 }
 
+// ====== HELP EVENTS ======
+type ShowHelpEvent struct {
+	BaseEvent
+	Title       string
+	Text        string
+	ReturnFocus tview.Primitive
+}
+
+type CloseHelpEvent struct {
+	BaseEvent
+}
+
 // ====== SESSION SPECIFIC EVENTS ======
 type SessionShowNewEvent struct {
 	BaseEvent
@@ -244,10 +258,3 @@ type SessionDeleteFailedEvent struct {
 	Error error
 }
 
-type SessionShowHelpEvent struct {
-	BaseEvent
-}
-
-type SessionCloseHelpEvent struct {
-	BaseEvent
-}

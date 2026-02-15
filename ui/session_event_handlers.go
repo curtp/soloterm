@@ -75,12 +75,3 @@ func (a *App) handleSessionDeleteFailed(e *SessionDeleteFailedEvent) {
 	a.notification.ShowError("Failed to delete session: " + e.Error.Error())
 }
 
-func (a *App) handleSessionShowHelp(e *SessionShowHelpEvent) {
-	a.pages.ShowPage(SESSION_HELP_MODAL_ID)
-	a.SetFocus(a.sessionView.HelpModal)
-}
-
-func (a *App) handleSessionCloseHelp(e *SessionCloseHelpEvent) {
-	a.pages.HidePage(SESSION_HELP_MODAL_ID)
-	a.SetFocus(a.sessionView.TextArea)
-}

@@ -17,3 +17,4 @@ func (a *App) handleTagShow(e *TagShowEvent) {
 	a.pages.ShowPage(TAG_MODAL_ID)
 	a.SetFocus(a.tagView.TagTable)
 }
+

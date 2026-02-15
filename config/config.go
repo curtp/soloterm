@@ -42,6 +42,8 @@ func (c *Config) Load(workdir string) (*Config, error) {
 		return nil, fmt.Errorf("failed to parse config file: %w", err)
 	}
 
+	cfg.FullFilePath = c.FullFilePath
+
 	// Validate required fields
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid configuration: %w", err)

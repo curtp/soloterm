@@ -46,12 +46,3 @@ func (gh *GameViewHelper) LoadAllGames() ([]*GameWithSessions, error) {
 	return gamesWithSessions, nil
 }
 
-func (gh *GameViewHelper) IsGame(reference any) (*game.Game, bool) {
-	if reference == nil {
-		return nil, false
-	}
-
-	g, ok := reference.(*game.Game)
-	return g, ok
-}
-

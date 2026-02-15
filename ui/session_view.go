@@ -13,12 +13,11 @@ import (
 // SessionView provides session-specific UI operations
 type SessionView struct {
 	TextArea         *tview.TextArea
+	textAreaFrame    *tview.Frame
 	Form             *SessionForm
 	Modal            *tview.Flex
-	HelpModal        *tview.Flex
 	app              *App
 	sessionService   *session.Service
-	helper           *SessionViewHelper
 	currentSessionID *int64
 	currentSession   *session.Session
 	isLoading        bool
@@ -37,7 +36,6 @@ func NewSessionView(app *App, service *session.Service) *SessionView {
 		app:            app,
 		sessionService: service,
 		isDirty:        false,
-		helper:         NewSessionViewHelper(service),
 	}
 
 	sessionView.Setup()
@@ -49,7 +47,6 @@ func NewSessionView(app *App, service *session.Service) *SessionView {
 func (sv *SessionView) Setup() {
 	sv.setupTextArea()
 	sv.setupModal()
-	sv.setupHelpModal()
 	sv.setupKeyBindings()
 	sv.setupFocusHandlers()
 }
@@ -58,9 +55,6 @@ func (sv *SessionView) Setup() {
 func (sv *SessionView) setupTextArea() {
 	sv.TextArea = tview.NewTextArea()
 	sv.TextArea.SetDisabled(true)
-	sv.TextArea.SetTitle(DEFAULT_SECTION_TITLE).
-		SetTitleAlign(tview.AlignLeft).
-		SetBorder(true)
 	sv.TextArea.SetChangedFunc(func() {
 		if sv.isLoading {
 			return
@@ -69,88 +63,12 @@ func (sv *SessionView) setupTextArea() {
 		sv.updateTitle()
 		sv.startAutosave()
 	})
-}
 
-func (sv *SessionView) setupHelpModal() {
-	helpText := tview.NewTextView().
-		SetDynamicColors(true).
-		SetText(`Scroll Down To View All Help Options
-
-[green]Session Management
-
-[yellow]Ctrl+E[white]: Edit the session name or Delete the session.
-[yellow]Ctrl+N[white]: Add a new session.
-
-[green][:::https://zeruhur.itch.io/lonelog]Lonelog[:::-] https://zeruhur.itch.io/lonelog
-
-[yellow]F2[white]: Insert the Character Action template.
-[yellow]F3[white]: Insert the Oracle template.
-[yellow]F4[white]: Insert the Dice template.
-[yellow]Ctrl+T[white]: Select a template (NPC, Event, Location, etc.) to insert.
-		
-[green]Navigation
-
-[yellow]Left arrow[white]: Move left.
-[yellow]Right arrow[white]: Move right.
-[yellow]Down arrow[white]: Move down.
-[yellow]Up arrow[white]: Move up.
-[yellow]Ctrl-A, Home[white]: Move to the beginning of the current line.
-[yellow]End[white]: Move to the end of the current line.
-[yellow]Ctrl-F, page down[white]: Move down by one page.
-[yellow]Ctrl-B, page up[white]: Move up by one page.
-[yellow]Alt-Up arrow[white]: Scroll the page up.
-[yellow]Alt-Down arrow[white]: Scroll the page down.
-[yellow]Alt-Left arrow[white]: Scroll the page to the left.
-[yellow]Alt-Right arrow[white]: Scroll the page to the right.
-[yellow]Alt-B, Ctrl-Left arrow[white]: Move back by one word.
-[yellow]Alt-F, Ctrl-Right arrow[white]: Move forward by one word.
-
-[green]Editing[white]
-
-Type to enter text.
-[yellow]Backspace[white]: Delete the left character.
-[yellow]Delete[white]: Delete the right character.
-[yellow]Ctrl-K[white]: Delete until the end of the line.
-[yellow]Ctrl-W[white]: Delete the rest of the word.
-[yellow]Ctrl-U[white]: Delete the current line.
-
-[green]Undo
-
-[yellow]Ctrl-Z[white]: Undo.
-[yellow]Ctrl-Y[white]: Redo.`)
-
-	helpFrame := tview.NewFrame(helpText).
-		SetBorders(1, 1, 0, 0, 2, 2)
-	helpFrame.SetBorder(true).
-		SetTitle(" [::b]Help (Esc = Close) ").
+	sv.textAreaFrame = tview.NewFrame(sv.TextArea).
+		SetBorders(1, 1, 0, 0, 1, 1)
+	sv.textAreaFrame.SetTitle(DEFAULT_SECTION_TITLE).
 		SetTitleAlign(tview.AlignLeft).
-		SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-			if event.Key() == tcell.KeyEscape {
-				sv.app.HandleEvent(&SessionCloseHelpEvent{
-					BaseEvent: BaseEvent{action: SESSION_CLOSE_HELP},
-				})
-				return nil
-			}
-			return event
-		})
-
-	// Scroll to the beginning when the help text receives focus
-	helpText.SetFocusFunc(func() {
-		helpText.ScrollToBeginning()
-	})
-
-	// Center the modal on screen
-	sv.HelpModal = tview.NewFlex().
-		AddItem(nil, 0, 1, false).
-		AddItem(
-			tview.NewFlex().
-				SetDirection(tview.FlexRow).
-				AddItem(nil, 0, 1, false).
-				AddItem(helpFrame, 22, 1, true).
-				AddItem(nil, 0, 1, false),
-			64, 1, true,
-		).
-		AddItem(nil, 0, 1, false)
+		SetBorder(true)
 }
 
 // setupModal configures the session form modal
@@ -233,14 +151,14 @@ func (sv *SessionView) Refresh() {
 	sv.Autosave()
 
 	if sv.currentSessionID == nil {
-		sv.TextArea.SetTitle(DEFAULT_SECTION_TITLE)
+		sv.textAreaFrame.SetTitle(DEFAULT_SECTION_TITLE)
 		sv.TextArea.SetText("", true)
 		sv.currentSession = nil
 		return
 	}
 
 	// Load the session and set the content
-	loadedSession, err := sv.helper.LoadSession(*sv.currentSessionID)
+	loadedSession, err := sv.sessionService.GetByID(*sv.currentSessionID)
 	if err != nil {
 		sv.app.notification.ShowError(fmt.Sprintf("Error loading session: %v", err))
 	}
@@ -297,7 +215,7 @@ func (sv *SessionView) HandleDelete() {
 		return
 	}
 
-	session, err := sv.helper.LoadSession(*sv.currentSessionID)
+	session, err := sv.sessionService.GetByID(*sv.currentSessionID)
 	if err != nil {
 		sv.app.notification.ShowError(fmt.Sprintf("Error loading session: %v", err))
 	}
@@ -312,7 +230,7 @@ func (sv *SessionView) HandleDelete() {
 // ConfirmDelete executes the actual deletion after user confirmation
 func (sv *SessionView) ConfirmDelete(sessionID int64) {
 	// Business logic: Delete the session
-	err := sv.helper.Delete(sessionID)
+	err := sv.sessionService.Delete(sessionID)
 	if err != nil {
 		// Dispatch failure event with error
 		sv.app.HandleEvent(&SessionDeleteFailedEvent{
@@ -338,15 +256,61 @@ func (sv *SessionView) ShowNewModal() {
 }
 
 func (sv *SessionView) ShowHelpModal() {
-	sv.app.HandleEvent(&SessionShowHelpEvent{
-		BaseEvent: BaseEvent{action: SESSION_SHOW_HELP},
+	sv.app.HandleEvent(&ShowHelpEvent{
+		BaseEvent:   BaseEvent{action: SHOW_HELP},
+		Title:       "Session Help",
+		ReturnFocus: sv.TextArea,
+		Text: `Scroll Down To View All Help Options
+
+[green]Session Management
+
+[yellow]Ctrl+E[white]: Edit the session name or Delete the session.
+[yellow]Ctrl+N[white]: Add a new session.
+
+[green][:::https://zeruhur.itch.io/lonelog]Lonelog[:::-] https://zeruhur.itch.io/lonelog
+
+[yellow]F2[white]: Insert the Character Action template.
+[yellow]F3[white]: Insert the Oracle template.
+[yellow]F4[white]: Insert the Dice template.
+[yellow]Ctrl+T[white]: Select a template (NPC, Event, Location, etc.) to insert.
+
+[green]Navigation
+
+[yellow]Left arrow[white]: Move left.
+[yellow]Right arrow[white]: Move right.
+[yellow]Down arrow[white]: Move down.
+[yellow]Up arrow[white]: Move up.
+[yellow]Ctrl-A, Home[white]: Move to the beginning of the current line.
+[yellow]End[white]: Move to the end of the current line.
+[yellow]Ctrl-F, page down[white]: Move down by one page.
+[yellow]Ctrl-B, page up[white]: Move up by one page.
+[yellow]Alt-Up arrow[white]: Scroll the page up.
+[yellow]Alt-Down arrow[white]: Scroll the page down.
+[yellow]Alt-Left arrow[white]: Scroll the page to the left.
+[yellow]Alt-Right arrow[white]: Scroll the page to the right.
+[yellow]Alt-B, Ctrl-Left arrow[white]: Move back by one word.
+[yellow]Alt-F, Ctrl-Right arrow[white]: Move forward by one word.
+
+[green]Editing[white]
+
+Type to enter text.
+[yellow]Backspace[white]: Delete the left character.
+[yellow]Delete[white]: Delete the right character.
+[yellow]Ctrl-K[white]: Delete until the end of the line.
+[yellow]Ctrl-W[white]: Delete the rest of the word.
+[yellow]Ctrl-U[white]: Delete the current line.
+
+[green]Undo
+
+[yellow]Ctrl-Z[white]: Undo.
+[yellow]Ctrl-Y[white]: Redo.`,
 	})
 }
 
 // ShowEditModal displays the session form modal for editing an existing session
 func (sv *SessionView) ShowEditModal(sessionID int64) {
 	sv.Autosave()
-	session, err := sv.helper.LoadSession(sessionID)
+	session, err := sv.sessionService.GetByID(sessionID)
 	if err != nil {
 		sv.app.notification.ShowError(fmt.Sprintf("Error loading session: %v", err))
 	}
@@ -365,7 +329,7 @@ func (sv *SessionView) updateTitle() {
 	if sv.isDirty {
 		title = " [red]●[-] [::b]" + sv.currentSession.GameName + ": " + sv.currentSession.Name + " (Ctrl+L) "
 	}
-	sv.TextArea.SetTitle(title)
+	sv.textAreaFrame.SetTitle(title)
 }
 
 // Autosave persists the current TextArea content if dirty

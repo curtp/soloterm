@@ -25,7 +25,7 @@ const (
 	MAIN_PAGE_ID          string = "main"
 	ABOUT_MODAL_ID        string = "about"
 	SESSION_MODAL_ID      string = "sessionModal"
-	SESSION_HELP_MODAL_ID string = "sessionHelpModal"
+	HELP_MODAL_ID string = "helpModal"
 )
 
 type App struct {
@@ -46,6 +46,7 @@ type App struct {
 
 	// UI Components
 	aboutModal   *tview.Modal
+	helpModal    *HelpModal
 	confirmModal *ConfirmationModal
 	footer       *tview.TextView
 	notification *Notification
@@ -89,7 +90,7 @@ func (a *App) setupUI() {
 	a.mainFlex = tview.NewFlex().
 		SetDirection(tview.FlexColumn).
 		AddItem(a.leftSidebar, 0, 1, false).        // 1/3 of the width
-		AddItem(a.sessionView.TextArea, 0, 2, true) // 2/3 of the width
+		AddItem(a.sessionView.textAreaFrame, 0, 2, true) // 2/3 of the width
 
 	// Main content with footer
 	mainContent := tview.NewFlex().
@@ -110,7 +111,8 @@ func (a *App) setupUI() {
 			a.pages.HidePage(ABOUT_MODAL_ID)
 		})
 
-	// Create confirmation modal
+	// Create app-level modals
+	a.helpModal = NewHelpModal(a)
 	a.confirmModal = NewConfirmationModal()
 
 	// Pages for modal overlay (must be created BEFORE notification setup)
@@ -122,8 +124,8 @@ func (a *App) setupUI() {
 		AddPage(CHARACTER_MODAL_ID, a.characterView.Modal, true, false).
 		AddPage(ATTRIBUTE_MODAL_ID, a.characterView.AttributeModal, true, false).
 		AddPage(SESSION_MODAL_ID, a.sessionView.Modal, true, false).
-		AddPage(SESSION_HELP_MODAL_ID, a.sessionView.HelpModal, true, false).
-		AddPage(TAG_MODAL_ID, a.tagView.Modal, true, false).   // Tag modal on top of forms
+		AddPage(TAG_MODAL_ID, a.tagView.Modal, true, false).
+		AddPage(HELP_MODAL_ID, a.helpModal, true, false).
 		AddPage(CONFIRM_MODAL_ID, a.confirmModal, true, false) // Confirm always on top
 	a.pages.SetBackgroundColor(tcell.ColorDefault)
 
@@ -246,6 +248,17 @@ func (a *App) showAbout() {
 	a.pages.ShowPage(ABOUT_MODAL_ID)
 }
 
+func (a *App) handleShowHelp(e *ShowHelpEvent) {
+	a.helpModal.Show(e.Title, e.Text, e.ReturnFocus)
+	a.pages.ShowPage(HELP_MODAL_ID)
+	a.SetFocus(a.helpModal)
+}
+
+func (a *App) handleCloseHelp(e *CloseHelpEvent) {
+	a.pages.HidePage(HELP_MODAL_ID)
+	a.SetFocus(a.helpModal.returnFocus)
+}
+
 func (a *App) GetSelectedGameState() *GameState {
 	return a.gameView.GetCurrentSelection()
 }
@@ -308,6 +321,10 @@ func (a *App) HandleEvent(event Event) {
 		dispatch(event, a.handleTagCancelled)
 	case TAG_SHOW:
 		dispatch(event, a.handleTagShow)
+	case SHOW_HELP:
+		dispatch(event, a.handleShowHelp)
+	case CLOSE_HELP:
+		dispatch(event, a.handleCloseHelp)
 	case SESSION_SHOW_NEW:
 		dispatch(event, a.handleSessionShowNew)
 	case SESSION_CANCEL:
@@ -324,9 +341,5 @@ func (a *App) HandleEvent(event Event) {
 		dispatch(event, a.handleSessionDeleted)
 	case SESSION_DELETE_FAILED:
 		dispatch(event, a.handleSessionDeleteFailed)
-	case SESSION_SHOW_HELP:
-		dispatch(event, a.handleSessionShowHelp)
-	case SESSION_CLOSE_HELP:
-		dispatch(event, a.handleSessionCloseHelp)
 	}
 }
