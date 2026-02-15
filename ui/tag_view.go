@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"soloterm/config"
 	"soloterm/domain/tag"
 
 	"github.com/gdamore/tcell/v2"
@@ -9,13 +10,23 @@ import (
 
 // TagView provides tag-specific UI operations
 type TagView struct {
-	app         *App
-	returnFocus tview.Primitive // Field to restore focus to after tag selection
+	app             *App
+	cfg             *config.Config
+	tagService      *tag.Service
+	Modal           *tview.Flex
+	tagModalContent *tview.Flex
+	tagList         *tview.List
+	TagTable        *tview.Table
+	returnFocus     tview.Primitive // Field to restore focus to after tag selection
 }
 
 // NewTagView creates a new tag view
-func NewTagView(app *App) *TagView {
-	return &TagView{app: app}
+func NewTagView(app *App, cfg *config.Config, tagService *tag.Service) *TagView {
+	tagView := &TagView{app: app, cfg: cfg, tagService: tagService}
+
+	tagView.Setup()
+
+	return tagView
 }
 
 // Setup initializes all tag UI components
@@ -28,11 +39,11 @@ func (tv *TagView) Setup() {
 // setupModal configures the tag modal
 func (tv *TagView) setupModal() {
 	// Create the tag table
-	tv.app.tagTable = tview.NewTable().
+	tv.TagTable = tview.NewTable().
 		SetBorders(false).
 		SetSelectable(true, false). // Make rows selectable
 		SetFixed(1, 0)              // Fix the header and divider rows
-	tv.app.tagTable.SetSelectedStyle(tcell.Style{}.Background(tcell.ColorAqua).Foreground(tcell.ColorBlack))
+	tv.TagTable.SetSelectedStyle(tcell.Style{}.Background(tcell.ColorAqua).Foreground(tcell.ColorBlack))
 
 	// Create help text explaining tag exclusion
 	helpText := tv.buildExclusionHelpText()
@@ -43,42 +54,42 @@ func (tv *TagView) setupModal() {
 		SetDynamicColors(true)
 
 	// Create container with border that holds the tag selector and help text
-	tv.app.tagModalContent = tview.NewFlex().
+	tv.tagModalContent = tview.NewFlex().
 		SetDirection(tview.FlexRow).
-		AddItem(tv.app.tagTable, 0, 1, true).
+		AddItem(tv.TagTable, 0, 1, true).
 		AddItem(tagHelpView, 2, 0, false)
-	tv.app.tagModalContent.SetBorder(true).
+	tv.tagModalContent.SetBorder(true).
 		SetTitleAlign(tview.AlignLeft).
 		SetTitle("[::b] Select Tag [-::-]")
 
 	// Center the modal on screen
-	tv.app.tagModal = tview.NewFlex().
+	tv.Modal = tview.NewFlex().
 		AddItem(nil, 0, 1, false).
 		AddItem(
 			tview.NewFlex().
 				SetDirection(tview.FlexRow).
 				AddItem(nil, 0, 1, false).
-				AddItem(tv.app.tagModalContent, 25, 0, true).
+				AddItem(tv.tagModalContent, 25, 0, true).
 				AddItem(nil, 0, 1, false),
 			70, 1, true, // Width of the modal in columns
 		).
 		AddItem(nil, 0, 1, false)
 
-	tv.app.tagModal.SetFocusFunc(func() {
+	tv.Modal.SetFocusFunc(func() {
 		tv.app.updateFooterHelp("[aqua::b]Tags[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Enter[white] Select  [yellow]Esc[white] Close")
 	})
 
 }
 
 func (tv *TagView) Refresh() {
-	tv.app.tagTable.Clear()
+	tv.TagTable.Clear()
 
 	// Add header row
-	tv.app.tagTable.SetCell(0, 0, tview.NewTableCell("Label").
+	tv.TagTable.SetCell(0, 0, tview.NewTableCell("Label").
 		SetTextColor(tcell.ColorYellow).
 		SetAlign(tview.AlignLeft).
 		SetSelectable(false))
-	tv.app.tagTable.SetCell(0, 1, tview.NewTableCell("Template").
+	tv.TagTable.SetCell(0, 1, tview.NewTableCell("Template").
 		SetTextColor(tcell.ColorYellow).
 		SetAlign(tview.AlignLeft).
 		SetSelectable(false))
@@ -91,22 +102,22 @@ func (tv *TagView) Refresh() {
 	}
 
 	// Load tags: configured + recent from logs
-	allTags, err := tv.app.tagService.LoadTagsForGame(gameID, tv.app.cfg.TagTypes, tv.app.cfg.TagExcludeWords)
+	allTags, err := tv.tagService.LoadTagsForGame(gameID, tv.cfg.TagTypes, tv.cfg.TagExcludeWords)
 	if err != nil {
 		// If loading fails, just show configured tags
-		allTags = tv.app.cfg.TagTypes
+		allTags = tv.cfg.TagTypes
 	}
 
 	currentRow := 1
 
 	// Add configured tags
-	configTags := tv.app.cfg.TagTypes
+	configTags := tv.cfg.TagTypes
 	for _, tagType := range configTags {
-		tv.app.tagTable.SetCell(currentRow, 0, tview.NewTableCell(tagType.Label).
+		tv.TagTable.SetCell(currentRow, 0, tview.NewTableCell(tagType.Label).
 			SetTextColor(tcell.ColorWhite).
 			SetAlign(tview.AlignLeft).
 			SetExpansion(0))
-		tv.app.tagTable.SetCell(currentRow, 1, tview.NewTableCell(tview.Escape(tagType.Template)).
+		tv.TagTable.SetCell(currentRow, 1, tview.NewTableCell(tview.Escape(tagType.Template)).
 			SetTextColor(tcell.ColorWhite).
 			SetAlign(tview.AlignLeft).
 			SetExpansion(1))
@@ -116,11 +127,11 @@ func (tv *TagView) Refresh() {
 	// Add separator if we have recent tags
 	recentTags := allTags[len(configTags):]
 	if len(recentTags) > 0 {
-		tv.app.tagTable.SetCell(currentRow, 0, tview.NewTableCell("────────────────").
+		tv.TagTable.SetCell(currentRow, 0, tview.NewTableCell("────────────────").
 			SetTextColor(tcell.ColorGray).
 			SetAlign(tview.AlignLeft).
 			SetSelectable(false))
-		tv.app.tagTable.SetCell(currentRow, 1, tview.NewTableCell("────────────────").
+		tv.TagTable.SetCell(currentRow, 1, tview.NewTableCell("────────────────").
 			SetTextColor(tcell.ColorGray).
 			SetAlign(tview.AlignLeft).
 			SetSelectable(false))
@@ -128,11 +139,11 @@ func (tv *TagView) Refresh() {
 
 		// Add recent tags
 		for _, tagType := range recentTags {
-			tv.app.tagTable.SetCell(currentRow, 0, tview.NewTableCell(tagType.Label).
+			tv.TagTable.SetCell(currentRow, 0, tview.NewTableCell(tagType.Label).
 				SetTextColor(tcell.ColorWhite).
 				SetAlign(tview.AlignLeft).
 				SetExpansion(0))
-			tv.app.tagTable.SetCell(currentRow, 1, tview.NewTableCell(tview.Escape(tagType.Template)).
+			tv.TagTable.SetCell(currentRow, 1, tview.NewTableCell(tview.Escape(tagType.Template)).
 				SetTextColor(tcell.ColorWhite).
 				SetAlign(tview.AlignLeft).
 				SetExpansion(1))
@@ -144,11 +155,11 @@ func (tv *TagView) Refresh() {
 func (tv *TagView) selectTag() {
 
 	// Build the tag off of the selected row
-	row, _ := tv.app.tagTable.GetSelection()
+	row, _ := tv.TagTable.GetSelection()
 
 	tagType := tag.TagType{}
-	tagType.Label = tv.app.tagTable.GetCell(row, 0).Text
-	tagType.Template = tv.app.tagTable.GetCell(row, 1).Text
+	tagType.Label = tv.TagTable.GetCell(row, 0).Text
+	tagType.Template = tv.TagTable.GetCell(row, 1).Text
 
 	// Fire the event for the selected tag
 	tv.app.HandleEvent(&TagSelectedEvent{
@@ -159,7 +170,7 @@ func (tv *TagView) selectTag() {
 }
 
 func (tv *TagView) setupKeyBindings() {
-	tv.app.tagTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+	tv.TagTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		// Enter key selects the current tag and closes the modal
 		if event.Key() == tcell.KeyEnter {
 			tv.selectTag()
@@ -180,13 +191,13 @@ func (tv *TagView) setupKeyBindings() {
 
 // buildExclusionHelpText creates help text explaining how to exclude tags
 func (tv *TagView) buildExclusionHelpText() string {
-	if len(tv.app.cfg.TagExcludeWords) == 0 {
+	if len(tv.cfg.TagExcludeWords) == 0 {
 		return ""
 	}
 
 	// Build a comma-separated list of exclude words
-	words := make([]string, len(tv.app.cfg.TagExcludeWords))
-	for i, word := range tv.app.cfg.TagExcludeWords {
+	words := make([]string, len(tv.cfg.TagExcludeWords))
+	for i, word := range tv.cfg.TagExcludeWords {
 		words[i] = "'" + word + "'"
 	}
 

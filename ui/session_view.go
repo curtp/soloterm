@@ -17,6 +17,7 @@ type SessionView struct {
 	Modal            *tview.Flex
 	HelpModal        *tview.Flex
 	app              *App
+	sessionService   *session.Service
 	helper           *SessionViewHelper
 	currentSessionID *int64
 	currentSession   *session.Session
@@ -33,12 +34,17 @@ const (
 
 // NewGameView creates a new session view helper
 func NewSessionView(app *App, service *session.Service) *SessionView {
-	return &SessionView{
-		app:      app,
-		isDirty:  false,
-		gameName: "",
-		helper:   NewSessionViewHelper(service),
+	sessionView := &SessionView{
+		app:            app,
+		sessionService: service,
+		isDirty:        false,
+		gameName:       "",
+		helper:         NewSessionViewHelper(service),
 	}
+
+	sessionView.Setup()
+
+	return sessionView
 }
 
 // Setup initializes all session UI components
@@ -258,7 +264,7 @@ func (sv *SessionView) Refresh() {
 func (sv *SessionView) HandleSave() {
 	session := sv.Form.BuildDomain()
 
-	session, err := sv.app.sessionService.Save(session)
+	session, err := sv.sessionService.Save(session)
 	if err != nil {
 		// Check if it's a validation error
 		if sharedui.HandleValidationError(err, sv.Form) {
@@ -371,7 +377,7 @@ func (sv *SessionView) Autosave() {
 		return
 	}
 	sv.currentSession.Content = sv.TextArea.GetText()
-	_, err := sv.app.sessionService.Save(sv.currentSession)
+	_, err := sv.sessionService.Save(sv.currentSession)
 	if err != nil {
 		sv.app.notification.ShowError(fmt.Sprintf("Autosave failed: %v", err))
 		return

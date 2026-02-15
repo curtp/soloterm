@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"soloterm/domain/game"
+	"soloterm/domain/session"
 	sharedui "soloterm/shared/ui"
 
 	"github.com/gdamore/tcell/v2"
@@ -12,39 +13,59 @@ import (
 // GameView provides game-specific UI operations
 type GameView struct {
 	app            *App
+	gameService    *game.Service
 	helper         *GameViewHelper
 	selectedGameID *int64
+
+	Tree  *tview.TreeView
+	Form  *GameForm
+	Modal *tview.Flex
+}
+
+type GameState struct {
+	GameID    *int64
+	SessionID *int64
 }
 
 // NewGameView creates a new game view helper
-func NewGameView(app *App) *GameView {
-	return &GameView{
-		app:    app,
-		helper: NewGameViewHelper(app.gameService, app.sessionService),
+func NewGameView(app *App, gameService *game.Service, sessionService *session.Service) *GameView {
+	gv := &GameView{
+		app:         app,
+		gameService: gameService,
+		helper:      NewGameViewHelper(gameService, sessionService),
 	}
+
+	gv.Setup()
+
+	return gv
 }
 
 // Setup initializes all game UI components
 func (gv *GameView) Setup() {
+	gv.setupForm()
 	gv.setupTreeView()
 	gv.setupModal()
 	gv.setupKeyBindings()
 	gv.setupFocusHandlers()
 }
 
+func (gv *GameView) setupForm() {
+	gv.Form = NewGameForm()
+}
+
 // setupTreeView configures the game tree view
 func (gv *GameView) setupTreeView() {
-	gv.app.gameTree = tview.NewTreeView()
-	gv.app.gameTree.SetBorder(true).
+	gv.Tree = tview.NewTreeView()
+	gv.Tree.SetBorder(true).
 		SetTitle(" [::b]Games & Sessions (Ctrl+G) ").
 		SetTitleAlign(tview.AlignLeft)
 
 	// Placeholder root node
 	root := tview.NewTreeNode("Games").SetColor(tcell.ColorYellow).SetSelectable(false)
-	gv.app.gameTree.SetRoot(root).SetCurrentNode(root)
+	gv.Tree.SetRoot(root).SetCurrentNode(root)
 
 	// Set up selection handler for the tree (triggered by Space)
-	gv.app.gameTree.SetSelectedFunc(func(node *tview.TreeNode) {
+	gv.Tree.SetSelectedFunc(func(node *tview.TreeNode) {
 		// Need the current selection for the session date if one is selected
 		currentSelection := gv.GetCurrentSelection()
 		if currentSelection == nil {
@@ -71,35 +92,35 @@ func (gv *GameView) setupTreeView() {
 // setupModal configures the game form modal
 func (gv *GameView) setupModal() {
 	// Set up handlers
-	gv.app.gameForm.SetupHandlers(
+	gv.Form.SetupHandlers(
 		gv.HandleSave,
 		gv.HandleCancel,
 		gv.HandleDelete,
 	)
 
 	// Center the modal on screen
-	gv.app.gameModal = tview.NewFlex().
+	gv.Modal = tview.NewFlex().
 		AddItem(nil, 0, 1, false).
 		AddItem(
 			tview.NewFlex().
 				SetDirection(tview.FlexRow).
 				AddItem(nil, 0, 1, false).
-				AddItem(gv.app.gameForm, 11, 1, true). // Dynamic height: expands to fit content
+				AddItem(gv.Form, 11, 1, true). // Dynamic height: expands to fit content
 				AddItem(nil, 0, 1, false),
 			60, 1, true, // Dynamic width: expands to fit content (up to screen width)
 		).
 		AddItem(nil, 0, 1, false)
-	gv.app.gameModal.SetBackgroundColor(tcell.ColorBlack)
+	gv.Modal.SetBackgroundColor(tcell.ColorBlack)
 
-	gv.app.gameModal.SetFocusFunc(func() {
-		gv.app.SetModalHelpMessage(*gv.app.gameForm.DataForm)
+	gv.Modal.SetFocusFunc(func() {
+		gv.app.SetModalHelpMessage(*gv.Form.DataForm)
 	})
 
 }
 
 // setupKeyBindings configures keyboard shortcuts for the game tree
 func (gv *GameView) setupKeyBindings() {
-	gv.app.gameTree.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+	gv.Tree.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyCtrlE:
 			game := gv.getSelectedGame()
@@ -116,7 +137,7 @@ func (gv *GameView) setupKeyBindings() {
 
 // setupFocusHandlers configures focus event handlers
 func (gv *GameView) setupFocusHandlers() {
-	gv.app.gameTree.SetFocusFunc(func() {
+	gv.Tree.SetFocusFunc(func() {
 		gv.app.updateFooterHelp("[aqua::b]Games[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Space[white] Select/Expand  [yellow]Ctrl+E[white] Edit  [yellow]Ctrl+N[white] New")
 	})
 }
@@ -130,7 +151,7 @@ func (gv *GameView) Refresh() {
 	// the save game process.
 	gv.selectedGameID = nil
 
-	root := gv.app.gameTree.GetRoot()
+	root := gv.Tree.GetRoot()
 	root.ClearChildren()
 
 	// Load all games from database
@@ -163,7 +184,7 @@ func (gv *GameView) Refresh() {
 
 		// Check if this game was previously selected
 		if currentSelection != nil && g.Game.ID == *currentSelection.GameID {
-			gv.app.gameTree.SetCurrentNode(gameNode)
+			gv.Tree.SetCurrentNode(gameNode)
 			gameNode.SetExpanded(true)
 		}
 
@@ -187,7 +208,7 @@ func (gv *GameView) Refresh() {
 				// Check if this session was previously selected
 				if currentSelection != nil && currentSelection.SessionID != nil &&
 					s.GameID == *currentSelection.GameID && s.ID == *currentSelection.SessionID {
-					gv.app.gameTree.SetCurrentNode(sessionNode)
+					gv.Tree.SetCurrentNode(sessionNode)
 					gameNode.SetExpanded(true)
 				}
 			}
@@ -201,7 +222,7 @@ func (gv *GameView) getSelectedGame() *game.Game {
 		return nil
 	}
 
-	game, err := gv.app.gameService.GetByID(*gameTreeReference.GameID)
+	game, err := gv.gameService.GetByID(*gameTreeReference.GameID)
 	if err != nil {
 		return nil
 	}
@@ -210,19 +231,19 @@ func (gv *GameView) getSelectedGame() *game.Game {
 }
 
 func (gv *GameView) SelectGame(gameID *int64) {
-	if gv.app.gameTree.GetRoot() == nil {
+	if gv.Tree.GetRoot() == nil {
 		return
 	}
 
 	// If nil is provided, clear the selection
 	if gameID == nil {
 		gv.selectedGameID = nil
-		gv.app.gameTree.SetCurrentNode(gv.app.gameTree.GetRoot())
+		gv.Tree.SetCurrentNode(gv.Tree.GetRoot())
 		return
 	}
 
 	var foundNode *tview.TreeNode
-	gv.app.gameTree.GetRoot().Walk(func(node, parent *tview.TreeNode) bool {
+	gv.Tree.GetRoot().Walk(func(node, parent *tview.TreeNode) bool {
 		ref := node.GetReference()
 		if ref != nil {
 			if state, ok := ref.(*GameState); ok && state.GameID != nil && *state.GameID == *gameID {
@@ -234,18 +255,18 @@ func (gv *GameView) SelectGame(gameID *int64) {
 	})
 
 	if foundNode != nil {
-		gv.app.gameTree.SetCurrentNode(foundNode)
+		gv.Tree.SetCurrentNode(foundNode)
 		foundNode.SetExpanded(true)
 	}
 }
 
 func (gv *GameView) SelectSession(sessionID int64) {
-	if gv.app.gameTree.GetRoot() == nil {
+	if gv.Tree.GetRoot() == nil {
 		return
 	}
 
 	var foundNode *tview.TreeNode
-	gv.app.gameTree.GetRoot().Walk(func(node, parent *tview.TreeNode) bool {
+	gv.Tree.GetRoot().Walk(func(node, parent *tview.TreeNode) bool {
 		ref := node.GetReference()
 		if ref != nil {
 			if state, ok := ref.(*GameState); ok && state.SessionID != nil && *state.SessionID == sessionID {
@@ -257,7 +278,7 @@ func (gv *GameView) SelectSession(sessionID int64) {
 	})
 
 	if foundNode != nil {
-		gv.app.gameTree.SetCurrentNode(foundNode)
+		gv.Tree.SetCurrentNode(foundNode)
 	}
 }
 
@@ -270,7 +291,7 @@ func (gv *GameView) GetCurrentSelection() *GameState {
 	}
 
 	// Pull the data from the tree view
-	treeRef := gv.app.gameTree.GetCurrentNode().GetReference()
+	treeRef := gv.Tree.GetCurrentNode().GetReference()
 	if treeRef != nil {
 		ref, ok := treeRef.(*GameState)
 		if ok {
@@ -283,15 +304,15 @@ func (gv *GameView) GetCurrentSelection() *GameState {
 
 // HandleSave processes game save operation
 func (gv *GameView) HandleSave() {
-	gameEntity := gv.app.gameForm.BuildDomain()
+	gameEntity := gv.Form.BuildDomain()
 
 	// Remember if this is a new game being saved.
 	newGame := gameEntity.IsNew()
 
-	savedGame, err := gv.app.gameService.Save(gameEntity)
+	savedGame, err := gv.gameService.Save(gameEntity)
 	if err != nil {
 		// Check if it's a validation error
-		if sharedui.HandleValidationError(err, gv.app.gameForm) {
+		if sharedui.HandleValidationError(err, gv.Form) {
 			return
 		}
 
@@ -339,7 +360,7 @@ func (gv *GameView) HandleDelete() {
 // ConfirmDelete executes the actual deletion after user confirmation
 func (gv *GameView) ConfirmDelete(gameID int64) {
 	// Business logic: Delete the game
-	err := gv.app.gameService.Delete(gameID)
+	err := gv.gameService.Delete(gameID)
 	if err != nil {
 		// Dispatch failure event with error
 		gv.app.HandleEvent(&GameDeleteFailedEvent{

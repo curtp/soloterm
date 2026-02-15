@@ -56,6 +56,13 @@ type Event interface {
 	Action() UserAction
 }
 
+// dispatch type-asserts the event and calls the handler if it matches.
+func dispatch[T any](event Event, handler func(T)) {
+	if e, ok := any(event).(T); ok {
+		handler(e)
+	}
+}
+
 // Base event struct that all events embed
 type BaseEvent struct {
 	action UserAction
