@@ -38,7 +38,7 @@ func (a *App) handleCharacterDeleted(_ *CharacterDeletedEvent) {
 	a.pages.HidePage(CHARACTER_MODAL_ID)
 	a.pages.SwitchToPage(MAIN_PAGE_ID)
 	a.characterView.InfoView.Clear()
-	a.characterView.AttributeTable.Clear()
+	a.attributeView.Table.Clear()
 	a.characterView.RefreshTree()
 	a.SetFocus(a.characterView.ReturnFocus)
 	a.notification.ShowSuccess("Character deleted successfully")
@@ -70,8 +70,8 @@ func (a *App) handleCharacterDuplicateConfirm(e *CharacterDuplicateConfirmEvent)
 func (a *App) handleCharacterDuplicated(e *CharacterDuplicatedEvent) {
 	a.pages.HidePage(CONFIRM_MODAL_ID)
 	a.characterView.RefreshTree()
-	a.characterView.RefreshDisplay()
 	a.characterView.SelectCharacter(e.Character.ID)
+	a.characterView.RefreshDisplay()
 	a.SetFocus(a.characterView.ReturnFocus)
 	a.notification.ShowSuccess("Character duplicated successfully")
 }

@@ -17,15 +17,15 @@ import (
 )
 
 const (
-	GAME_MODAL_ID         string = "gameModal"
-	TAG_MODAL_ID          string = "tagModal"
-	CHARACTER_MODAL_ID    string = "characterModal"
-	ATTRIBUTE_MODAL_ID    string = "attributeModal"
-	CONFIRM_MODAL_ID      string = "confirm"
-	MAIN_PAGE_ID          string = "main"
-	ABOUT_MODAL_ID        string = "about"
-	SESSION_MODAL_ID      string = "sessionModal"
-	HELP_MODAL_ID string = "helpModal"
+	GAME_MODAL_ID      string = "gameModal"
+	TAG_MODAL_ID       string = "tagModal"
+	CHARACTER_MODAL_ID string = "characterModal"
+	ATTRIBUTE_MODAL_ID string = "attributeModal"
+	CONFIRM_MODAL_ID   string = "confirm"
+	MAIN_PAGE_ID       string = "main"
+	ABOUT_MODAL_ID     string = "about"
+	SESSION_MODAL_ID   string = "sessionModal"
+	HELP_MODAL_ID      string = "helpModal"
 )
 
 type App struct {
@@ -36,6 +36,7 @@ type App struct {
 	tagView       *TagView
 	sessionView   *SessionView
 	characterView *CharacterView
+	attributeView *AttributeView
 
 	// Layout containers
 	mainFlex         *tview.Flex
@@ -67,6 +68,7 @@ func NewApp(db *database.DBStore, cfg *config.Config) *App {
 	app.gameView = NewGameView(app, gameService, sessionService)
 	app.sessionView = NewSessionView(app, sessionService)
 	app.tagView = NewTagView(app, cfg, tagService)
+	app.attributeView = NewAttributeView(app, charService)
 	app.characterView = NewCharacterView(app, charService)
 
 	app.setupUI()
@@ -89,7 +91,7 @@ func (a *App) setupUI() {
 	// Main layout: horizontal split of tree (left, narrow) and log view (right)
 	a.mainFlex = tview.NewFlex().
 		SetDirection(tview.FlexColumn).
-		AddItem(a.leftSidebar, 0, 1, false).        // 1/3 of the width
+		AddItem(a.leftSidebar, 0, 1, false).             // 1/3 of the width
 		AddItem(a.sessionView.textAreaFrame, 0, 2, true) // 2/3 of the width
 
 	// Main content with footer
@@ -122,7 +124,7 @@ func (a *App) setupUI() {
 		AddPage(ABOUT_MODAL_ID, a.aboutModal, true, false).
 		AddPage(GAME_MODAL_ID, a.gameView.Modal, true, false).
 		AddPage(CHARACTER_MODAL_ID, a.characterView.Modal, true, false).
-		AddPage(ATTRIBUTE_MODAL_ID, a.characterView.AttributeModal, true, false).
+		AddPage(ATTRIBUTE_MODAL_ID, a.attributeView.Modal, true, false).
 		AddPage(SESSION_MODAL_ID, a.sessionView.Modal, true, false).
 		AddPage(TAG_MODAL_ID, a.tagView.Modal, true, false).
 		AddPage(HELP_MODAL_ID, a.helpModal, true, false).
@@ -171,7 +173,7 @@ func (a *App) SetModalHelpMessage(form sharedui.DataForm) {
 
 func (a *App) setupKeyBindings() {
 	a.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		switchable := []tview.Primitive{a.gameView.Tree, a.sessionView.TextArea, a.characterView.CharTree, a.characterView.AttributeTable}
+		switchable := []tview.Primitive{a.gameView.Tree, a.sessionView.TextArea, a.characterView.CharTree, a.attributeView.Table}
 		switch event.Key() {
 		case tcell.KeyCtrlQ:
 			a.Stop()
@@ -189,7 +191,7 @@ func (a *App) setupKeyBindings() {
 			return nil
 		case tcell.KeyCtrlS:
 			if slices.Contains(switchable, a.GetFocus()) {
-				a.SetFocus(a.characterView.AttributeTable)
+				a.SetFocus(a.attributeView.Table)
 				return nil
 			}
 		case tcell.KeyCtrlL:
@@ -212,9 +214,9 @@ func (a *App) setupKeyBindings() {
 				a.SetFocus(a.characterView.CharTree)
 				return nil
 			case a.characterView.CharTree:
-				a.SetFocus(a.characterView.AttributeTable)
+				a.SetFocus(a.attributeView.Table)
 				return nil
-			case a.characterView.AttributeTable:
+			case a.attributeView.Table:
 				a.SetFocus(a.gameView.Tree)
 				return nil
 			}
@@ -224,7 +226,7 @@ func (a *App) setupKeyBindings() {
 			currentFocus := a.GetFocus()
 			switch currentFocus {
 			case a.gameView.Tree:
-				a.SetFocus(a.characterView.AttributeTable)
+				a.SetFocus(a.attributeView.Table)
 				return nil
 			case a.sessionView.TextArea:
 				a.SetFocus(a.gameView.Tree)
@@ -232,7 +234,7 @@ func (a *App) setupKeyBindings() {
 			case a.characterView.CharTree:
 				a.SetFocus(a.sessionView.TextArea)
 				return nil
-			case a.characterView.AttributeTable:
+			case a.attributeView.Table:
 				a.SetFocus(a.characterView.CharTree)
 				return nil
 			}
@@ -261,6 +263,10 @@ func (a *App) handleCloseHelp(e *CloseHelpEvent) {
 
 func (a *App) GetSelectedGameState() *GameState {
 	return a.gameView.GetCurrentSelection()
+}
+
+func (a *App) GetSelectedCharacterID() *int64 {
+	return a.characterView.GetSelectedCharacterID()
 }
 
 func (a *App) HandleEvent(event Event) {

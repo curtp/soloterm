@@ -21,9 +21,6 @@ type CharacterView struct {
 	// had focus before initiating a process like editing or duplicating a character
 	ReturnFocus tview.Primitive
 
-	// An array of the attributes IDs in order
-	attrOrder []int64
-
 	// Used to expand the system in the tree after deleting a character in the system
 	expandSystem *string
 
@@ -31,16 +28,11 @@ type CharacterView struct {
 	selectedCharacterID *int64
 
 	// UI Components
-	CharTree       *tview.TreeView
-	InfoView       *tview.TextView
-	AttributeTable *tview.Table
-	Form           *CharacterForm
-	Modal          *tview.Flex
-	// CharPane              *tview.Flex // Character section
-	CharPane              *tview.Frame
-	AttributeForm         *AttributeForm
-	AttributeModal        *tview.Flex
-	AttributeModalContent *tview.Flex
+	CharTree *tview.TreeView
+	InfoView *tview.TextView
+	Form     *CharacterForm
+	Modal    *tview.Flex
+	CharPane *tview.Frame
 }
 
 // NewCharacterView creates a new character view helper
@@ -53,13 +45,10 @@ func NewCharacterView(app *App, charService *character.Service) *CharacterView {
 // Setup initializes all character-related UI components
 func (cv *CharacterView) Setup() {
 	cv.setupCharacterForm()
-	cv.setupAttributeForm()
 	cv.setupCharacterTree()
 	cv.setupCharacterInfo()
-	cv.setupAttributeTable()
 	cv.setupCharacterPane()
 	cv.setupCharacterModal()
-	cv.setupAttributeModal()
 	cv.setupFocusHandlers()
 }
 
@@ -72,16 +61,12 @@ func (cv *CharacterView) setupCharacterForm() {
 	cv.Form = NewCharacterForm()
 }
 
-func (cv *CharacterView) setupAttributeForm() {
-	cv.AttributeForm = NewAttributeForm()
-}
-
 func (cv *CharacterView) setupCharacterPane() {
 	// Character pane combining info and attributes
 	charDetails := tview.NewFlex().
 		SetDirection(tview.FlexRow).
-		AddItem(cv.InfoView, 4, 1, false).      // Proportional height (smaller weight)
-		AddItem(cv.AttributeTable, 0, 2, false) // Proportional height (larger weight - gets 2x space)
+		AddItem(cv.InfoView, 4, 1, false).               // Proportional height (smaller weight)
+		AddItem(cv.app.attributeView.Table, 0, 2, false) // Proportional height (larger weight - gets 2x space)
 
 	cv.CharPane = tview.NewFrame(charDetails).
 		SetBorders(0, 0, 0, 0, 1, 1)
@@ -92,7 +77,7 @@ func (cv *CharacterView) setupCharacterPane() {
 	cv.CharPane.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyCtrlH:
-			cv.ShowSheetHelpModal()
+			cv.app.attributeView.ShowHelpModal()
 			return nil
 		}
 
@@ -125,7 +110,7 @@ func (cv *CharacterView) setupCharacterTree() {
 		}
 
 		cv.RefreshDisplay()
-		cv.AttributeTable.ScrollToBeginning()
+		cv.app.attributeView.Table.ScrollToBeginning()
 	})
 
 	// Set up input capture for character tree - Ctrl+N to add character
@@ -159,43 +144,6 @@ func (cv *CharacterView) setupCharacterInfo() {
 		SetText("")
 }
 
-// setupAttributeTable configures the attribute table
-func (cv *CharacterView) setupAttributeTable() {
-	cv.AttributeTable = tview.NewTable().
-		SetBorders(false).
-		SetSelectable(true, false). // Make rows selectable
-		SetFixed(1, 0)              // Fix the header and divider rows
-
-	cv.AttributeTable.SetSelectedStyle(tcell.Style{}.Background(tcell.ColorAqua).Foreground(tcell.ColorBlack))
-
-	cv.AttributeTable.SetBorder(false)
-
-	// Set up input capture for attribute table
-	cv.AttributeTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if cv.GetSelectedCharacterID() == nil {
-			cv.app.notification.ShowWarning("Select a character before editing the sheet")
-			return nil
-		}
-
-		// Handle Ctrl+N or Insert key to add new attribute
-		if event.Key() == tcell.KeyCtrlN {
-			cv.ShowNewAttributeModal()
-			return nil
-		}
-
-		// Handle Ctrl+E to edit selected attribute
-		if event.Key() == tcell.KeyCtrlE {
-			attr := cv.GetSelectedAttribute()
-			if attr != nil {
-				cv.ShowEditAttributeModal(attr)
-			}
-			return nil
-		}
-
-		return event
-	})
-}
-
 // setupCharacterModal configures the character form modal
 func (cv *CharacterView) setupCharacterModal() {
 	// Set up handlers
@@ -223,54 +171,6 @@ func (cv *CharacterView) setupCharacterModal() {
 	})
 }
 
-// setupAttributeModal configures the attribute form modal
-func (cv *CharacterView) setupAttributeModal() {
-	// Create help text view at modal level (no border, will be inside form container)
-	helpTextView := tview.NewTextView()
-	helpTextView.SetDynamicColors(true).
-		SetTextAlign(tview.AlignLeft).
-		SetWrap(true).
-		SetBorder(false)
-
-	// Create container with border that holds both form and help
-	cv.AttributeModalContent = tview.NewFlex().
-		SetDirection(tview.FlexRow).
-		AddItem(cv.AttributeForm, 0, 1, true).
-		AddItem(helpTextView, 3, 0, false) // Fixed 3-line height for help
-	cv.AttributeModalContent.SetBorder(true).
-		SetTitleAlign(tview.AlignLeft)
-
-	// Subscribe to form's help text changes
-	cv.AttributeForm.SetHelpTextChangeHandler(func(text string) {
-		helpTextView.SetText(text)
-	})
-
-	// Set up handlers
-	cv.AttributeForm.SetupHandlers(
-		cv.HandleAttributeSave,
-		cv.HandleAttributeCancel,
-		cv.HandleAttributeDelete,
-	)
-
-	// Center the modal on screen
-	cv.AttributeModal = tview.NewFlex().
-		AddItem(nil, 0, 1, false).
-		AddItem(
-			tview.NewFlex().
-				SetDirection(tview.FlexRow).
-				AddItem(nil, 0, 1, false).
-				AddItem(cv.AttributeModalContent, 16, 1, true). // Increased height for help text
-				AddItem(nil, 0, 1, false),
-			60, 1, true, // Fixed width
-		).
-		AddItem(nil, 0, 1, false)
-
-	cv.AttributeModal.SetFocusFunc(func() {
-		cv.app.SetModalHelpMessage(*cv.AttributeForm.DataForm)
-	})
-
-}
-
 // setupFocusHandlers configures focus event handlers
 func (cv *CharacterView) setupFocusHandlers() {
 	editDupHelp := "[yellow]Ctrl+E[white] Edit  [yellow]Ctrl+D[white] Duplicate"
@@ -278,8 +178,8 @@ func (cv *CharacterView) setupFocusHandlers() {
 		cv.SetReturnFocus(cv.CharTree)
 		cv.app.updateFooterHelp("[aqua::b]Characters[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Space/Enter[white] Select/Expand  [yellow]Ctrl+N[white] New  " + editDupHelp)
 	})
-	cv.AttributeTable.SetFocusFunc(func() {
-		cv.SetReturnFocus(cv.AttributeTable)
+	cv.app.attributeView.Table.SetFocusFunc(func() {
+		cv.SetReturnFocus(cv.app.attributeView.Table)
 		cv.app.updateFooterHelp("[aqua::b]Sheet[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Ctrl+E[white] Edit  [yellow]Ctrl+N[white] New  [yellow]Ctrl+H[white] Help")
 	})
 }
@@ -399,7 +299,7 @@ func (cv *CharacterView) RefreshDisplay() {
 	cv.InfoView.ScrollToBeginning()
 
 	// Load and display attributes
-	cv.loadAndDisplayAttributes(*cv.GetSelectedCharacterID())
+	cv.app.attributeView.LoadAndDisplay(*cv.GetSelectedCharacterID())
 }
 
 // displayCharacterInfo displays character information in the character info view
@@ -409,74 +309,6 @@ func (cv *CharacterView) displayCharacterInfo(char *character.Character) {
 	charInfo += "[yellow::bi]  Role/Class:[white::-] " + char.Role + "\n"
 	charInfo += "[yellow::bi]Species/Race:[white::-] " + char.Species
 	cv.InfoView.SetText(charInfo)
-}
-
-// loadAndDisplayAttributes loads and displays attributes for a character
-func (cv *CharacterView) loadAndDisplayAttributes(characterID int64) {
-	// Load attributes for this character
-	attrs, err := cv.charService.GetAttributesForCharacter(characterID)
-	if err != nil {
-		attrs = []*character.Attribute{}
-	}
-
-	// Clear and repopulate attribute table
-	cv.AttributeTable.Clear()
-	// Clear the array of attribute IDs
-	cv.attrOrder = nil
-
-	// Add header row
-	cv.AttributeTable.SetCell(0, 0, tview.NewTableCell("").
-		SetTextColor(tcell.ColorYellow).
-		SetAlign(tview.AlignLeft).
-		SetSelectable(false))
-	cv.AttributeTable.SetCell(0, 1, tview.NewTableCell("").
-		SetTextColor(tcell.ColorYellow).
-		SetAlign(tview.AlignLeft).
-		SetSelectable(false))
-
-	// Add attribute rows (starting from row 1)
-	for i, attr := range attrs {
-		// Put the attribute ID in the attrOrder array to track what attribute is where.
-		cv.attrOrder = append(cv.attrOrder, attr.ID)
-
-		name := tview.Escape(attr.Name)
-
-		if attr.PositionInGroup > 0 && attr.GroupCount > 1 && attr.GroupCountAfterZero > 0 {
-			name = " " + name
-		} else {
-			if attr.PositionInGroup == 0 && attr.GroupCount > 1 && attr.GroupCountAfterZero > 0 {
-				name = "[::u]" + name + "[::-]"
-			}
-		}
-
-		row := i + 1
-		cv.AttributeTable.SetCell(row, 0, tview.NewTableCell(name).
-			SetTextColor(tcell.ColorWhite).
-			SetAlign(tview.AlignLeft).
-			SetExpansion(0))
-		cv.AttributeTable.SetCell(row, 1, tview.NewTableCell(tview.Escape(attr.Value)).
-			SetTextColor(tcell.ColorWhite).
-			SetAlign(tview.AlignLeft).
-			SetExpansion(1))
-	}
-
-	// Show message if no attributes
-	if len(attrs) == 0 {
-		cv.AttributeTable.SetCell(2, 0, tview.NewTableCell("(No Entries - Ctrl+N to Add)").
-			SetTextColor(tcell.ColorGray).
-			SetAlign(tview.AlignCenter).
-			SetExpansion(2))
-	}
-}
-
-func (cv *CharacterView) selectAttribute(attributeID int64) {
-	// Get the index of the attribute ID to select
-	index := slices.Index(cv.attrOrder, attributeID)
-
-	if index != -1 {
-		// Add 1 to the index to account for the header row
-		cv.AttributeTable.Select(index+1, 0)
-	}
 }
 
 func (cv *CharacterView) GetSelectedCharacter() *character.Character {
@@ -605,30 +437,12 @@ func (cv *CharacterView) ConfirmDelete(characterID int64) {
 		return
 	}
 
+	// Forget the character was selected
+	cv.selectedCharacterID = nil
+
 	// Dispatch success event
 	cv.app.HandleEvent(&CharacterDeletedEvent{
 		BaseEvent: BaseEvent{action: CHARACTER_DELETED},
-	})
-}
-
-func (cv *CharacterView) ShowSheetHelpModal() {
-	cv.app.HandleEvent(&ShowHelpEvent{
-		BaseEvent:   BaseEvent{action: SHOW_HELP},
-		Title:       "Character Sheet Help",
-		ReturnFocus: cv.AttributeTable,
-		Text: `Scroll Down To View All Help Options
-
-[green]What to Track?[white]
-
-It's recommended to only track the bare essentials like health, or key pieces of information that may change during the adventure. Short names and values are recommended.
-		
-[green]Sheet Entries[white]
-
-[yellow]Name[white]: Name of the entry (HP, XP, Level). May be the name of a section header (Skills, Gear, Stats)
-[yellow]Value[white]: Value to assign to the entry (10/10, 2, +2). It may be blank. 
-[yellow]Group[white]: Organizes related entries together. Entries with the same group number will be displayed in the same section.
-[yellow]Position[white]: Controls the order within a group. Position 0 is shown first and will be styled if there are other entries in the same group.
-`,
 	})
 }
 
@@ -649,115 +463,4 @@ func (cv *CharacterView) ShowEditCharacterModal() {
 		BaseEvent: BaseEvent{action: CHARACTER_SHOW_EDIT},
 		Character: cv.GetSelectedCharacter(),
 	})
-}
-
-// HandleAttributeSave saves the attribute from the form
-func (cv *CharacterView) HandleAttributeSave() {
-	attr := cv.AttributeForm.BuildDomain()
-
-	// Validate and save
-	savedAttr, err := cv.charService.SaveAttribute(attr)
-	if err != nil {
-		// Check if it's a validation error
-		if sharedui.HandleValidationError(err, cv.AttributeForm) {
-			return
-		}
-		cv.app.notification.ShowError("Failed to save entry: " + err.Error())
-		return
-	}
-
-	// Dispatch event with saved attribute
-	cv.app.HandleEvent(&AttributeSavedEvent{
-		BaseEvent: BaseEvent{action: ATTRIBUTE_SAVED},
-		Attribute: savedAttr,
-	})
-}
-
-// HandleAttributeCancel cancels attribute editing
-func (cv *CharacterView) HandleAttributeCancel() {
-	cv.app.HandleEvent(&AttributeCancelledEvent{
-		BaseEvent: BaseEvent{action: ATTRIBUTE_CANCEL},
-	})
-}
-
-// HandleAttributeDelete deletes the current attribute
-func (cv *CharacterView) HandleAttributeDelete() {
-	attr := cv.AttributeForm.BuildDomain()
-
-	// Only delete if it has an ID (exists in database)
-	if attr.ID == 0 {
-		cv.app.HandleEvent(&AttributeCancelledEvent{
-			BaseEvent: BaseEvent{action: ATTRIBUTE_CANCEL},
-		})
-		return
-	}
-
-	// Dispatch event to show confirmation
-	cv.app.HandleEvent(&AttributeDeleteConfirmEvent{
-		BaseEvent: BaseEvent{action: ATTRIBUTE_DELETE_CONFIRM},
-		Attribute: attr,
-	})
-}
-
-// ConfirmAttributeDelete executes the actual deletion after user confirmation
-func (cv *CharacterView) ConfirmAttributeDelete(attributeID int64) {
-	// Business logic: Delete the attribute
-	err := cv.charService.DeleteAttribute(attributeID)
-	if err != nil {
-		// Dispatch failure event with error
-		cv.app.HandleEvent(&AttributeDeleteFailedEvent{
-			BaseEvent: BaseEvent{action: ATTRIBUTE_DELETE_FAILED},
-			Error:     err,
-		})
-		return
-	}
-
-	// Dispatch success event
-	cv.app.HandleEvent(&AttributeDeletedEvent{
-		BaseEvent: BaseEvent{action: ATTRIBUTE_DELETED},
-	})
-}
-
-// ShowEditAttributeModal displays the attribute form modal for editing an existing attribute
-func (cv *CharacterView) ShowEditAttributeModal(attr *character.Attribute) {
-	if attr == nil {
-		return
-	}
-
-	cv.app.HandleEvent(&AttributeShowEditEvent{
-		BaseEvent: BaseEvent{action: ATTRIBUTE_SHOW_EDIT},
-		Attribute: attr,
-	})
-}
-
-// ShowNewAttributeModal displays the attribute form modal for creating a new attribute
-func (cv *CharacterView) ShowNewAttributeModal() {
-	if cv.GetSelectedCharacterID() == nil {
-		return
-	}
-
-	// Get the currently selected attribute to use its group as default
-	attr := cv.GetSelectedAttribute()
-
-	cv.app.HandleEvent(&AttributeShowNewEvent{
-		BaseEvent:         BaseEvent{action: ATTRIBUTE_SHOW_NEW},
-		CharacterID:       *cv.GetSelectedCharacterID(),
-		SelectedAttribute: attr, // Pass selected attribute for default values
-	})
-}
-
-func (cv *CharacterView) GetSelectedAttribute() *character.Attribute {
-	if cv.GetSelectedCharacterID() == nil {
-		return nil
-	}
-
-	// Load the attribute which is currently selected
-	row, _ := cv.AttributeTable.GetSelection()
-	attrs, _ := cv.charService.GetAttributesForCharacter(*cv.GetSelectedCharacterID())
-	attrIndex := row - 1
-	if attrIndex >= 0 && attrIndex < len(attrs) {
-		return attrs[attrIndex]
-	}
-
-	return nil
 }
