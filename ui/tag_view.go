@@ -47,19 +47,10 @@ func (tv *TagView) setupModal() {
 		SetFixed(1, 0)              // Fix the header and divider rows
 	tv.TagTable.SetSelectedStyle(tcell.Style{}.Background(tcell.ColorAqua).Foreground(tcell.ColorBlack))
 
-	// Create help text explaining tag exclusion
-	helpText := tv.buildExclusionHelpText()
-	tagHelpView := tview.NewTextView().
-		SetText(helpText).
-		SetTextAlign(tview.AlignCenter).
-		SetTextColor(tcell.ColorGray).
-		SetDynamicColors(true)
-
 	// Create container that holds the tag selector and help text
 	tv.tagModalContent = tview.NewFlex().
 		SetDirection(tview.FlexRow).
-		AddItem(tv.TagTable, 0, 1, true).
-		AddItem(tagHelpView, 2, 0, false)
+		AddItem(tv.TagTable, 0, 1, true)
 
 	// Wrap in a frame for padding between border and content
 	tagFrame := tview.NewFrame(tv.tagModalContent).

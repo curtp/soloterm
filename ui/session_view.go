@@ -90,7 +90,7 @@ func (sv *SessionView) setupModal() {
 			tview.NewFlex().
 				SetDirection(tview.FlexRow).
 				AddItem(nil, 0, 1, false).
-				AddItem(sv.Form, 8, 1, true). // Dynamic height: expands to fit content
+				AddItem(sv.Form, 7, 1, true). // Dynamic height: expands to fit content
 				AddItem(nil, 0, 1, false),
 			60, 1, true, // Dynamic width: expands to fit content (up to screen width)
 		).
@@ -119,19 +119,27 @@ func (sv *SessionView) setupKeyBindings() {
 			sv.ShowNewModal()
 			return nil
 		case tcell.KeyF2:
-			sv.InsertAtCursor("@ \nd: ->\n=> ")
+			if sv.currentSessionID != nil {
+				sv.InsertAtCursor("@ \nd: ->\n=> ")
+			}
 			return nil
 		case tcell.KeyF3:
-			sv.InsertAtCursor("? \nd: ->\n=> ")
+			if sv.currentSessionID != nil {
+				sv.InsertAtCursor("? \nd: ->\n=> ")
+			}
 			return nil
 		case tcell.KeyF4:
-			sv.InsertAtCursor("d: ->\n=> ")
+			if sv.currentSessionID != nil {
+				sv.InsertAtCursor("d: ->\n=> ")
+			}
 			return nil
 		case tcell.KeyCtrlT:
-			// Dispatch event with saved log
-			sv.app.HandleEvent(&TagShowEvent{
-				BaseEvent: BaseEvent{action: TAG_SHOW},
-			})
+			if sv.currentSessionID != nil {
+				// Dispatch event with saved log
+				sv.app.HandleEvent(&TagShowEvent{
+					BaseEvent: BaseEvent{action: TAG_SHOW},
+				})
+			}
 			return nil
 		}
 
@@ -141,8 +149,15 @@ func (sv *SessionView) setupKeyBindings() {
 
 // setupFocusHandlers configures focus event handlers
 func (sv *SessionView) setupFocusHandlers() {
+	editHelp := "[yellow]PgUp/PgDn/↑/↓[white] Scroll  [yellow]Ctrl+E[white] Edit  [yellow]Ctrl+N[white] New  [yellow]Ctrl+T[white] Tag  [yellow]F2[white] Action  [yellow]F3[white] Oracle  [yellow]F4[white] Dice"
+	newHelp := "[yellow]Ctrl+N[white] New"
+	baseHelp := "[aqua::b]Session[-::-] :: "
 	sv.TextArea.SetFocusFunc(func() {
-		sv.app.updateFooterHelp("[aqua::b]Session[-::-] :: [yellow]PgUp/PgDn/↑/↓[white] Scroll  [yellow]Ctrl+E[white] Edit  [yellow]Ctrl+N[white] New  [yellow]Ctrl+T[white] Tag  [yellow]F2[white] Action  [yellow]F3[white] Oracle  [yellow]F4[white] Dice  [yellow]Ctrl+H[white] Help")
+		if sv.currentSessionID != nil {
+			sv.app.updateFooterHelp(baseHelp + editHelp)
+		} else {
+			sv.app.updateFooterHelp(baseHelp + newHelp)
+		}
 	})
 }
 

@@ -31,12 +31,13 @@ type CharacterView struct {
 	selectedCharacterID *int64
 
 	// UI Components
-	CharTree              *tview.TreeView
-	InfoView              *tview.TextView
-	AttributeTable        *tview.Table
-	Form                  *CharacterForm
-	Modal                 *tview.Flex
-	CharPane              *tview.Flex // Character section
+	CharTree       *tview.TreeView
+	InfoView       *tview.TextView
+	AttributeTable *tview.Table
+	Form           *CharacterForm
+	Modal          *tview.Flex
+	// CharPane              *tview.Flex // Character section
+	CharPane              *tview.Frame
 	AttributeForm         *AttributeForm
 	AttributeModal        *tview.Flex
 	AttributeModalContent *tview.Flex
@@ -77,13 +78,26 @@ func (cv *CharacterView) setupAttributeForm() {
 
 func (cv *CharacterView) setupCharacterPane() {
 	// Character pane combining info and attributes
-	cv.CharPane = tview.NewFlex().
+	charDetails := tview.NewFlex().
 		SetDirection(tview.FlexRow).
 		AddItem(cv.InfoView, 4, 1, false).      // Proportional height (smaller weight)
 		AddItem(cv.AttributeTable, 0, 2, false) // Proportional height (larger weight - gets 2x space)
-	cv.CharPane.SetBorder(true).
-		SetTitle(" [::b]Character Sheet (Ctrl+S) ").
-		SetTitleAlign(tview.AlignLeft)
+
+	cv.CharPane = tview.NewFrame(charDetails).
+		SetBorders(0, 0, 0, 0, 1, 1)
+	cv.CharPane.SetTitle(" [::b]Character Sheet (Ctrl+S) ").
+		SetTitleAlign(tview.AlignLeft).
+		SetBorder(true)
+
+	cv.CharPane.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyCtrlH:
+			cv.ShowSheetHelpModal()
+			return nil
+		}
+
+		return event
+	})
 }
 
 // setupCharacterTree configures the character tree view
@@ -266,7 +280,7 @@ func (cv *CharacterView) setupFocusHandlers() {
 	})
 	cv.AttributeTable.SetFocusFunc(func() {
 		cv.SetReturnFocus(cv.AttributeTable)
-		cv.app.updateFooterHelp("[aqua::b]Sheet[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Ctrl+E[white] Edit  [yellow]Ctrl+N[white] New")
+		cv.app.updateFooterHelp("[aqua::b]Sheet[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Ctrl+E[white] Edit  [yellow]Ctrl+N[white] New  [yellow]Ctrl+H[white] Help")
 	})
 }
 
@@ -588,6 +602,27 @@ func (cv *CharacterView) ConfirmDelete(characterID int64) {
 	// Dispatch success event
 	cv.app.HandleEvent(&CharacterDeletedEvent{
 		BaseEvent: BaseEvent{action: CHARACTER_DELETED},
+	})
+}
+
+func (cv *CharacterView) ShowSheetHelpModal() {
+	cv.app.HandleEvent(&ShowHelpEvent{
+		BaseEvent:   BaseEvent{action: SHOW_HELP},
+		Title:       "Character Sheet Help",
+		ReturnFocus: cv.AttributeTable,
+		Text: `Scroll Down To View All Help Options
+
+[green]What to Track?[white]
+
+It's recommended to only track the bare essentials like health, or key pieces of information that may change during the adventure. Short names and values are recommended.
+		
+[green]Sheet Entries[white]
+
+[yellow]Name[white]: Name of the entry (HP, XP, Level). May be the name of a section header (Skills, Gear, Stats)
+[yellow]Value[white]: Value to assign to the entry (10/10, 2, +2). It may be blank. 
+[yellow]Group[white]: Organizes related entries together. Entries with the same group number will be displayed in the same section.
+[yellow]Position[white]: Controls the order within a group. Position 0 is shown first and will be styled if there are other entries in the same group.
+`,
 	})
 }
 
