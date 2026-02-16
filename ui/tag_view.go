@@ -233,13 +233,3 @@ and close words by editing the configuration file:
 
 [aqua]%s[white]`, closeWords, tv.cfg.FullFilePath)
 }
-
-// buildExclusionHelpText creates help text explaining how to exclude tags
-func (tv *TagView) buildExclusionHelpText() string {
-	if len(tv.cfg.TagExcludeWords) == 0 {
-		return ""
-	}
-
-	wordList := text.FormatWordList(tv.cfg.TagExcludeWords, "'")
-	return "[gray]To hide a tag from this list, add " + wordList + " to its data section.[-]"
-}
