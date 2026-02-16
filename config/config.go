@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"soloterm/domain/tag"
 	"soloterm/shared/validation"
 
@@ -22,7 +23,7 @@ type Config struct {
 
 // Load loads the configuration file from the directory passed in
 func (c *Config) Load(workdir string) (*Config, error) {
-	c.FullFilePath = workdir + "/" + CONFIG_FILE_NAME
+	c.FullFilePath = filepath.Join(workdir, CONFIG_FILE_NAME)
 	var data []byte
 
 	// If the file doesn't exist, create it, otherwise read it

@@ -117,7 +117,8 @@ func (tv *TagView) Refresh() {
 		tv.TagTable.SetCell(currentRow, 1, tview.NewTableCell(tview.Escape(tagType.Template)).
 			SetTextColor(tcell.ColorWhite).
 			SetAlign(tview.AlignLeft).
-			SetExpansion(1))
+			SetExpansion(1).
+			SetReference(tagType.Template))
 		currentRow++
 	}
 
@@ -143,7 +144,8 @@ func (tv *TagView) Refresh() {
 			tv.TagTable.SetCell(currentRow, 1, tview.NewTableCell(tview.Escape(tagType.Template)).
 				SetTextColor(tcell.ColorWhite).
 				SetAlign(tview.AlignLeft).
-				SetExpansion(1))
+				SetExpansion(1).
+				SetReference(tagType.Template))
 			currentRow++
 		}
 	}
@@ -156,7 +158,7 @@ func (tv *TagView) selectTag() {
 
 	tagType := tag.TagType{}
 	tagType.Label = tv.TagTable.GetCell(row, 0).Text
-	tagType.Template = tv.TagTable.GetCell(row, 1).Text
+	tagType.Template = tv.TagTable.GetCell(row, 1).GetReference().(string)
 
 	// Fire the event for the selected tag
 	tv.app.HandleEvent(&TagSelectedEvent{

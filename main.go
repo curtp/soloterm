@@ -3,34 +3,43 @@ package main
 import (
 	"log"
 	"os"
+	"path/filepath"
 	"soloterm/config"
 	"soloterm/database"
+	"soloterm/shared/dirs"
 	"soloterm/ui"
 )
 
 func main() {
 	log.SetOutput(os.Stdout)
 
-	setupEnvironment()
+	// Resolve directories
+	configDir, err := dirs.ConfigDir()
+	if err != nil {
+		log.Fatal("Failed to resolve config directory: ", err)
+	}
+	dataDir, err := dirs.DataDir()
+	if err != nil {
+		log.Fatal("Failed to resolve data directory: ", err)
+	}
 
 	// Load configuration
 	var cfg config.Config
-	loadedCfg, err := cfg.Load(getWorkingDirectory())
+	loadedCfg, err := cfg.Load(configDir)
 	if err != nil {
 		log.SetOutput(os.Stdout)
 		log.Fatal("Failed to load config: ", err)
 	}
 	log.Printf("Using configuration file: %s", cfg.FullFilePath)
+
 	// Setup logging to file
-	logFile, err := os.OpenFile(getWorkingDirectory()+"/soloterm.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	logPath := filepath.Join(dataDir, "soloterm.log")
+	logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatal("Failed to open log file: ", err)
 	}
 	defer logFile.Close()
 	log.Printf("Logs are written to: %s", logFile.Name())
-	log.Print("Starting...")
-	log.SetOutput(logFile)
-	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 
 	// Setup database (connect + migrate)
 	db, err := database.Setup(nil)
@@ -38,7 +47,12 @@ func main() {
 		log.SetOutput(os.Stdout)
 		log.Fatal("Database setup failed: ", err)
 	}
+	log.Printf("Database is stored in: %s", dataDir)
 	defer db.Connection.Close()
+
+	log.Print("Starting...")
+	log.SetOutput(logFile)
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 
 	// Create and run the TUI application
 	app := ui.NewApp(db, loadedCfg)
@@ -46,24 +60,4 @@ func main() {
 		log.SetOutput(os.Stdout)
 		log.Fatal("Application error:", err)
 	}
-}
-
-func setupEnvironment() {
-	if workDir := os.Getenv("SOLOTERM_WORK_DIR"); workDir == "" {
-		workDir, err := os.UserHomeDir()
-		if err != nil {
-			log.Fatal("Unable to locate the users home directory. Set the SOLOTERM_WORK_DIR environment variable to a directory to store the data and log.")
-		}
-		workDir += "/soloterm"
-		os.Setenv("SOLOTERM_WORK_DIR", workDir)
-		log.Printf("SOLOTERM_WORK_DIR environment variable not found")
-		log.Printf("Setting to: %s", workDir)
-		log.Printf("To change the work dir, set the environment variable and restart the app.")
-		log.Printf("The database files and application log will be located in this directory.")
-	}
-
-}
-
-func getWorkingDirectory() string {
-	return os.Getenv("SOLOTERM_WORK_DIR")
 }

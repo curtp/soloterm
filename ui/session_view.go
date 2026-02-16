@@ -397,26 +397,6 @@ func (sv *SessionView) stopAutosave() {
 }
 
 func (sv *SessionView) InsertAtCursor(template string) {
-	row, col, _, _ := sv.TextArea.GetCursor()
-	content := sv.TextArea.GetText()
-
-	// Convert row:col to byte offset
-	currentRow := 0
-	currentCol := 0
-
-	for i, r := range content {
-		if currentRow == row && currentCol == col {
-			sv.TextArea.Replace(i, i, template)
-			return
-		}
-		if r == '\n' {
-			currentRow++
-			currentCol = 0
-		} else {
-			currentCol++
-		}
-	}
-
-	// Cursor is at the very end of text
-	sv.TextArea.Replace(len(content), len(content), template)
+	_, start, _ := sv.TextArea.GetSelection()
+	sv.TextArea.Replace(start, start, template)
 }

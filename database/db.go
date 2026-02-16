@@ -3,9 +3,9 @@
 package database
 
 import (
-	"log"
 	"os"
 	"path/filepath"
+	"soloterm/shared/dirs"
 
 	"github.com/jmoiron/sqlx"
 	_ "modernc.org/sqlite"
@@ -97,19 +97,16 @@ func connectWithPath(dbPath string) (*DBStore, error) {
 }
 
 // getDBPath returns the path to the database file
-// Checks environment variable first, then falls back to ./data/kvstore.db
+// Checks DB_PATH environment variable first, then falls back to the data directory
 func getDBPath() (string, error) {
 	if dbPath := os.Getenv("DB_PATH"); dbPath != "" {
 		return dbPath, nil
 	}
 
-	workDir := os.Getenv("SOLOTERM_WORK_DIR")
-
-	err := os.MkdirAll(workDir, 0755)
+	dataDir, err := dirs.DataDir()
 	if err != nil {
-		log.Printf("Error creating path for database: %s", err)
 		return "", err
 	}
 
-	return filepath.Join(workDir, "soloterm.db"), nil
+	return filepath.Join(dataDir, "soloterm.db"), nil
 }

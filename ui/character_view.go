@@ -381,13 +381,19 @@ func (cv *CharacterView) SelectCharacter(charID int64) {
 
 	if foundNode != nil {
 		cv.CharTree.SetCurrentNode(foundNode)
+		cv.selectedCharacterID = &charID
 	}
 }
 
 // RefreshDisplay updates the character info and attributes display
 func (cv *CharacterView) RefreshDisplay() {
+	char := cv.GetSelectedCharacter()
+	if char == nil {
+		return
+	}
+
 	// Display character info
-	cv.displayCharacterInfo(cv.GetSelectedCharacter())
+	cv.displayCharacterInfo(char)
 
 	// Resize the pane to fit the character info provided
 	cv.InfoView.ScrollToBeginning()

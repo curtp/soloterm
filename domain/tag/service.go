@@ -59,7 +59,8 @@ func (s *Service) extractRecentTags(contents []string, excludeWords []string) []
 
 	// Regex to match tags: [TagIdentifier | data]
 	// Captures tag identifier and optional data section separately
-	tagRegex := regexp.MustCompile(`\[([^\]|]+)(\|[^\]\[]*)?\]`)
+	// The data section allows nested [...] sequences (e.g. for tracking boxes like [ ])
+	tagRegex := regexp.MustCompile(`\[([^\]|]+)(\|[^\[\]]*(?:\[[^\]]*\][^\[\]]*)*)?\]`)
 
 	// Process contents in reverse order (newest first)
 	for i := len(contents) - 1; i >= 0; i-- {
