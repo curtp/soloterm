@@ -192,10 +192,9 @@ func (gv *GameView) Refresh() {
 				SetSelectable(false)
 			gameNode.AddChild(sessionPlaceholder)
 		} else {
-			// Add session nodes
 			for _, s := range g.Sessions {
 				reference = &GameState{GameID: &g.Game.ID, SessionID: &s.ID}
-				sessionNode := tview.NewTreeNode(s.Name).
+				sessionNode := tview.NewTreeNode(s.Name + " (" + s.CreatedAt.Format("2006-01-02") + ")").
 					SetReference(reference).
 					SetColor(tcell.ColorAqua).
 					SetSelectable(true).
