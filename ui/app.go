@@ -55,7 +55,10 @@ type App struct {
 
 func NewApp(db *database.DBStore, cfg *config.Config) *App {
 	gameService := game.NewService(game.NewRepository(db))
-	charService := character.NewService(character.NewRepository(db))
+	charRepo := character.NewRepository(db)
+	attrRepo := character.NewAttributeRepository(db)
+	attrService := character.NewAttributeService(attrRepo)
+	charService := character.NewService(charRepo, attrService)
 	sessionRepo := session.NewRepository(db)
 	tagService := tag.NewService(sessionRepo)
 	sessionService := session.NewService(sessionRepo)
@@ -68,7 +71,7 @@ func NewApp(db *database.DBStore, cfg *config.Config) *App {
 	app.gameView = NewGameView(app, gameService, sessionService)
 	app.sessionView = NewSessionView(app, sessionService)
 	app.tagView = NewTagView(app, cfg, tagService)
-	app.attributeView = NewAttributeView(app, charService)
+	app.attributeView = NewAttributeView(app, attrService)
 	app.characterView = NewCharacterView(app, charService)
 
 	app.setupUI()
@@ -176,6 +179,7 @@ func (a *App) setupKeyBindings() {
 		switchable := []tview.Primitive{a.gameView.Tree, a.sessionView.TextArea, a.characterView.CharTree, a.attributeView.Table}
 		switch event.Key() {
 		case tcell.KeyCtrlQ:
+			a.sessionView.Autosave()
 			a.Stop()
 			return nil
 		case tcell.KeyCtrlG:
@@ -259,6 +263,10 @@ func (a *App) handleShowHelp(e *ShowHelpEvent) {
 func (a *App) handleCloseHelp(e *CloseHelpEvent) {
 	a.pages.HidePage(HELP_MODAL_ID)
 	a.SetFocus(a.helpModal.returnFocus)
+}
+
+func (a *App) isPageVisible(pageID string) bool {
+	return slices.Contains(a.pages.GetPageNames(true), pageID)
 }
 
 func (a *App) GetSelectedGameState() *GameState {

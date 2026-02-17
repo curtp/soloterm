@@ -12,7 +12,7 @@ import (
 // AttributeView provides attribute UI operations
 type AttributeView struct {
 	app         *App
-	charService *character.Service
+	attrService *character.AttributeService
 	attrOrder   []int64
 	Table       *tview.Table
 	Form        *AttributeForm
@@ -21,10 +21,10 @@ type AttributeView struct {
 }
 
 // NewAttributeView creates a new attribute view
-func NewAttributeView(app *App, charService *character.Service) *AttributeView {
+func NewAttributeView(app *App, attrService *character.AttributeService) *AttributeView {
 	av := &AttributeView{
 		app:         app,
-		charService: charService,
+		attrService: attrService,
 	}
 	av.Setup()
 	return av
@@ -128,7 +128,7 @@ func (av *AttributeView) setupModal() {
 // LoadAndDisplay loads and displays attributes for a character
 func (av *AttributeView) LoadAndDisplay(characterID int64) {
 	// Load attributes for this character
-	attrs, err := av.charService.GetAttributesForCharacter(characterID)
+	attrs, err := av.attrService.GetForCharacter(characterID)
 	if err != nil {
 		attrs = []*character.Attribute{}
 	}
@@ -202,7 +202,7 @@ func (av *AttributeView) GetSelected() *character.Attribute {
 
 	// Load the attribute which is currently selected
 	row, _ := av.Table.GetSelection()
-	attrs, _ := av.charService.GetAttributesForCharacter(*av.app.GetSelectedCharacterID())
+	attrs, _ := av.attrService.GetForCharacter(*av.app.GetSelectedCharacterID())
 	attrIndex := row - 1
 	if attrIndex >= 0 && attrIndex < len(attrs) {
 		return attrs[attrIndex]
@@ -216,7 +216,7 @@ func (av *AttributeView) HandleSave() {
 	attr := av.Form.BuildDomain()
 
 	// Validate and save
-	savedAttr, err := av.charService.SaveAttribute(attr)
+	savedAttr, err := av.attrService.Save(attr)
 	if err != nil {
 		// Check if it's a validation error
 		if sharedui.HandleValidationError(err, av.Form) {
@@ -262,7 +262,7 @@ func (av *AttributeView) HandleDelete() {
 // ConfirmDelete executes the actual deletion after user confirmation
 func (av *AttributeView) ConfirmDelete(attributeID int64) {
 	// Business logic: Delete the attribute
-	err := av.charService.DeleteAttribute(attributeID)
+	err := av.attrService.Delete(attributeID)
 	if err != nil {
 		// Dispatch failure event with error
 		av.app.HandleEvent(&AttributeDeleteFailedEvent{

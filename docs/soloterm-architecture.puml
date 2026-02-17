@@ -12,9 +12,6 @@ skinparam linetype ortho
 package "domain" <<Rectangle>> DOMAIN_COLOR {
     package "game" {
         class Game {
-            + ID, Name, Description
-            + CreatedAt, UpdatedAt
-            --
             + Validate(): *Validator
         }
 
@@ -27,67 +24,62 @@ package "domain" <<Rectangle>> DOMAIN_COLOR {
         }
     }
 
-    package "log" {
-        enum LogType {
-            CHARACTER_ACTION
-            ORACLE_QUESTION
-            MECHANICS
-            STORY
-        }
-
-        class Log {
-            + ID, GameID, LogType
-            + Description, Narrative, Result
-            + CreatedAt, UpdatedAt
-            --
+    package "session" {
+        class Session {
+            + IsNew(): bool
             + Validate(): *Validator
         }
 
-        class Session {
-            + GameID, Date, LogCount
+        class SessionService {
+            + Save, Delete, GetByID
+            + GetAllForGame
         }
 
-        class LogService {
+        class SessionRepository {
             + Save, Delete, GetByID
-            + GetSessionsForGame
-            + GetLogsForSession
+            + GetAllForGame
+            + GetAllContentForGame
+            + DeleteAllForGame
+        }
+    }
+
+    package "tag" {
+        class TagType {
+            + Label, Template
         }
 
-        class LogRepository {
-            + Save, Delete, GetByID
-            + GetSessionsForGame
-            + GetLogsForSession
+        class TagService {
+            + LoadTagsForGame()
+            - extractRecentTags()
         }
     }
 
     package "character" {
         class Character {
-            + ID, Name, System, Role, Species
-            + CreatedAt, UpdatedAt
-            --
             + Validate(): *Validator
         }
 
         class Attribute {
-            + ID, CharacterID, Name, Value
-            + Group, PositionInGroup
-            + CreatedAt, UpdatedAt
-            --
             + Validate(): *Validator
         }
 
         class CharacterService {
             + Save, Delete, GetByID, GetAll
             + Duplicate
-            + SaveAttribute, DeleteAttribute
-            + GetAttributesForCharacter
         }
 
         class CharacterRepository {
             + Save, Delete, GetByID, GetAll
-            + Duplicate
-            + SaveAttribute, DeleteAttribute
-            + GetAttributesForCharacter
+        }
+
+        class AttributeService {
+            + Save, Delete, GetByID
+            + GetForCharacter
+        }
+
+        class AttributeRepository {
+            + Save, Delete, GetByID
+            + GetForCharacter
         }
     }
 
@@ -99,6 +91,8 @@ package "domain" <<Rectangle>> DOMAIN_COLOR {
         - Entities own validation rules
         - Services coordinate business logic
         - Repositories handle persistence
+        - Tag domain has no persistence
+          (config + session content extraction)
     end note
 }
 
@@ -108,74 +102,64 @@ package "ui" <<Rectangle>> UI_COLOR {
     class App {
         <b>Central Orchestrator</b>
         --
-        - gameService, logService, charService
-        - gameView, logView, characterView
-        - selectedGame: *Game
+        - gameView, sessionView
+        - characterView, attributeView
+        - tagView
         --
         <b>UI Components</b>
-        - pages, gameTree, charTree
-        - logTextView, attributeTable
+        - pages, leftSidebar
         - notification, confirmModal
+        - helpModal, aboutModal, footer
         --
         + HandleEvent(event Event)
-        - handle{Domain}{Action}() methods
+        + isPageVisible(pageID): bool
     }
 
     together {
         class GameView {
-            - app: *App
+            - gameService, sessionService
             - helper: *GameViewHelper
             --
             + Setup(), Refresh()
+            + SelectGame(), SelectSession()
             + HandleSave(), HandleCancel()
             + HandleDelete(), ConfirmDelete()
-            + ShowNewModal(), ShowEditModal()
         }
 
-        class LogView {
-            - app: *App
-            - helper: *LogViewHelper
+        class SessionView {
+            - sessionService
+            - TextArea, autosaveTicker
+            - isDirty, isLoading
             --
             + Setup(), Refresh()
             + HandleSave(), HandleCancel()
             + HandleDelete(), ConfirmDelete()
-            + ShowNewModal(), ShowEditModal()
+            + Autosave()
         }
 
         class CharacterView {
-            - app: *App
+            - charService
             - helper: *CharacterViewHelper
-            + ReturnFocus: tview.Primitive
             --
-            + Setup(), RefreshTree(), RefreshDisplay()
+            + Setup(), RefreshTree()
             + HandleSave(), HandleCancel()
             + HandleDelete(), ConfirmDelete()
             + HandleDuplicate(), ConfirmDuplicate()
-            + Attribute CRUD methods
-        }
-    }
-
-    together {
-        class GameViewHelper {
-            - gameService, logService
-            --
-            + LoadAllGames(): []*GameWithSessions
         }
 
-        class LogViewHelper {
-            - logService
+        class AttributeView {
+            - attrService
             --
-            + LoadLogsForGame()
-            + LoadLogsForSession()
-            + FormatLogDisplay()
+            + Setup(), LoadAndDisplay()
+            + HandleSave(), HandleCancel()
+            + HandleDelete(), ConfirmDelete()
         }
 
-        class CharacterViewHelper {
-            - charService
+        class TagView {
+            - tagService, config
             --
-            + LoadAllCharacters()
-            + LoadAttributesForCharacter()
-            + GroupCharactersBySystem()
+            + Setup(), LoadTags()
+            + SelectTag()
         }
     }
 
@@ -184,9 +168,7 @@ package "ui" <<Rectangle>> UI_COLOR {
             + Action(): UserAction
         }
 
-        class BaseEvent {
-            - action: UserAction
-        }
+        class BaseEvent
 
         note as EventTypes
             <b>Event Types (per domain)</b>
@@ -197,12 +179,17 @@ package "ui" <<Rectangle>> UI_COLOR {
             - {Domain}CancelledEvent
             - {Domain}ShowNewEvent
             - {Domain}ShowEditEvent
+            --
+            <b>Special Events</b>
+            - TagSelectedEvent, TagShowEvent
+            - ShowHelpEvent, CloseHelpEvent
+            - CharacterDuplicatedEvent
         end note
     }
 
     package "Forms" {
         class GameForm
-        class LogForm
+        class SessionForm
         class CharacterForm
         class AttributeForm
 
@@ -215,14 +202,9 @@ package "ui" <<Rectangle>> UI_COLOR {
         }
     }
 
-    class ConfirmationModal {
-        + Configure(message, onConfirm, onCancel)
-    }
-
-    class Notification {
-        + ShowInfo, ShowSuccess
-        + ShowWarning, ShowError
-    }
+    class ConfirmationModal
+    class HelpModal
+    class Notification
 
     note as UIFlowNote
         <b>Event-Driven UI Flow</b>
@@ -241,43 +223,42 @@ package "ui" <<Rectangle>> UI_COLOR {
         -> handleGameSaved()
         -> refresh, notify, focus
     end note
-
-    note as ViewNote
-        <b>View Responsibilities</b>
-        - Setup UI components & key bindings
-        - Handle user actions (save, delete, etc.)
-        - Call services for business logic
-        - Dispatch events to App
-
-        <b>ViewHelper Responsibilities</b>
-        - Load and transform data
-        - Format data for display
-        - No UI manipulation
-    end note
 }
 
 ' ==================== SHARED LAYER ====================
 package "shared" <<Rectangle>> SHARED_COLOR {
     class Validator {
-        + Errors: map[string][]string
-        --
         + Check(field, condition, message)
         + HasErrors(): bool
-        + Error(): string
     }
 
     class "ui/DataForm" as SharedDataForm {
-        Base form functionality
-        for validation integration
+        Base form with field errors,
+        key captures, help text
+    }
+
+    class "dirs" as SharedDirs {
+        + ConfigDir(), DataDir()
+    }
+}
+
+' ==================== CONFIG LAYER ====================
+package "config" <<Rectangle>> #FFF3E0 {
+    class Config {
+        + TagTypes: []TagType
+        + TagExcludeWords: []string
+        --
+        + Load(workdir): *Config
+        + Validate(): *Validator
     }
 }
 
 ' ==================== DATABASE LAYER ====================
 package "database" <<Rectangle>> DB_COLOR {
     class DBStore {
-        + *sqlx.DB
+        + Connection: *sqlx.DB
         --
-        + Setup(): *DBStore
+        + Setup(path): *DBStore
         + RegisterMigration()
     }
 
@@ -285,7 +266,7 @@ package "database" <<Rectangle>> DB_COLOR {
         SQLite with:
         - WAL mode
         - Foreign keys enabled
-        - Cascading deletes
+        - Per-domain migrations
     end note
 }
 
@@ -307,59 +288,59 @@ package "External" <<Rectangle>> #F5F5F5 {
 ' ==================== RELATIONSHIPS ====================
 
 ' Domain internal
-Game "1" -- "0..*" Log : has
+Game "1" -- "0..*" Session : has
 Character "1" -- "0..*" Attribute : has
-Log --> LogType
 
 GameService --> GameRepository
-LogService --> LogRepository
+SessionService --> SessionRepository
+TagService --> SessionRepository : reads content
 CharacterService --> CharacterRepository
+CharacterService --> AttributeService : Duplicate()
+AttributeService --> AttributeRepository
 
 GameRepository ..> Game
-LogRepository ..> Log
-LogRepository ..> Session
+SessionRepository ..> Session
 CharacterRepository ..> Character
-CharacterRepository ..> Attribute
+AttributeRepository ..> Attribute
 
 ' UI Layer
 App *-- GameView
-App *-- LogView
+App *-- SessionView
 App *-- CharacterView
+App *-- AttributeView
+App *-- TagView
 App *-- Notification
 App *-- ConfirmationModal
-
-GameView --> GameViewHelper
-LogView --> LogViewHelper
-CharacterView --> CharacterViewHelper
+App *-- HelpModal
 
 GameView ..> Event : dispatches
-LogView ..> Event : dispatches
+SessionView ..> Event : dispatches
 CharacterView ..> Event : dispatches
+AttributeView ..> Event : dispatches
+TagView ..> Event : dispatches
 
 App ..> Event : handles
 
-GameViewHelper --> GameService
-GameViewHelper --> LogService
-LogViewHelper --> LogService
-CharacterViewHelper --> CharacterService
+GameView --> GameService
+GameView --> SessionService
+SessionView --> SessionService
+CharacterView --> CharacterService
+AttributeView --> AttributeService
+TagView --> TagService
 
 GameForm ..|> DataForm
-LogForm ..|> DataForm
+SessionForm ..|> DataForm
 CharacterForm ..|> DataForm
 AttributeForm ..|> DataForm
 
 BaseEvent ..|> Event
 
 ' Cross-layer
-App --> GameService
-App --> LogService
-App --> CharacterService
-App --> DBStore
-
 Game ..> Validator
-Log ..> Validator
+Session ..> Validator
 Character ..> Validator
 Attribute ..> Validator
+Config ..> TagType
 
 DBStore --> sqlx
 App --> tview
@@ -367,9 +348,9 @@ App --> tview
 ' Entry point
 note as MainNote
     <b>main.go</b>
-    1. database.Setup() -> *DBStore
-    2. ui.NewApp(db) -> *App
-    3. app.EnableMouse()
+    1. config.Load() -> *Config
+    2. database.Setup() -> *DBStore
+    3. ui.NewApp(db, cfg) -> *App
     4. app.Run() -> event loop
 end note
 

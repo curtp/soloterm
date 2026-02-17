@@ -135,7 +135,7 @@ func (sv *SessionView) setupKeyBindings() {
 			return nil
 		case tcell.KeyCtrlT:
 			if sv.currentSessionID != nil {
-				// Dispatch event with saved log
+				sv.Autosave()
 				sv.app.HandleEvent(&TagShowEvent{
 					BaseEvent: BaseEvent{action: TAG_SHOW},
 				})

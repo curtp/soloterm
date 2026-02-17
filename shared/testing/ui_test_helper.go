@@ -50,6 +50,46 @@ func SimulateBacktab(app *tview.Application) {
 	}
 }
 
+// SimulateCtrlG simulates jumping to the game tree view
+func SimulateCtrlG(app *tview.Application) {
+	event := tcell.NewEventKey(tcell.KeyCtrlG, 0, tcell.ModNone)
+	if handler := app.GetInputCapture(); handler != nil {
+		handler(event)
+	}
+}
+
+// SimulateCtrlL simulates jumping to the session view
+func SimulateCtrlL(app *tview.Application) {
+	event := tcell.NewEventKey(tcell.KeyCtrlL, 0, tcell.ModNone)
+	if handler := app.GetInputCapture(); handler != nil {
+		handler(event)
+	}
+}
+
+// SimulateCtrlC simulates jumping to the character view
+func SimulateCtrlC(app *tview.Application) {
+	event := tcell.NewEventKey(tcell.KeyCtrlC, 0, tcell.ModNone)
+	if handler := app.GetInputCapture(); handler != nil {
+		handler(event)
+	}
+}
+
+// SimulateCtrlS simulates jumping to the character sheet
+func SimulateCtrlS(app *tview.Application) {
+	event := tcell.NewEventKey(tcell.KeyCtrlS, 0, tcell.ModNone)
+	if handler := app.GetInputCapture(); handler != nil {
+		handler(event)
+	}
+}
+
+// SimulateF1 simulates opening the about modal
+func SimulateF1(app *tview.Application) {
+	event := tcell.NewEventKey(tcell.KeyF1, 0, tcell.ModNone)
+	if handler := app.GetInputCapture(); handler != nil {
+		handler(event)
+	}
+}
+
 func SimulateDownArrow(p tview.Primitive, app *tview.Application) {
 	SimulateKey(p, app, tcell.KeyDown)
 }
@@ -64,14 +104,6 @@ func SimulateCtrlE(p tview.Primitive, app *tview.Application) {
 
 func SimulateCtrlN(p tview.Primitive, app *tview.Application) {
 	SimulateKey(p, app, tcell.KeyCtrlN)
-}
-
-func SimulateCtrlS(p tview.Primitive, app *tview.Application) {
-	SimulateKey(p, app, tcell.KeyCtrlS)
-}
-
-func SimulateCtrlC(p tview.Primitive, app *tview.Application) {
-	SimulateKey(p, app, tcell.KeyCtrlC)
 }
 
 func SimulateCtrlD(p tview.Primitive, app *tview.Application) {

@@ -2,12 +2,13 @@ package character
 
 // Service handles character business logic
 type Service struct {
-	repo *Repository
+	repo        *Repository
+	attrService *AttributeService
 }
 
 // NewService creates a new character service
-func NewService(repo *Repository) *Service {
-	return &Service{repo: repo}
+func NewService(repo *Repository, attrService *AttributeService) *Service {
+	return &Service{repo: repo, attrService: attrService}
 }
 
 // Save validates and saves a character (create or update)
@@ -43,7 +44,7 @@ func (s *Service) Duplicate(id int64) (*Character, error) {
 	}
 
 	// Loop over the attributes and copy them over as-is
-	attrs, err := s.GetAttributesForCharacter(id)
+	attrs, err := s.attrService.GetForCharacter(id)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +53,7 @@ func (s *Service) Duplicate(id int64) (*Character, error) {
 	for _, attr := range attrs {
 		attr.ID = 0
 		attr.CharacterID = char.ID
-		_, err = s.SaveAttribute(attr)
+		_, err = s.attrService.Save(attr)
 		if err != nil {
 			return nil, err
 		}
@@ -76,37 +77,4 @@ func (s *Service) GetByID(id int64) (*Character, error) {
 // GetAll retrieves all characters
 func (s *Service) GetAll() ([]*Character, error) {
 	return s.repo.GetAll()
-}
-
-// SaveAttribute validates and saves an attribute (create or update)
-func (s *Service) SaveAttribute(a *Attribute) (*Attribute, error) {
-	// Validate
-	validator := a.Validate()
-	if validator.HasErrors() {
-		return nil, validator
-	}
-
-	// Save to database
-	err := s.repo.SaveAttribute(a)
-	if err != nil {
-		return nil, err
-	}
-
-	return a, nil
-}
-
-// DeleteAttribute removes an attribute by ID
-func (s *Service) DeleteAttribute(id int64) error {
-	_, err := s.repo.DeleteAttribute(id)
-	return err
-}
-
-// GetAttributeByID retrieves an attribute by ID
-func (s *Service) GetAttributeByID(id int64) (*Attribute, error) {
-	return s.repo.GetAttributeByID(id)
-}
-
-// GetAll retrieves all character attributes
-func (s *Service) GetAttributesForCharacter(character_id int64) ([]*Attribute, error) {
-	return s.repo.GetAttributesForCharacter(character_id)
 }
