@@ -16,7 +16,7 @@ const (
 
 // Config represents the application configuration
 type Config struct {
-	FullFilePath    string
+	FullFilePath    string        `yaml:"-"`
 	TagTypes        []tag.TagType `yaml:"tag_types"`
 	TagExcludeWords []string      `yaml:"tag_exclude_words"`
 }

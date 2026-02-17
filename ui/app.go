@@ -108,7 +108,7 @@ func (a *App) setupUI() {
 		SetText("SoloTerm - Solo RPG Session Logger\n\n" +
 			"By Squidhead Games\n" +
 			"https://squidhead-games.itch.io\n\n" +
-			"Version 1.0.5\n\n" +
+			"Version 1.0.6\n\n" +
 			"Lonelog by Loreseed Workshop\n" +
 			"https://zeruhur.itch.io/lonelog").
 		AddButtons([]string{"Close"}).
