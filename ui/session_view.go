@@ -1,9 +1,12 @@
 package ui
 
 import (
+	"bytes"
 	"fmt"
+	"os"
 	"soloterm/domain/session"
 	sharedui "soloterm/shared/ui"
+	"strings"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -12,18 +15,22 @@ import (
 
 // SessionView provides session-specific UI operations
 type SessionView struct {
-	TextArea         *tview.TextArea
-	textAreaFrame    *tview.Frame
-	Form             *SessionForm
-	Modal            *tview.Flex
-	app              *App
-	sessionService   *session.Service
-	currentSessionID *int64
-	currentSession   *session.Session
-	isLoading        bool
-	isDirty          bool
-	autosaveTicker   *time.Ticker
-	autosaveStop     chan struct{}
+	TextArea          *tview.TextArea
+	textAreaFrame     *tview.Frame
+	Form              *SessionForm
+	Modal             *tview.Flex
+	FileForm          *FileForm
+	FileModal         *tview.Flex
+	fileFormContainer *tview.Flex
+	app               *App
+	sessionService    *session.Service
+	currentSessionID  *int64
+	currentSession    *session.Session
+	isLoading         bool
+	isDirty           bool
+	isImporting       bool
+	autosaveTicker    *time.Ticker
+	autosaveStop      chan struct{}
 }
 
 const (
@@ -47,6 +54,7 @@ func NewSessionView(app *App, service *session.Service) *SessionView {
 func (sv *SessionView) Setup() {
 	sv.setupTextArea()
 	sv.setupModal()
+	sv.setupFileModal()
 	sv.setupKeyBindings()
 	sv.setupFocusHandlers()
 }
@@ -103,6 +111,121 @@ func (sv *SessionView) setupModal() {
 
 }
 
+// setupFileModal configures the file import/export form modal
+func (sv *SessionView) setupFileModal() {
+	sv.FileForm = NewFileForm()
+
+	sv.FileForm.SetupHandlers(
+		sv.HandleFileAction,
+		sv.HandleFileCancel,
+		nil,
+	)
+
+	sv.FileForm.SetBorder(true).
+		SetTitle(" Import File ").
+		SetTitleAlign(tview.AlignLeft)
+
+	// Form with error message below it
+	sv.fileFormContainer = tview.NewFlex().
+		SetDirection(tview.FlexRow).
+		AddItem(sv.FileForm, 7, 0, true).
+		AddItem(sv.FileForm.errorMessage, 3, 0, false)
+
+	sv.FileModal = tview.NewFlex().
+		AddItem(nil, 0, 1, false).
+		AddItem(
+			tview.NewFlex().
+				SetDirection(tview.FlexRow).
+				AddItem(nil, 0, 1, false).
+				AddItem(sv.fileFormContainer, 10, 1, true).
+				AddItem(nil, 0, 1, false),
+			60, 1, true,
+		).
+		AddItem(nil, 0, 1, false)
+	sv.FileModal.SetBackgroundColor(tcell.ColorBlack)
+}
+
+// ShowImportModal displays the file form modal for importing a file
+func (sv *SessionView) ShowImportModal() {
+	sv.isImporting = true
+	sv.FileForm.Reset()
+	sv.FileForm.SetTitle(" Import File ")
+	sv.app.pages.ShowPage(FILE_MODAL_ID)
+	sv.app.SetFocus(sv.FileForm)
+	sv.app.updateFooterHelp("[aqua::b]Import[-::-] :: [yellow]Ctrl+S[white] Import  [yellow]Esc[white] Cancel")
+}
+
+// ShowExportModal displays the file form modal for exporting a file
+func (sv *SessionView) ShowExportModal() {
+	sv.isImporting = false
+	sv.FileForm.Reset()
+	sv.FileForm.SetTitle(" Export File ")
+	sv.app.pages.ShowPage(FILE_MODAL_ID)
+	sv.app.SetFocus(sv.FileForm)
+	sv.app.updateFooterHelp("[aqua::b]Export[-::-] :: [yellow]Ctrl+S[white] Export  [yellow]Esc[white] Cancel")
+}
+
+// HandleFileAction processes the import or export action
+func (sv *SessionView) HandleFileAction() {
+	path := strings.TrimSpace(sv.FileForm.GetPath())
+	if path == "" {
+		sv.FileForm.ShowError("File path is required")
+		return
+	}
+
+	if sv.isImporting {
+		sv.handleImport(path)
+	} else {
+		sv.handleExport(path)
+	}
+}
+
+func (sv *SessionView) handleImport(path string) {
+	sv.Autosave()
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		sv.FileForm.ShowError(fmt.Sprintf("Cannot read file: %v", err))
+		return
+	}
+
+	if bytes.ContainsRune(data, 0) {
+		sv.FileForm.ShowError("File appears to be binary, not a text file")
+		return
+	}
+
+	sv.isLoading = true
+	sv.TextArea.SetText(string(data), false)
+	sv.isLoading = false
+	sv.isDirty = true
+	sv.updateTitle()
+	sv.Autosave()
+
+	sv.app.HandleEvent(&SessionImportDoneEvent{
+		BaseEvent: BaseEvent{action: SESSION_IMPORT_DONE},
+	})
+}
+
+func (sv *SessionView) handleExport(path string) {
+	content := sv.TextArea.GetText()
+	err := os.WriteFile(path, []byte(content), 0644)
+	if err != nil {
+		sv.FileForm.ShowError(fmt.Sprintf("Cannot write file: %v", err))
+		return
+	}
+
+	sv.app.HandleEvent(&SessionExportDoneEvent{
+		BaseEvent: BaseEvent{action: SESSION_EXPORT_DONE},
+	})
+}
+
+// HandleFileCancel cancels the file form modal
+func (sv *SessionView) HandleFileCancel() {
+	sv.app.HandleEvent(&FileFormCancelledEvent{
+		BaseEvent: BaseEvent{action: FILE_FORM_CANCEL},
+	})
+}
+
 // setupKeyBindings configures keyboard shortcuts for the session tree
 func (sv *SessionView) setupKeyBindings() {
 	sv.TextArea.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -139,6 +262,16 @@ func (sv *SessionView) setupKeyBindings() {
 				sv.app.HandleEvent(&TagShowEvent{
 					BaseEvent: BaseEvent{action: TAG_SHOW},
 				})
+			}
+			return nil
+		case tcell.KeyCtrlO:
+			if sv.currentSessionID != nil {
+				sv.ShowImportModal()
+			}
+			return nil
+		case tcell.KeyCtrlX:
+			if sv.currentSessionID != nil {
+				sv.ShowExportModal()
 			}
 			return nil
 		}
@@ -281,6 +414,8 @@ func (sv *SessionView) ShowHelpModal() {
 
 [yellow]Ctrl+E[white]: Edit the session name or Delete the session.
 [yellow]Ctrl+N[white]: Add a new session.
+[yellow]Ctrl+O[white]: Import content from a file.
+[yellow]Ctrl+X[white]: Export content to a file.
 
 [green][:::https://zeruhur.itch.io/lonelog]Lonelog[:::-] https://zeruhur.itch.io/lonelog
 

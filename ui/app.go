@@ -21,6 +21,7 @@ const (
 	TAG_MODAL_ID       string = "tagModal"
 	CHARACTER_MODAL_ID string = "characterModal"
 	ATTRIBUTE_MODAL_ID string = "attributeModal"
+	FILE_MODAL_ID      string = "fileModal"
 	CONFIRM_MODAL_ID   string = "confirm"
 	MAIN_PAGE_ID       string = "main"
 	ABOUT_MODAL_ID     string = "about"
@@ -130,6 +131,7 @@ func (a *App) setupUI() {
 		AddPage(ATTRIBUTE_MODAL_ID, a.attributeView.Modal, true, false).
 		AddPage(SESSION_MODAL_ID, a.sessionView.Modal, true, false).
 		AddPage(TAG_MODAL_ID, a.tagView.Modal, true, false).
+		AddPage(FILE_MODAL_ID, a.sessionView.FileModal, true, false).
 		AddPage(HELP_MODAL_ID, a.helpModal, true, false).
 		AddPage(CONFIRM_MODAL_ID, a.confirmModal, true, false) // Confirm always on top
 	a.pages.SetBackgroundColor(tcell.ColorDefault)
@@ -355,5 +357,11 @@ func (a *App) HandleEvent(event Event) {
 		dispatch(event, a.handleSessionDeleted)
 	case SESSION_DELETE_FAILED:
 		dispatch(event, a.handleSessionDeleteFailed)
+	case SESSION_IMPORT_DONE:
+		dispatch(event, a.handleSessionImportDone)
+	case SESSION_EXPORT_DONE:
+		dispatch(event, a.handleSessionExportDone)
+	case FILE_FORM_CANCEL:
+		dispatch(event, a.handleFileFormCancelled)
 	}
 }

@@ -75,3 +75,21 @@ func (a *App) handleSessionDeleteFailed(e *SessionDeleteFailedEvent) {
 	a.notification.ShowError("Failed to delete session: " + e.Error.Error())
 }
 
+func (a *App) handleSessionImportDone(_ *SessionImportDoneEvent) {
+	a.pages.HidePage(FILE_MODAL_ID)
+	a.sessionView.Refresh()
+	a.SetFocus(a.sessionView.TextArea)
+	a.notification.ShowSuccess("File imported successfully")
+}
+
+func (a *App) handleSessionExportDone(_ *SessionExportDoneEvent) {
+	a.pages.HidePage(FILE_MODAL_ID)
+	a.SetFocus(a.sessionView.TextArea)
+	a.notification.ShowSuccess("File exported successfully")
+}
+
+func (a *App) handleFileFormCancelled(_ *FileFormCancelledEvent) {
+	a.pages.HidePage(FILE_MODAL_ID)
+	a.SetFocus(a.sessionView.TextArea)
+}
+
