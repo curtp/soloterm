@@ -361,6 +361,10 @@ func (a *App) HandleEvent(event Event) {
 		dispatch(event, a.handleSessionShowImport)
 	case SESSION_SHOW_EXPORT:
 		dispatch(event, a.handleSessionShowExport)
+	case SESSION_IMPORT:
+		dispatch(event, a.handleSessionImport)
+	case SESSION_EXPORT:
+		dispatch(event, a.handleSessionExport)
 	case SESSION_IMPORT_DONE:
 		dispatch(event, a.handleSessionImportDone)
 	case SESSION_EXPORT_DONE:

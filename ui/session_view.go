@@ -1,12 +1,9 @@
 package ui
 
 import (
-	"bytes"
 	"fmt"
-	"os"
 	"soloterm/domain/session"
 	sharedui "soloterm/shared/ui"
-	"strings"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -116,8 +113,22 @@ func (sv *SessionView) setupFileModal() {
 	sv.FileForm = NewFileForm()
 
 	sv.FileForm.SetupHandlers(
-		sv.HandleFileAction,
-		sv.HandleFileCancel,
+		func() {
+			if sv.isImporting {
+				sv.app.HandleEvent(&SessionImportEvent{
+					BaseEvent: BaseEvent{action: SESSION_IMPORT},
+				})
+			} else {
+				sv.app.HandleEvent(&SessionExportEvent{
+					BaseEvent: BaseEvent{action: SESSION_EXPORT},
+				})
+			}
+		},
+		func() {
+			sv.app.HandleEvent(&FileFormCancelledEvent{
+				BaseEvent: BaseEvent{action: FILE_FORM_CANCEL},
+			})
+		},
 		nil,
 	)
 
@@ -145,67 +156,6 @@ func (sv *SessionView) setupFileModal() {
 	sv.FileModal.SetBackgroundColor(tcell.ColorBlack)
 }
 
-
-// HandleFileAction processes the import or export action
-func (sv *SessionView) HandleFileAction() {
-	path := strings.TrimSpace(sv.FileForm.GetPath())
-	if path == "" {
-		sv.FileForm.ShowError("File path is required")
-		return
-	}
-
-	if sv.isImporting {
-		sv.handleImport(path)
-	} else {
-		sv.handleExport(path)
-	}
-}
-
-func (sv *SessionView) handleImport(path string) {
-	sv.Autosave()
-
-	data, err := os.ReadFile(path)
-	if err != nil {
-		sv.FileForm.ShowError(fmt.Sprintf("Cannot read file: %v", err))
-		return
-	}
-
-	if bytes.ContainsRune(data, 0) {
-		sv.FileForm.ShowError("File appears to be binary, not a text file")
-		return
-	}
-
-	sv.isLoading = true
-	sv.TextArea.SetText(string(data), false)
-	sv.isLoading = false
-	sv.isDirty = true
-	sv.updateTitle()
-	sv.Autosave()
-
-	sv.app.HandleEvent(&SessionImportDoneEvent{
-		BaseEvent: BaseEvent{action: SESSION_IMPORT_DONE},
-	})
-}
-
-func (sv *SessionView) handleExport(path string) {
-	content := sv.TextArea.GetText()
-	err := os.WriteFile(path, []byte(content), 0644)
-	if err != nil {
-		sv.FileForm.ShowError(fmt.Sprintf("Cannot write file: %v", err))
-		return
-	}
-
-	sv.app.HandleEvent(&SessionExportDoneEvent{
-		BaseEvent: BaseEvent{action: SESSION_EXPORT_DONE},
-	})
-}
-
-// HandleFileCancel cancels the file form modal
-func (sv *SessionView) HandleFileCancel() {
-	sv.app.HandleEvent(&FileFormCancelledEvent{
-		BaseEvent: BaseEvent{action: FILE_FORM_CANCEL},
-	})
-}
 
 // setupKeyBindings configures keyboard shortcuts for the session tree
 func (sv *SessionView) setupKeyBindings() {

@@ -1,6 +1,12 @@
 package ui
 
-import "soloterm/shared/dirs"
+import (
+	"bytes"
+	"fmt"
+	"os"
+	"soloterm/shared/dirs"
+	"strings"
+)
 
 func (a *App) handleSessionShowNew(e *SessionShowNewEvent) {
 	a.sessionView.Modal.SetTitle(" New Session ")
@@ -84,6 +90,7 @@ func (a *App) handleSessionShowImport(_ *SessionShowImportEvent) {
 	a.sessionView.isImporting = true
 	a.sessionView.FileForm.Reset(dirs.ExportDir())
 	a.sessionView.FileForm.SetTitle(" Import File ")
+	a.sessionView.FileForm.GetButton(0).SetLabel("Import")
 	a.pages.ShowPage(FILE_MODAL_ID)
 	a.SetFocus(a.sessionView.FileForm)
 	a.updateFooterHelp("[aqua::b]Import[-::-] :: [yellow]Ctrl+S[white] Import  [yellow]Esc[white] Cancel")
@@ -96,9 +103,63 @@ func (a *App) handleSessionShowExport(_ *SessionShowExportEvent) {
 	a.sessionView.isImporting = false
 	a.sessionView.FileForm.Reset(dirs.ExportDir())
 	a.sessionView.FileForm.SetTitle(" Export File ")
+	a.sessionView.FileForm.GetButton(0).SetLabel("Export")
 	a.pages.ShowPage(FILE_MODAL_ID)
 	a.SetFocus(a.sessionView.FileForm)
 	a.updateFooterHelp("[aqua::b]Export[-::-] :: [yellow]Ctrl+S[white] Export  [yellow]Esc[white] Cancel")
+}
+
+func (a *App) handleSessionImport(_ *SessionImportEvent) {
+	sv := a.sessionView
+	path := strings.TrimSpace(sv.FileForm.GetPath())
+	if path == "" {
+		sv.FileForm.ShowError("File path is required")
+		return
+	}
+
+	sv.Autosave()
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		sv.FileForm.ShowError(fmt.Sprintf("Cannot read file: %v", err))
+		return
+	}
+
+	if bytes.ContainsRune(data, 0) {
+		sv.FileForm.ShowError("File appears to be binary, not a text file")
+		return
+	}
+
+	sv.isLoading = true
+	sv.TextArea.SetText(string(data), false)
+	sv.isLoading = false
+	sv.isDirty = true
+	sv.updateTitle()
+	sv.Autosave()
+
+	a.HandleEvent(&SessionImportDoneEvent{
+		BaseEvent: BaseEvent{action: SESSION_IMPORT_DONE},
+	})
+}
+
+func (a *App) handleSessionExport(_ *SessionExportEvent) {
+	sv := a.sessionView
+	path := strings.TrimSpace(sv.FileForm.GetPath())
+	if path == "" {
+		sv.FileForm.ShowError("File path is required")
+		return
+	}
+
+	content := sv.TextArea.GetText()
+	err := os.WriteFile(path, []byte(content), 0644)
+	if err != nil {
+		sv.FileForm.ShowError(fmt.Sprintf("Cannot write file: %v", err))
+		return
+	}
+
+	a.HandleEvent(&SessionExportDoneEvent{
+		BaseEvent: BaseEvent{action: SESSION_EXPORT_DONE},
+	})
 }
 
 func (a *App) handleSessionImportDone(_ *SessionImportDoneEvent) {
@@ -118,4 +179,3 @@ func (a *App) handleFileFormCancelled(_ *FileFormCancelledEvent) {
 	a.pages.HidePage(FILE_MODAL_ID)
 	a.SetFocus(a.sessionView.TextArea)
 }
-

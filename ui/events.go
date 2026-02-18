@@ -51,6 +51,8 @@ const (
 	SESSION_DELETED        UserAction = "session_deleted"
 	SESSION_SHOW_IMPORT    UserAction = "session_show_import"
 	SESSION_SHOW_EXPORT    UserAction = "session_show_export"
+	SESSION_IMPORT         UserAction = "session_import"
+	SESSION_EXPORT         UserAction = "session_export"
 	SESSION_IMPORT_DONE    UserAction = "session_import_done"
 	SESSION_EXPORT_DONE    UserAction = "session_export_done"
 	FILE_FORM_CANCEL       UserAction = "file_form_cancel"
@@ -268,6 +270,14 @@ type SessionShowImportEvent struct {
 }
 
 type SessionShowExportEvent struct {
+	BaseEvent
+}
+
+type SessionImportEvent struct {
+	BaseEvent
+}
+
+type SessionExportEvent struct {
 	BaseEvent
 }
 
