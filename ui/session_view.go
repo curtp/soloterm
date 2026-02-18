@@ -145,25 +145,6 @@ func (sv *SessionView) setupFileModal() {
 	sv.FileModal.SetBackgroundColor(tcell.ColorBlack)
 }
 
-// ShowImportModal displays the file form modal for importing a file
-func (sv *SessionView) ShowImportModal() {
-	sv.isImporting = true
-	sv.FileForm.Reset()
-	sv.FileForm.SetTitle(" Import File ")
-	sv.app.pages.ShowPage(FILE_MODAL_ID)
-	sv.app.SetFocus(sv.FileForm)
-	sv.app.updateFooterHelp("[aqua::b]Import[-::-] :: [yellow]Ctrl+S[white] Import  [yellow]Esc[white] Cancel")
-}
-
-// ShowExportModal displays the file form modal for exporting a file
-func (sv *SessionView) ShowExportModal() {
-	sv.isImporting = false
-	sv.FileForm.Reset()
-	sv.FileForm.SetTitle(" Export File ")
-	sv.app.pages.ShowPage(FILE_MODAL_ID)
-	sv.app.SetFocus(sv.FileForm)
-	sv.app.updateFooterHelp("[aqua::b]Export[-::-] :: [yellow]Ctrl+S[white] Export  [yellow]Esc[white] Cancel")
-}
 
 // HandleFileAction processes the import or export action
 func (sv *SessionView) HandleFileAction() {
@@ -265,14 +246,14 @@ func (sv *SessionView) setupKeyBindings() {
 			}
 			return nil
 		case tcell.KeyCtrlO:
-			if sv.currentSessionID != nil {
-				sv.ShowImportModal()
-			}
+			sv.app.HandleEvent(&SessionShowImportEvent{
+				BaseEvent: BaseEvent{action: SESSION_SHOW_IMPORT},
+			})
 			return nil
 		case tcell.KeyCtrlX:
-			if sv.currentSessionID != nil {
-				sv.ShowExportModal()
-			}
+			sv.app.HandleEvent(&SessionShowExportEvent{
+				BaseEvent: BaseEvent{action: SESSION_SHOW_EXPORT},
+			})
 			return nil
 		}
 
@@ -282,7 +263,7 @@ func (sv *SessionView) setupKeyBindings() {
 
 // setupFocusHandlers configures focus event handlers
 func (sv *SessionView) setupFocusHandlers() {
-	editHelp := "[yellow]PgUp/PgDn/↑/↓[white] Scroll  [yellow]Ctrl+E[white] Edit  [yellow]Ctrl+N[white] New  [yellow]Ctrl+T[white] Tag  [yellow]F2[white] Action  [yellow]F3[white] Oracle  [yellow]F4[white] Dice"
+	editHelp := "[yellow]PgUp/PgDn/↑/↓[white] Scroll  [yellow]Ctrl+E[white] Edit Name  [yellow]Ctrl+N[white] New  [yellow]Ctrl+T[white] Tag  [yellow]F2[white] Action  [yellow]F3[white] Oracle  [yellow]F4[white] Dice"
 	newHelp := "[yellow]Ctrl+N[white] New"
 	baseHelp := "[aqua::b]Session[-::-] :: "
 	sv.TextArea.SetFocusFunc(func() {

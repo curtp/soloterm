@@ -101,9 +101,10 @@ func TestSessionView_ImportEmptyPath(t *testing.T) {
 	app.sessionView.currentSessionID = &s.ID
 	app.sessionView.Refresh()
 
-	// Open import modal and submit with empty path
+	// Open import modal, clear the default path, and submit
 	app.SetFocus(app.sessionView.TextArea)
 	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlO)
+	app.sessionView.FileForm.pathField.SetText("")
 	testHelper.SimulateKey(app.sessionView.FileForm, app.Application, tcell.KeyCtrlS)
 
 	// Modal should stay open with error

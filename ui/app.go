@@ -357,6 +357,10 @@ func (a *App) HandleEvent(event Event) {
 		dispatch(event, a.handleSessionDeleted)
 	case SESSION_DELETE_FAILED:
 		dispatch(event, a.handleSessionDeleteFailed)
+	case SESSION_SHOW_IMPORT:
+		dispatch(event, a.handleSessionShowImport)
+	case SESSION_SHOW_EXPORT:
+		dispatch(event, a.handleSessionShowExport)
 	case SESSION_IMPORT_DONE:
 		dispatch(event, a.handleSessionImportDone)
 	case SESSION_EXPORT_DONE:

@@ -5,12 +5,13 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	"mellium.im/filechooser"
 )
 
 // FileForm represents a form for importing/exporting files
 type FileForm struct {
 	*sharedui.DataForm
-	pathField    *tview.InputField
+	pathField    *filechooser.PathInputField
 	errorMessage *tview.TextView
 }
 
@@ -20,10 +21,17 @@ func NewFileForm() *FileForm {
 		DataForm: sharedui.NewDataForm(),
 	}
 
-	ff.pathField = tview.NewInputField().
-		SetLabel("File Path").
+	ff.pathField = filechooser.NewPathInputField()
+	ff.pathField.SetLabel("File Path").
+		SetPlaceholder("Type / to browse files").
+		SetPlaceholderStyle(ff.pathField.GetFieldStyle().Foreground(tcell.ColorDarkGrey)).
 		SetFieldBackgroundColor(tcell.ColorDefault).
 		SetFieldWidth(0)
+	ff.pathField.SetAutocompleteStyles(
+		tcell.ColorGray,
+		tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.ColorGray),
+		tcell.StyleDefault.Foreground(tcell.ColorBlack).Background(tcell.ColorAqua),
+	)
 
 	ff.errorMessage = tview.NewTextView().
 		SetDynamicColors(true).
@@ -45,9 +53,10 @@ func (ff *FileForm) setupForm() {
 	ff.SetItemPadding(1)
 }
 
-// Reset clears the form fields and error
-func (ff *FileForm) Reset() {
-	ff.pathField.SetText("")
+// Reset clears the form fields and error, setting the path to defaultPath
+func (ff *FileForm) Reset(defaultPath string) {
+	ff.pathField.SetText(defaultPath)
+	ff.pathField.Autocomplete() // dismiss any lingering autocomplete list
 	ff.ClearError()
 	ff.SetFocus(0)
 }

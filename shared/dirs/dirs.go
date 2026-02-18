@@ -43,6 +43,17 @@ func DataDir() (string, error) {
 	return ensureDir(filepath.Join(base, appName))
 }
 
+// ExportDir returns the default directory for file import/export operations.
+// Returns the user's home directory with a trailing path separator,
+// or falls back to "/" if the home directory cannot be determined.
+func ExportDir() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return string(os.PathSeparator)
+	}
+	return home + string(os.PathSeparator)
+}
+
 // userDataDir returns the base directory for user-specific data files.
 // On Linux: XDG_DATA_HOME or ~/.local/share
 // On macOS: ~/Library/Application Support (same as UserConfigDir)

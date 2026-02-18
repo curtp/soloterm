@@ -1,5 +1,7 @@
 package ui
 
+import "soloterm/shared/dirs"
+
 func (a *App) handleSessionShowNew(e *SessionShowNewEvent) {
 	a.sessionView.Modal.SetTitle(" New Session ")
 	selectedGameState := a.GetSelectedGameState()
@@ -73,6 +75,30 @@ func (a *App) handleSessionDeleted(_ *SessionDeletedEvent) {
 func (a *App) handleSessionDeleteFailed(e *SessionDeleteFailedEvent) {
 	a.pages.HidePage(CONFIRM_MODAL_ID)
 	a.notification.ShowError("Failed to delete session: " + e.Error.Error())
+}
+
+func (a *App) handleSessionShowImport(_ *SessionShowImportEvent) {
+	if a.sessionView.currentSessionID == nil {
+		return
+	}
+	a.sessionView.isImporting = true
+	a.sessionView.FileForm.Reset(dirs.ExportDir())
+	a.sessionView.FileForm.SetTitle(" Import File ")
+	a.pages.ShowPage(FILE_MODAL_ID)
+	a.SetFocus(a.sessionView.FileForm)
+	a.updateFooterHelp("[aqua::b]Import[-::-] :: [yellow]Ctrl+S[white] Import  [yellow]Esc[white] Cancel")
+}
+
+func (a *App) handleSessionShowExport(_ *SessionShowExportEvent) {
+	if a.sessionView.currentSessionID == nil {
+		return
+	}
+	a.sessionView.isImporting = false
+	a.sessionView.FileForm.Reset(dirs.ExportDir())
+	a.sessionView.FileForm.SetTitle(" Export File ")
+	a.pages.ShowPage(FILE_MODAL_ID)
+	a.SetFocus(a.sessionView.FileForm)
+	a.updateFooterHelp("[aqua::b]Export[-::-] :: [yellow]Ctrl+S[white] Export  [yellow]Esc[white] Cancel")
 }
 
 func (a *App) handleSessionImportDone(_ *SessionImportDoneEvent) {

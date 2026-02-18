@@ -49,6 +49,8 @@ const (
 	SESSION_DELETE_CONFIRM UserAction = "session_delete_confirm"
 	SESSION_DELETE_FAILED  UserAction = "session_delete_failed"
 	SESSION_DELETED        UserAction = "session_deleted"
+	SESSION_SHOW_IMPORT    UserAction = "session_show_import"
+	SESSION_SHOW_EXPORT    UserAction = "session_show_export"
 	SESSION_IMPORT_DONE    UserAction = "session_import_done"
 	SESSION_EXPORT_DONE    UserAction = "session_export_done"
 	FILE_FORM_CANCEL       UserAction = "file_form_cancel"
@@ -259,6 +261,14 @@ type SessionDeletedEvent struct {
 type SessionDeleteFailedEvent struct {
 	BaseEvent
 	Error error
+}
+
+type SessionShowImportEvent struct {
+	BaseEvent
+}
+
+type SessionShowExportEvent struct {
+	BaseEvent
 }
 
 type SessionImportDoneEvent struct {
