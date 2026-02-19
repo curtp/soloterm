@@ -132,15 +132,20 @@ func (sv *SessionView) setupFileModal() {
 		nil,
 	)
 
-	sv.FileForm.SetBorder(true).
-		SetTitle(" Import File ").
-		SetTitleAlign(tview.AlignLeft)
+	helpTextView := tview.NewTextView().
+		SetDynamicColors(true).
+		SetWordWrap(true)
 
-	// Form with error message below it
+	sv.FileForm.SetHelpTextChangeHandler(func(text string) {
+		helpTextView.SetText(text)
+	})
+
 	sv.fileFormContainer = tview.NewFlex().
 		SetDirection(tview.FlexRow).
-		AddItem(sv.FileForm, 7, 0, true).
-		AddItem(sv.FileForm.errorMessage, 3, 0, false)
+		AddItem(sv.FileForm, 0, 1, true).
+		AddItem(helpTextView, 3, 0, false)
+	sv.fileFormContainer.SetBorder(true).
+		SetTitleAlign(tview.AlignLeft)
 
 	sv.FileModal = tview.NewFlex().
 		AddItem(nil, 0, 1, false).

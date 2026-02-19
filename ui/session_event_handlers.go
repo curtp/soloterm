@@ -89,7 +89,7 @@ func (a *App) handleSessionShowImport(_ *SessionShowImportEvent) {
 	}
 	a.sessionView.isImporting = true
 	a.sessionView.FileForm.Reset(dirs.ExportDir())
-	a.sessionView.FileForm.SetTitle(" Import File ")
+	a.sessionView.fileFormContainer.SetTitle(" Import File ")
 	a.sessionView.FileForm.GetButton(0).SetLabel("Import")
 	a.pages.ShowPage(FILE_MODAL_ID)
 	a.SetFocus(a.sessionView.FileForm)
@@ -102,7 +102,7 @@ func (a *App) handleSessionShowExport(_ *SessionShowExportEvent) {
 	}
 	a.sessionView.isImporting = false
 	a.sessionView.FileForm.Reset(dirs.ExportDir())
-	a.sessionView.FileForm.SetTitle(" Export File ")
+	a.sessionView.fileFormContainer.SetTitle(" Export File ")
 	a.sessionView.FileForm.GetButton(0).SetLabel("Export")
 	a.pages.ShowPage(FILE_MODAL_ID)
 	a.SetFocus(a.sessionView.FileForm)

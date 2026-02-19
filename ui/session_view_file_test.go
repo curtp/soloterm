@@ -63,7 +63,7 @@ func TestSessionView_ImportFileNotFound(t *testing.T) {
 	assert.True(t, app.isPageVisible(FILE_MODAL_ID), "Expected file modal to remain visible on error")
 
 	// Error message should be displayed
-	assert.Contains(t, app.sessionView.FileForm.errorMessage.GetText(true), "Cannot read file")
+	assert.Contains(t, app.sessionView.FileForm.GetErrorText(), "Cannot read file")
 }
 
 func TestSessionView_ImportBinaryFileRejected(t *testing.T) {
@@ -89,7 +89,7 @@ func TestSessionView_ImportBinaryFileRejected(t *testing.T) {
 
 	// Modal should stay open
 	assert.True(t, app.isPageVisible(FILE_MODAL_ID), "Expected file modal to remain visible for binary file")
-	assert.Contains(t, app.sessionView.FileForm.errorMessage.GetText(true), "binary")
+	assert.Contains(t, app.sessionView.FileForm.GetErrorText(), "binary")
 }
 
 func TestSessionView_ImportEmptyPath(t *testing.T) {
@@ -109,7 +109,7 @@ func TestSessionView_ImportEmptyPath(t *testing.T) {
 
 	// Modal should stay open with error
 	assert.True(t, app.isPageVisible(FILE_MODAL_ID), "Expected file modal to remain visible")
-	assert.Contains(t, app.sessionView.FileForm.errorMessage.GetText(true), "File path is required")
+	assert.Contains(t, app.sessionView.FileForm.GetErrorText(), "File path is required")
 }
 
 func TestSessionView_ExportFile(t *testing.T) {
@@ -162,7 +162,7 @@ func TestSessionView_ExportToInvalidPath(t *testing.T) {
 
 	// Modal should stay open on error
 	assert.True(t, app.isPageVisible(FILE_MODAL_ID), "Expected file modal to remain visible on error")
-	assert.Contains(t, app.sessionView.FileForm.errorMessage.GetText(true), "Cannot write file")
+	assert.Contains(t, app.sessionView.FileForm.GetErrorText(), "Cannot write file")
 }
 
 func TestSessionView_ImportCancelDoesNothing(t *testing.T) {

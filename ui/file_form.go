@@ -12,7 +12,7 @@ import (
 type FileForm struct {
 	*sharedui.DataForm
 	pathField    *filechooser.PathInputField
-	errorMessage *tview.TextView
+	lastErrorText string
 }
 
 // NewFileForm creates a new file form
@@ -33,10 +33,6 @@ func NewFileForm() *FileForm {
 		tcell.StyleDefault.Foreground(tcell.ColorBlack).Background(tcell.ColorAqua),
 	)
 
-	ff.errorMessage = tview.NewTextView().
-		SetDynamicColors(true).
-		SetWordWrap(true)
-
 	ff.setupForm()
 	return ff
 }
@@ -46,9 +42,7 @@ func (ff *FileForm) setupForm() {
 
 	ff.AddFormItem(ff.pathField)
 
-	ff.SetBorder(true).
-		SetTitle(" Import File ").
-		SetTitleAlign(tview.AlignLeft)
+	ff.SetBorder(false)
 	ff.SetButtonsAlign(tview.AlignCenter)
 	ff.SetItemPadding(1)
 }
@@ -68,10 +62,17 @@ func (ff *FileForm) GetPath() string {
 
 // ShowError displays an error message on the form
 func (ff *FileForm) ShowError(msg string) {
-	ff.errorMessage.SetText("[red]" + msg)
+	ff.lastErrorText = "[red]" + msg
+	ff.NotifyHelpTextChange(ff.lastErrorText)
 }
 
 // ClearError clears the error message
 func (ff *FileForm) ClearError() {
-	ff.errorMessage.SetText("")
+	ff.lastErrorText = ""
+	ff.NotifyHelpTextChange("")
+}
+
+// GetErrorText returns the current error text for testing
+func (ff *FileForm) GetErrorText() string {
+	return ff.lastErrorText
 }
