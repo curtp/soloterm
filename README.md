@@ -38,7 +38,7 @@ When the application starts, it creates a config.yaml file which you can edit to
 
 ## Characters
 ![Screenshot](docs/characters.png)
-There are 2 secctions for managing characters in the app. The top section is where you add a characters information (name, system, role, species). The bottom section is the sheet where you track attributes.
+There are 2 sections for managing characters in the app. The top section is where you add a characters information (name, system, role, species). The bottom section is the sheet where you track attributes.
 
 Attributes are just key/value pairs. You can group the attributes together by assigning them the same group number. The first entry in the group is turned into a group heading. You can then assign a position to each attribute to change the order within the group.
 
