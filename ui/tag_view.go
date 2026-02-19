@@ -125,7 +125,7 @@ func (tv *TagView) Refresh() {
 	// Add separator if we have recent tags
 	recentTags := allTags[len(configTags):]
 	if len(recentTags) > 0 {
-		tv.TagTable.SetCell(currentRow, 0, tview.NewTableCell("─── Active Tags ──").
+		tv.TagTable.SetCell(currentRow, 0, tview.NewTableCell("─── Active Tags ───").
 			SetTextColor(tcell.ColorYellow).
 			SetAlign(tview.AlignLeft).
 			SetSelectable(false))
