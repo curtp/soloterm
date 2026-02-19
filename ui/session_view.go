@@ -161,7 +161,6 @@ func (sv *SessionView) setupFileModal() {
 	sv.FileModal.SetBackgroundColor(tcell.ColorBlack)
 }
 
-
 // setupKeyBindings configures keyboard shortcuts for the session tree
 func (sv *SessionView) setupKeyBindings() {
 	sv.TextArea.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -171,7 +170,7 @@ func (sv *SessionView) setupKeyBindings() {
 				sv.ShowEditModal(*sv.currentSessionID)
 				return nil
 			}
-		case tcell.KeyCtrlH:
+		case tcell.KeyF12:
 			sv.ShowHelpModal()
 			return nil
 		case tcell.KeyCtrlN:
@@ -218,7 +217,7 @@ func (sv *SessionView) setupKeyBindings() {
 
 // setupFocusHandlers configures focus event handlers
 func (sv *SessionView) setupFocusHandlers() {
-	editHelp := "[yellow]PgUp/PgDn/↑/↓[white] Scroll  [yellow]Ctrl+E[white] Edit Name  [yellow]Ctrl+N[white] New  [yellow]Ctrl+T[white] Tag  [yellow]F2[white] Action  [yellow]F3[white] Oracle  [yellow]F4[white] Dice"
+	editHelp := "[yellow]PgUp/PgDn/↑/↓[white] Scroll  [yellow]F12[white] Help  [yellow]Ctrl+E[white] Edit Name  [yellow]Ctrl+N[white] New  [yellow]Ctrl+T[white] Tag  [yellow]F2[white] Action  [yellow]F3[white] Oracle  [yellow]F4[white] Dice"
 	newHelp := "[yellow]Ctrl+N[white] New"
 	baseHelp := "[aqua::b]Session[-::-] :: "
 	sv.TextArea.SetFocusFunc(func() {

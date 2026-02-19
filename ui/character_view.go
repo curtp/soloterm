@@ -76,7 +76,7 @@ func (cv *CharacterView) setupCharacterPane() {
 
 	cv.CharPane.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
-		case tcell.KeyCtrlH:
+		case tcell.KeyF12:
 			cv.app.attributeView.ShowHelpModal()
 			return nil
 		}
@@ -180,7 +180,7 @@ func (cv *CharacterView) setupFocusHandlers() {
 	})
 	cv.app.attributeView.Table.SetFocusFunc(func() {
 		cv.SetReturnFocus(cv.app.attributeView.Table)
-		cv.app.updateFooterHelp("[aqua::b]Sheet[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Ctrl+E[white] Edit  [yellow]Ctrl+N[white] New  [yellow]Ctrl+H[white] Help")
+		cv.app.updateFooterHelp("[aqua::b]Sheet[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]F12[white] Help  [yellow]Ctrl+E[white] Edit  [yellow]Ctrl+N[white] New")
 	})
 }
 

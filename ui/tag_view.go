@@ -57,7 +57,7 @@ func (tv *TagView) setupModal() {
 		SetBorders(1, 1, 0, 0, 1, 1)
 	tagFrame.SetBorder(true).
 		SetTitleAlign(tview.AlignLeft).
-		SetTitle("[::b] Select Tag ([yellow]Esc[white] Close  [yellow]Ctrl+H[white] Help) [-::-]")
+		SetTitle("[::b] Select Tag ([yellow]Esc[white] Close) [-::-]")
 
 	// Center the modal on screen
 	tv.Modal = tview.NewFlex().
@@ -73,7 +73,7 @@ func (tv *TagView) setupModal() {
 		AddItem(nil, 0, 1, false)
 
 	tv.Modal.SetFocusFunc(func() {
-		tv.app.updateFooterHelp("[aqua::b]Tags[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Enter[white] Select  [yellow]Esc[white] Close")
+		tv.app.updateFooterHelp("[aqua::b]Tags[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]F12[white] Help  [yellow]Enter[white] Select  [yellow]Esc[white] Close")
 	})
 
 }
@@ -179,7 +179,7 @@ func (tv *TagView) setupKeyBindings() {
 			tv.app.HandleEvent(&TagCancelledEvent{
 				BaseEvent: BaseEvent{action: TAG_CANCEL},
 			})
-		case tcell.KeyCtrlH:
+		case tcell.KeyF12:
 			tv.app.HandleEvent(&ShowHelpEvent{
 				BaseEvent:   BaseEvent{action: SHOW_HELP},
 				Title:       "Tag Help",

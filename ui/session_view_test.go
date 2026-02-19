@@ -235,7 +235,7 @@ func TestSessionView_ShowHelpModal(t *testing.T) {
 	app.gameView.SelectSession(s.ID)
 
 	// Show the help modal
-	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlH)
+	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyF12)
 	assert.True(t, app.isPageVisible(HELP_MODAL_ID), "Expected help modal to be visible")
 }
 

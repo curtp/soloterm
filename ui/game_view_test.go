@@ -29,7 +29,7 @@ func setupTestApp(t *testing.T) *App {
 		TagExcludeWords: []string{"closed", "abandoned"},
 	}
 
-	app := NewApp(db, cfg)
+	app := NewApp(db, cfg, "test")
 	return app
 }
 

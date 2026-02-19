@@ -52,9 +52,10 @@ type App struct {
 	confirmModal *ConfirmationModal
 	footer       *tview.TextView
 	notification *Notification
+	version      string
 }
 
-func NewApp(db *database.DBStore, cfg *config.Config) *App {
+func NewApp(db *database.DBStore, cfg *config.Config, version string) *App {
 	gameService := game.NewService(game.NewRepository(db))
 	charRepo := character.NewRepository(db)
 	attrRepo := character.NewAttributeRepository(db)
@@ -66,6 +67,7 @@ func NewApp(db *database.DBStore, cfg *config.Config) *App {
 
 	app := &App{
 		Application: tview.NewApplication(),
+		version:     version,
 	}
 
 	// Initialize views
@@ -109,7 +111,7 @@ func (a *App) setupUI() {
 		SetText("SoloTerm - Solo RPG Session Logger\n\n" +
 			"By Squidhead Games\n" +
 			"https://squidhead-games.itch.io\n\n" +
-			"Version 1.0.6\n\n" +
+			"Version " + a.version + "\n\n" +
 			"Lonelog by Loreseed Workshop\n" +
 			"https://zeruhur.itch.io/lonelog").
 		AddButtons([]string{"Close"}).

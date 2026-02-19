@@ -178,8 +178,8 @@ func TestTagView_ShowHelpModal(t *testing.T) {
 	app := setupTestApp(t)
 	openTagModal(t, app)
 
-	// Open help from the tag modal via Ctrl+H
-	testHelper.SimulateKey(app.tagView.TagTable, app.Application, tcell.KeyCtrlH)
+	// Open help from the tag modal via F12
+	testHelper.SimulateKey(app.tagView.TagTable, app.Application, tcell.KeyF12)
 	assert.True(t, app.isPageVisible(HELP_MODAL_ID), "Expected help modal to be visible")
 
 	testHelper.SimulateEscape(app.helpModal, app.Application)
