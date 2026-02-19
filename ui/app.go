@@ -29,6 +29,13 @@ const (
 	HELP_MODAL_ID      string = "helpModal"
 )
 
+type AppInfo struct {
+	Version   string
+	ConfigDir string
+	DataDir   string
+	LogFile   string
+}
+
 type App struct {
 	*tview.Application
 
@@ -52,10 +59,10 @@ type App struct {
 	confirmModal *ConfirmationModal
 	footer       *tview.TextView
 	notification *Notification
-	version      string
+	info         AppInfo
 }
 
-func NewApp(db *database.DBStore, cfg *config.Config, version string) *App {
+func NewApp(db *database.DBStore, cfg *config.Config, info AppInfo) *App {
 	gameService := game.NewService(game.NewRepository(db))
 	charRepo := character.NewRepository(db)
 	attrRepo := character.NewAttributeRepository(db)
@@ -67,7 +74,7 @@ func NewApp(db *database.DBStore, cfg *config.Config, version string) *App {
 
 	app := &App{
 		Application: tview.NewApplication(),
-		version:     version,
+		info:        info,
 	}
 
 	// Initialize views
@@ -111,7 +118,10 @@ func (a *App) setupUI() {
 		SetText("SoloTerm - Solo RPG Session Logger\n\n" +
 			"By Squidhead Games\n" +
 			"https://squidhead-games.itch.io\n\n" +
-			"Version " + a.version + "\n\n" +
+			"Version " + a.info.Version + "\n\n" +
+			"Config:  " + a.info.ConfigDir + "\n" +
+			"Data:    " + a.info.DataDir + "\n" +
+			"Log:     " + a.info.LogFile + "\n\n" +
 			"Lonelog by Loreseed Workshop\n" +
 			"https://zeruhur.itch.io/lonelog").
 		AddButtons([]string{"Close"}).

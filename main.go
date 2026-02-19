@@ -10,7 +10,7 @@ import (
 	"soloterm/ui"
 )
 
-const version = "1.0.7"
+const version = "1.0.8"
 
 func main() {
 	log.SetOutput(os.Stdout)
@@ -56,8 +56,15 @@ func main() {
 	log.SetOutput(logFile)
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 
+	info := ui.AppInfo{
+		Version:   version,
+		ConfigDir: configDir,
+		DataDir:   dataDir,
+		LogFile:   logPath,
+	}
+
 	// Create and run the TUI application
-	app := ui.NewApp(db, loadedCfg, version)
+	app := ui.NewApp(db, loadedCfg, info)
 	if err := app.EnableMouse(false).Run(); err != nil {
 		log.SetOutput(os.Stdout)
 		log.Fatal("Application error:", err)
