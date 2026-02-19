@@ -1,1 +1,54 @@
-Need to figure out what this is
+# Terminal App for Tracking Solo TTRPG Sessions
+
+![Screenshot](docs/main_screen.png)
+
+This started out as a project to learn the Go programming language and turned into something I've been using to track my solo TTRPG sessions.
+
+People expressed interest in it, so I thought I'd put it up here on Github.
+
+So, the code may not be the best quality, but it does work!
+
+## Features
+* Create multiple games and track multiple sessions per game
+* Create simple characters for quick reference in the app
+* Support for tags and quick notations based on [Lonelog](https://zeruhur.itch.io/lonelog)
+* Mouse free navigation
+* Import/Export session logs
+
+## Games
+Games are just a name for adding session logs to. You'll need to add a game before adding logs.
+
+## Sessions
+Sessions is just a text area where you can type out your log. There's no formatting available here. It's just a simple text editor.
+
+You can import/export session logs however, so those who like to use Markdown can still do so. It just won't be formatted in the terminal.
+
+### Lonelog Tags
+![Screenshot](docs/using_tags.png)
+Check out [Lonelog](https://zeruhur.itch.io/lonelog) for using tags in your TTRPG session logs.
+
+When logging your session, you can press keys (F2 = Character Action, F3 = Oracle Question, F4 = Dice) to quickly insert a template. Press Ctrl+T to open up the tag modal to select a template to insert.
+
+The Active Tags section displays the list of "open" tags from all of the logs in the game.
+
+Picking one of those tags will insert it into the log where you can fill out the details.
+
+### Configuring Tags
+When the application starts, it creates a config.yaml file which you can edit to change the tags which are available. See the log written to the terminal when the application starts to see where the config.yaml file is located.
+
+## Characters
+![Screenshot](docs/characters.png)
+There are 2 secctions for managing characters in the app. The top section is where you add a characters information (name, system, role, species). The bottom section is the sheet where you track attributes.
+
+Attributes are just key/value pairs. You can group the attributes together by assigning them the same group number. The first entry in the group is turned into a group heading. You can then assign a position to each attribute to change the order within the group.
+
+It's recommended to track only simple things here. It's not a rich character sheet by any means.
+
+Depending on the game you're playing, the entire character sheet may fit in this area.
+
+# Contributing/Reporting Issues
+This is a little side project that I used to learn Go. I don't intend this to be an application I plan on building a support structure around.
+
+* If you want to fork the code and alter it, go for it. The license is MIT, so do what you want.
+* If you want to create a PR, cool. I can't guarantee I'll accept it, but it would be fun to see.
+* If you find a problem with the app, I'm not surprised. I've tested it and used Claude to help me write tests, so there shouldn't be anything huge. Feel free to open an issue here and if I get time I'll check it out. Or, if you like, fix it and submit a PR.
