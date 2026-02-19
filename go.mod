@@ -7,6 +7,7 @@ require (
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/stretchr/testify v1.11.1
 	gopkg.in/yaml.v3 v3.0.1
+	mellium.im/filechooser v0.0.3
 	modernc.org/sqlite v1.40.1
 )
 
@@ -20,7 +21,6 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	golang.org/x/term v0.28.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
-	mellium.im/filechooser v0.0.3 // indirect
 )
 
 require (
