@@ -27,6 +27,7 @@ const (
 	ABOUT_MODAL_ID     string = "about"
 	SESSION_MODAL_ID   string = "sessionModal"
 	HELP_MODAL_ID      string = "helpModal"
+	DICE_MODAL_ID      string = "diceModal"
 )
 
 type AppInfo struct {
@@ -45,6 +46,7 @@ type App struct {
 	sessionView   *SessionView
 	characterView *CharacterView
 	attributeView *AttributeView
+	diceView      *DiceView
 
 	// Layout containers
 	mainFlex         *tview.Flex
@@ -83,6 +85,7 @@ func NewApp(db *database.DBStore, cfg *config.Config, info AppInfo) *App {
 	app.tagView = NewTagView(app, cfg, tagService)
 	app.attributeView = NewAttributeView(app, attrService)
 	app.characterView = NewCharacterView(app, charService)
+	app.diceView = NewDiceView(app)
 
 	app.setupUI()
 	return app
@@ -144,6 +147,7 @@ func (a *App) setupUI() {
 		AddPage(SESSION_MODAL_ID, a.sessionView.Modal, true, false).
 		AddPage(TAG_MODAL_ID, a.tagView.Modal, true, false).
 		AddPage(FILE_MODAL_ID, a.sessionView.FileModal, true, false).
+		AddPage(DICE_MODAL_ID, a.diceView.Modal, true, false).
 		AddPage(HELP_MODAL_ID, a.helpModal, true, false).
 		AddPage(CONFIRM_MODAL_ID, a.confirmModal, true, false) // Confirm always on top
 	a.pages.SetBackgroundColor(tcell.ColorDefault)
@@ -170,7 +174,7 @@ func (a *App) setupUI() {
 }
 
 func (a *App) updateFooterHelp(helpText string) {
-	globalHelp := " [yellow]Tab/Shift+Tab[white] Navigate  [yellow]Ctrl+Q[white] Quit  |  "
+	globalHelp := " [yellow]Tab[white] Navigate  [yellow]Ctrl+R Dice  [yellow]Ctrl+Q[white] Quit  |  "
 	a.footer.SetText(globalHelp + helpText)
 }
 
@@ -192,6 +196,13 @@ func (a *App) setupKeyBindings() {
 	a.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switchable := []tview.Primitive{a.gameView.Tree, a.sessionView.TextArea, a.characterView.CharTree, a.attributeView.Table}
 		switch event.Key() {
+		case tcell.KeyCtrlR:
+			if !a.isPageVisible(DICE_MODAL_ID) {
+				a.HandleEvent(&DiceShowEvent{
+					BaseEvent: BaseEvent{action: DICE_SHOW},
+				})
+				return nil
+			}
 		case tcell.KeyCtrlQ:
 			a.sessionView.Autosave()
 			a.Stop()
@@ -383,5 +394,11 @@ func (a *App) HandleEvent(event Event) {
 		dispatch(event, a.handleSessionExportDone)
 	case FILE_FORM_CANCEL:
 		dispatch(event, a.handleFileFormCancelled)
+	case DICE_SHOW:
+		dispatch(event, a.handleDiceShow)
+	case DICE_CANCEL:
+		dispatch(event, a.handleDiceCancelled)
+	case DICE_INSERT_RESULT:
+		dispatch(event, a.handleDiceInsertResult)
 	}
 }

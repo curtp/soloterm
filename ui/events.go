@@ -38,26 +38,29 @@ const (
 	ATTRIBUTE_CANCEL            UserAction = "attribute_cancel"
 	ATTRIBUTE_SHOW_NEW          UserAction = "attribute_show_new"
 	ATTRIBUTE_SHOW_EDIT         UserAction = "attribute_show_edit"
-	TAG_SELECTED           UserAction = "tag_selected"
-	TAG_CANCEL             UserAction = "tag_cancel"
-	TAG_SHOW               UserAction = "tag_show"
-	SESSION_SHOW_NEW       UserAction = "session_show_new"
-	SESSION_SHOW_EDIT      UserAction = "session_show_edit"
-	SESSION_SAVED          UserAction = "session_saved"
-	SESSION_CANCEL         UserAction = "session_cancel"
-	SESSION_SELECTED       UserAction = "session_selected"
-	SESSION_DELETE_CONFIRM UserAction = "session_delete_confirm"
-	SESSION_DELETE_FAILED  UserAction = "session_delete_failed"
-	SESSION_DELETED        UserAction = "session_deleted"
-	SESSION_SHOW_IMPORT    UserAction = "session_show_import"
-	SESSION_SHOW_EXPORT    UserAction = "session_show_export"
-	SESSION_IMPORT         UserAction = "session_import"
-	SESSION_EXPORT         UserAction = "session_export"
-	SESSION_IMPORT_DONE    UserAction = "session_import_done"
-	SESSION_EXPORT_DONE    UserAction = "session_export_done"
-	FILE_FORM_CANCEL       UserAction = "file_form_cancel"
-	SHOW_HELP              UserAction = "show_help"
-	CLOSE_HELP             UserAction = "close_help"
+	TAG_SELECTED                UserAction = "tag_selected"
+	TAG_CANCEL                  UserAction = "tag_cancel"
+	TAG_SHOW                    UserAction = "tag_show"
+	SESSION_SHOW_NEW            UserAction = "session_show_new"
+	SESSION_SHOW_EDIT           UserAction = "session_show_edit"
+	SESSION_SAVED               UserAction = "session_saved"
+	SESSION_CANCEL              UserAction = "session_cancel"
+	SESSION_SELECTED            UserAction = "session_selected"
+	SESSION_DELETE_CONFIRM      UserAction = "session_delete_confirm"
+	SESSION_DELETE_FAILED       UserAction = "session_delete_failed"
+	SESSION_DELETED             UserAction = "session_deleted"
+	SESSION_SHOW_IMPORT         UserAction = "session_show_import"
+	SESSION_SHOW_EXPORT         UserAction = "session_show_export"
+	SESSION_IMPORT              UserAction = "session_import"
+	SESSION_EXPORT              UserAction = "session_export"
+	SESSION_IMPORT_DONE         UserAction = "session_import_done"
+	SESSION_EXPORT_DONE         UserAction = "session_export_done"
+	FILE_FORM_CANCEL            UserAction = "file_form_cancel"
+	SHOW_HELP                   UserAction = "show_help"
+	CLOSE_HELP                  UserAction = "close_help"
+	DICE_SHOW                   UserAction = "dice_show"
+	DICE_CANCEL                 UserAction = "dice_cancel"
+	DICE_INSERT_RESULT          UserAction = "dice_insert_result"
 )
 
 // Base event interface
@@ -293,3 +296,15 @@ type FileFormCancelledEvent struct {
 	BaseEvent
 }
 
+// ====== DICE SPECIFIC EVENTS ======
+type DiceCancelledEvent struct {
+	BaseEvent
+}
+
+type DiceShowEvent struct {
+	BaseEvent
+}
+
+type DiceInsertResultEvent struct {
+	BaseEvent
+}

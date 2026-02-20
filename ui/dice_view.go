@@ -1,0 +1,211 @@
+package ui
+
+import (
+	"fmt"
+	"soloterm/domain/dice"
+	"strings"
+
+	"github.com/gdamore/tcell/v2"
+	"github.com/rivo/tview"
+)
+
+// DiceView provides dice roller specific UI operations
+type DiceView struct {
+	app              *App
+	Modal            *tview.Flex
+	TextArea         *tview.TextArea
+	resultView       *tview.TextView
+	diceModalContent *tview.Flex
+	returnFocus      tview.Primitive // Field to restore focus to after dice selection
+}
+
+// NewDiceView creates a new dice view
+func NewDiceView(app *App) *DiceView {
+	diceView := &DiceView{app: app}
+
+	diceView.Setup()
+
+	return diceView
+}
+
+// Setup initializes all dice UI components
+func (dv *DiceView) Setup() {
+	dv.setupModal()
+	dv.setupKeyBindings()
+}
+
+// setupModal configures the dice modal
+func (dv *DiceView) setupModal() {
+	// Create the text area for capturing the rolls
+	dv.TextArea = tview.NewTextArea().
+		SetSize(4, 0)
+	dv.TextArea.SetBorder(true).
+		SetTitle(" Rolls ").
+		SetTitleAlign(tview.AlignLeft)
+
+	dv.resultView = tview.NewTextView().
+		SetDynamicColors(true)
+	dv.resultView.SetBorder(true).
+		SetTitle(" Results ").
+		SetTitleAlign(tview.AlignLeft)
+
+		//	keyHelp := tview.NewTextView().
+		//		SetDynamicColors(true).
+		//		SetTextAlign(tview.AlignCenter).
+		//		SetText("[yellow]Ctrl+R[white] Roll    [yellow]Ctrl+O[white] Insert    [yellow]F12[white] Help")
+
+	// Create container that holds the dice input, view, and buttons
+	dv.diceModalContent = tview.NewFlex().
+		SetDirection(tview.FlexRow).
+		AddItem(dv.TextArea, 0, 1, true).
+		AddItem(dv.resultView, 0, 1, false) //.
+		//AddItem(keyHelp, 1, 0, false)
+
+	// Wrap in a frame for padding between border and content
+	diceFrame := tview.NewFrame(dv.diceModalContent).
+		SetBorders(1, 0, 0, 0, 1, 1)
+	diceFrame.SetBorder(true).
+		SetTitleAlign(tview.AlignLeft).
+		SetTitle("[::b] Roll Dice ([yellow]Esc[white] Close) [-::-]")
+
+	// Center the modal on screen
+	dv.Modal = tview.NewFlex().
+		AddItem(nil, 0, 1, false).
+		AddItem(
+			tview.NewFlex().
+				SetDirection(tview.FlexRow).
+				AddItem(nil, 0, 1, false).
+				AddItem(diceFrame, 18, 0, true).
+				AddItem(nil, 0, 1, false),
+			60, 1, true, // Width of the modal in columns
+		).
+		AddItem(nil, 0, 1, false)
+
+	dv.Modal.SetFocusFunc(func() {
+		var b strings.Builder
+		b.WriteString("[aqua::b]Roll Dice[-::-] :: [yellow]Ctrl+R[white] Roll  ")
+		if dv.CanInsert() {
+			b.WriteString("[yellow]Ctrl+O[white] Insert  ")
+		}
+		b.WriteString("[yellow]F12[white] Help  [yellow]Esc[white] Close")
+		dv.app.updateFooterHelp(b.String())
+	})
+
+}
+
+func (dv *DiceView) Refresh() {
+	dv.TextArea.SetText("", true)
+	dv.resultView.SetText("")
+}
+
+func (dv *DiceView) setupKeyBindings() {
+	dv.Modal.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+
+		switch event.Key() {
+		case tcell.KeyCtrlR:
+			dv.roll()
+			return nil
+		case tcell.KeyCtrlO:
+			dv.app.HandleEvent(&DiceInsertResultEvent{
+				BaseEvent: BaseEvent{action: DICE_INSERT_RESULT},
+			})
+		case tcell.KeyEsc:
+			dv.app.HandleEvent(&DiceCancelledEvent{
+				BaseEvent: BaseEvent{action: DICE_CANCEL},
+			})
+		case tcell.KeyF12:
+			dv.app.HandleEvent(&ShowHelpEvent{
+				BaseEvent:   BaseEvent{action: SHOW_HELP},
+				Title:       "Dice Help",
+				ReturnFocus: dv.Modal,
+				Text:        dv.buildHelpText(),
+			})
+		}
+
+		return event
+	})
+}
+
+func (dv *DiceView) roll() {
+	dv.resultView.SetText("")
+
+	resultGroups := dice.Roll(dv.TextArea.GetText())
+
+	var b strings.Builder
+	for _, group := range resultGroups {
+		b.Reset()
+		if group.Label != "" {
+			b.WriteString("[yellow]" + group.Label + ":[white] ")
+		}
+
+		includeComma := false
+		if len(group.Results) > 1 {
+			includeComma = true
+		}
+		for i, result := range group.Results {
+			if result.Err != nil {
+				b.WriteString(fmt.Sprintf("[red]%s[white]", result.Err))
+			} else {
+				b.WriteString("[lime]" + result.Notation + "[white] = " + result.Breakdown)
+			}
+
+			if includeComma && i < len(group.Results)-1 {
+				b.WriteString(", ")
+			}
+		}
+
+		dv.resultView.SetText(dv.resultView.GetText(false) + b.String() + "\r\n")
+	}
+
+}
+
+func (dv *DiceView) CanInsert() bool {
+	return dv.returnFocus == dv.app.sessionView.TextArea
+}
+
+func (dv *DiceView) buildHelpText() string {
+	return `[green]Input Format[white]
+
+One roll per line. Labels are optional. Multiple
+dice expressions on one line are separated by
+commas.
+
+  [yellow]2d6[white]
+  [yellow]2d6, 1d8[white]
+  [yellow]Attack: 1d20+5[white]
+  [yellow]Attack: 1d20+5, 1d6[white]
+
+[green]Basic Notation[white]
+
+  [yellow]NdX[white]      Roll N dice with X sides
+  [yellow]NdX+C[white]    Add constant C to the total
+  [yellow]NdX-C[white]    Subtract constant C
+
+  [yellow]2d6[white]      Roll 2 six-sided dice
+  [yellow]1d20+5[white]   Roll 1d20 and add 5
+
+[green]Keep and Drop[white]
+
+  [yellow]NdXkZ[white]    Keep Z highest (also: khZ)
+  [yellow]NdXklZ[white]   Keep Z lowest
+  [yellow]NdXdZ[white]    Drop Z lowest (also: dlZ)
+  [yellow]NdXdhZ[white]   Drop Z highest
+
+  [yellow]4d6kh3[white]   Roll 4d6, keep 3 highest
+  [yellow]2d20kh1[white]  Advantage (keep highest)
+  [yellow]2d20kl1[white]  Disadvantage (keep lowest)
+
+[green]Success Counting (Versus)[white]
+
+  [yellow]NdXvT[white]    Count dice rolling T or higher
+  [yellow]NdXevT[white]   Exploding: reroll and add on max
+  [yellow]NdXrvT[white]   Reroll: add extra die on max
+
+  [yellow]6d10v8[white]   Roll 6d10, count successes ≥ 8
+
+[green]Fudge / Fate Dice[white]
+
+  [yellow]NdF[white]      Roll N Fate/Fudge dice (-1, 0, +1)
+  [yellow]4dF[white]      Standard Fate roll
+  [yellow]4dF+2[white]    Fate roll with +2 bonus`
+}

@@ -5,6 +5,7 @@ go 1.25.5
 require (
 	github.com/gdamore/tcell/v2 v2.8.1
 	github.com/jmoiron/sqlx v1.4.0
+	github.com/justinian/dice v1.0.3
 	github.com/stretchr/testify v1.11.1
 	gopkg.in/yaml.v3 v3.0.1
 	mellium.im/filechooser v0.0.3

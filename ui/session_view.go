@@ -217,7 +217,7 @@ func (sv *SessionView) setupKeyBindings() {
 
 // setupFocusHandlers configures focus event handlers
 func (sv *SessionView) setupFocusHandlers() {
-	editHelp := "[yellow]PgUp/PgDn/↑/↓[white] Scroll  [yellow]F12[white] Help  [yellow]Ctrl+E[white] Edit Name  [yellow]Ctrl+N[white] New  [yellow]Ctrl+T[white] Tag  [yellow]F2[white] Action  [yellow]F3[white] Oracle  [yellow]F4[white] Dice"
+	editHelp := "[yellow]PgUp/PgDn/↑/↓[white] Scroll  [yellow]F12[white] Help  [yellow]Ctrl+E[white] Edit Name  [yellow]Ctrl+N[white] New  [yellow]Ctrl+T[white] Tag  [yellow]F2[white] Action  [yellow]F3[white] Oracle"
 	newHelp := "[yellow]Ctrl+N[white] New"
 	baseHelp := "[aqua::b]Session[-::-] :: "
 	sv.TextArea.SetFocusFunc(func() {
