@@ -62,6 +62,9 @@ func (s *Service) extractRecentTags(contents []string, excludeWords []string) []
 	// The data section allows nested [...] sequences (e.g. for tracking boxes like [ ])
 	tagRegex := regexp.MustCompile(`\[([^\]|]+)(\|[^\[\]]*(?:\[[^\]]*\][^\[\]]*)*)?\]`)
 
+	// Dice breakdown values like [3 3 3] or [1] should not be treated as tags
+	numericOnlyRegex := regexp.MustCompile(`^[\d\s]+$`)
+
 	// Process contents in reverse order (newest first)
 	for i := len(contents) - 1; i >= 0; i-- {
 		content := contents[i]
@@ -75,6 +78,9 @@ func (s *Service) extractRecentTags(contents []string, excludeWords []string) []
 			if len(match) >= 2 {
 				// match[1] is the tag identifier (everything from [ to first | or ])
 				identifier := strings.TrimSpace(match[1])
+				if numericOnlyRegex.MatchString(identifier) {
+					continue
+				}
 				// match[0] is the entire tag including brackets
 				fullTag := match[0]
 
