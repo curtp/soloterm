@@ -12,6 +12,7 @@ So, the code may not be the best quality, but it does work!
 * Create multiple games and track multiple sessions per game
 * Create simple characters for quick reference in the app
 * Support for tags and quick notations based on [Lonelog](https://zeruhur.itch.io/lonelog)
+* Dice Rolling
 * Mouse free navigation
 * Import/Export session logs
 
@@ -47,6 +48,13 @@ Attributes are just key/value pairs. You can group the attributes together by as
 It's recommended to track only simple things here. It's not a rich character sheet by any means.
 
 Depending on the game you're playing, the entire character sheet may fit in this area.
+
+## Rolling Dice
+![Screenshot](docs/rolling_dice.png)
+
+You can roll dice from anywhere in the app. It follows the typical dice notation and allows tagging rolls with a label.
+
+When lauching the roller from within the session log, you can insert the roll result where the cursor is in the text area.
 
 # Contributing/Reporting Issues
 This is a little side project that I used to learn Go. I don't intend this to be an application I plan on building a support structure around.
