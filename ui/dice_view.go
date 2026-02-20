@@ -49,17 +49,11 @@ func (dv *DiceView) setupModal() {
 		SetTitle(" Results ").
 		SetTitleAlign(tview.AlignLeft)
 
-		//	keyHelp := tview.NewTextView().
-		//		SetDynamicColors(true).
-		//		SetTextAlign(tview.AlignCenter).
-		//		SetText("[yellow]Ctrl+R[white] Roll    [yellow]Ctrl+O[white] Insert    [yellow]F12[white] Help")
-
 	// Create container that holds the dice input, view, and buttons
 	dv.diceModalContent = tview.NewFlex().
 		SetDirection(tview.FlexRow).
 		AddItem(dv.TextArea, 0, 1, true).
-		AddItem(dv.resultView, 0, 1, false) //.
-		//AddItem(keyHelp, 1, 0, false)
+		AddItem(dv.resultView, 0, 1, false)
 
 	// Wrap in a frame for padding between border and content
 	diceFrame := tview.NewFrame(dv.diceModalContent).
@@ -106,9 +100,11 @@ func (dv *DiceView) setupKeyBindings() {
 			dv.roll()
 			return nil
 		case tcell.KeyCtrlO:
-			dv.app.HandleEvent(&DiceInsertResultEvent{
-				BaseEvent: BaseEvent{action: DICE_INSERT_RESULT},
-			})
+			if dv.CanInsert() {
+				dv.app.HandleEvent(&DiceInsertResultEvent{
+					BaseEvent: BaseEvent{action: DICE_INSERT_RESULT},
+				})
+			}
 		case tcell.KeyEsc:
 			dv.app.HandleEvent(&DiceCancelledEvent{
 				BaseEvent: BaseEvent{action: DICE_CANCEL},

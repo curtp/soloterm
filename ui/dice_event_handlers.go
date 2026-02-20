@@ -6,6 +6,7 @@ import (
 
 func (a *App) handleDiceCancelled(e *DiceCancelledEvent) {
 	a.pages.HidePage(DICE_MODAL_ID)
+	a.SetFocus(a.diceView.returnFocus)
 }
 
 func (a *App) handleDiceShow(e *DiceShowEvent) {
