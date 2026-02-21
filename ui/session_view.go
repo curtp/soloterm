@@ -357,7 +357,8 @@ func (sv *SessionView) ShowHelpModal() {
 
 [green]Session Management
 
-[yellow]Ctrl+E[white]: Edit the session name or Delete the session.
+Select the session in the game view to edit the name or delete the session.
+
 [yellow]Ctrl+N[white]: Add a new session.
 [yellow]Ctrl+O[white]: Import content from a file.
 [yellow]Ctrl+X[white]: Export content to a file.
