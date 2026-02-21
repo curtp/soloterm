@@ -77,13 +77,12 @@ func TestSessionView_EditSession(t *testing.T) {
 	g := createGame(t, app, "Test Game")
 	s := createSession(t, app, g.ID, "Original Session")
 
-	// Select the session
-	app.sessionView.currentSessionID = &s.ID
-	app.sessionView.Refresh()
-
-	// Open edit modal via Ctrl+E on the text area
-	app.SetFocus(app.sessionView.TextArea)
-	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlE)
+	// Navigate to and select the session via the game tree, then open edit modal
+	app.gameView.Refresh()
+	testHelper.SimulateDownArrow(app.gameView.Tree, app.Application)
+	testHelper.SimulateDownArrow(app.gameView.Tree, app.Application)
+	testHelper.SimulateEnter(app.gameView.Tree, app.Application)
+	testHelper.SimulateKey(app.gameView.Tree, app.Application, tcell.KeyCtrlE)
 	assert.True(t, app.isPageVisible(SESSION_MODAL_ID), "Expected session modal to be visible")
 
 	// Change the name and save via Ctrl+S
@@ -102,13 +101,12 @@ func TestSessionView_DeleteSession(t *testing.T) {
 	g := createGame(t, app, "Test Game")
 	s := createSession(t, app, g.ID, "Session To Delete")
 
-	// Select the session
-	app.sessionView.currentSessionID = &s.ID
-	app.sessionView.Refresh()
-
-	// Open edit modal via Ctrl+E, then delete via Ctrl+D
-	app.SetFocus(app.sessionView.TextArea)
-	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlE)
+	// Navigate to and select the session via the game tree, then open edit modal
+	app.gameView.Refresh()
+	testHelper.SimulateDownArrow(app.gameView.Tree, app.Application)
+	testHelper.SimulateDownArrow(app.gameView.Tree, app.Application)
+	testHelper.SimulateEnter(app.gameView.Tree, app.Application)
+	testHelper.SimulateKey(app.gameView.Tree, app.Application, tcell.KeyCtrlE)
 	assert.True(t, app.isPageVisible(SESSION_MODAL_ID))
 
 	testHelper.SimulateKey(app.sessionView.Form, app.Application, tcell.KeyCtrlD)
@@ -192,13 +190,14 @@ func TestSessionView_TextAreaDisabledWithoutSession(t *testing.T) {
 func TestSessionView_FormResetOnNew(t *testing.T) {
 	app := setupTestApp(t)
 	g := createGame(t, app, "Test Game")
-	s := createSession(t, app, g.ID, "Existing Session")
+	createSession(t, app, g.ID, "Existing Session")
 
-	// Select the session and open edit modal
-	app.sessionView.currentSessionID = &s.ID
-	app.sessionView.Refresh()
-	app.SetFocus(app.sessionView.TextArea)
-	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlE)
+	// Navigate to and select the session via the game tree, then open edit modal
+	app.gameView.Refresh()
+	testHelper.SimulateDownArrow(app.gameView.Tree, app.Application)
+	testHelper.SimulateDownArrow(app.gameView.Tree, app.Application)
+	testHelper.SimulateEnter(app.gameView.Tree, app.Application)
+	testHelper.SimulateKey(app.gameView.Tree, app.Application, tcell.KeyCtrlE)
 	assert.Equal(t, "Existing Session", app.sessionView.Form.nameField.GetText())
 
 	// Cancel then open new session form
@@ -280,4 +279,54 @@ func TestSessionView_ShowTagModal(t *testing.T) {
 	// Insert the templates using the function keys
 	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlT)
 	assert.True(t, app.isPageVisible(TAG_MODAL_ID), "Expected tag modal to be visible")
+}
+
+func TestSessionView_EditAndDeleteSessionFromGameTree(t *testing.T) {
+	app := setupTestApp(t)
+	g := createGame(t, app, "Test Game")
+	sA := createSession(t, app, g.ID, "Session A")
+
+	// Setup: navigate to and select Session A via the game tree
+	app.gameView.Refresh()
+	testHelper.SimulateDownArrow(app.gameView.Tree, app.Application)
+	testHelper.SimulateDownArrow(app.gameView.Tree, app.Application)
+	testHelper.SimulateEnter(app.gameView.Tree, app.Application)
+	require.Equal(t, sA.ID, *app.sessionView.currentSessionID, "Expected Session A to be selected")
+
+	// Create Session B via the UI
+	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlN)
+	require.True(t, app.isPageVisible(SESSION_MODAL_ID))
+	app.sessionView.Form.nameField.SetText("Session B")
+	testHelper.SimulateKey(app.sessionView.Form, app.Application, tcell.KeyCtrlS)
+	require.False(t, app.isPageVisible(SESSION_MODAL_ID))
+
+	// After saving, Session B is current — capture its ID before navigating away
+	sBID := *app.sessionView.currentSessionID
+
+	// Navigate UP to Session A and select it (tree cursor is on Session B after save)
+	testHelper.SimulateUpArrow(app.gameView.Tree, app.Application)
+	testHelper.SimulateEnter(app.gameView.Tree, app.Application)
+	require.Equal(t, sA.ID, *app.sessionView.currentSessionID, "Expected Session A to be selected again")
+
+	// Navigate DOWN to Session B without selecting it
+	testHelper.SimulateDownArrow(app.gameView.Tree, app.Application)
+	assert.Equal(t, sA.ID, *app.sessionView.currentSessionID, "Session A should still be selected (Session B not entered)")
+
+	// Ctrl+E on the game tree edits the highlighted Session B (not the selected one)
+	testHelper.SimulateKey(app.gameView.Tree, app.Application, tcell.KeyCtrlE)
+	assert.True(t, app.isPageVisible(SESSION_MODAL_ID), "Expected session edit modal to open for Session B")
+	assert.Equal(t, "Session B", app.sessionView.Form.nameField.GetText(), "Expected form to show Session B's name")
+
+	// Delete Session B via Ctrl+D, then confirm
+	testHelper.SimulateKey(app.sessionView.Form, app.Application, tcell.KeyCtrlD)
+	assert.True(t, app.isPageVisible(CONFIRM_MODAL_ID), "Expected confirmation modal")
+	app.sessionView.ConfirmDelete(sBID)
+	assert.False(t, app.isPageVisible(CONFIRM_MODAL_ID))
+	assert.False(t, app.isPageVisible(SESSION_MODAL_ID))
+
+	// Result: only Session A remains
+	remaining, err := app.sessionView.sessionService.GetAllForGame(g.ID)
+	require.NoError(t, err)
+	require.Len(t, remaining, 1, "Expected only Session A to remain")
+	assert.Equal(t, "Session A", remaining[0].Name)
 }

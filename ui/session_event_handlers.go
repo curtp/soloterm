@@ -56,6 +56,8 @@ func (a *App) handleSessionShowEdit(e *SessionShowEditEvent) {
 		return
 	}
 
+	a.sessionView.currentSessionID = &s.ID
+	a.sessionView.currentSession = s
 	a.sessionView.Form.PopulateForEdit(s)
 	a.pages.ShowPage(SESSION_MODAL_ID)
 	a.SetFocus(a.sessionView.Form)
