@@ -122,9 +122,9 @@ func (a *App) setupUI() {
 			"By Squidhead Games\n" +
 			"https://squidhead-games.itch.io\n\n" +
 			"Version " + a.info.Version + "\n\n" +
-			"Config:  " + a.info.ConfigDir + "\n" +
-			"Data:    " + a.info.DataDir + "\n" +
-			"Log:     " + a.info.LogFile + "\n\n" +
+			"Config: " + a.info.ConfigDir + "\n" +
+			"Data: " + a.info.DataDir + "\n" +
+			"Log: " + a.info.LogFile + "\n\n" +
 			"Lonelog by Loreseed Workshop\n" +
 			"https://zeruhur.itch.io/lonelog").
 		AddButtons([]string{"Close"}).
