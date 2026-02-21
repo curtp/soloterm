@@ -177,10 +177,19 @@ func (cv *CharacterView) setupFocusHandlers() {
 	cv.CharTree.SetFocusFunc(func() {
 		cv.SetReturnFocus(cv.CharTree)
 		cv.app.updateFooterHelp("[aqua::b]Characters[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Space/Enter[white] Select/Expand  [yellow]Ctrl+N[white] New  " + editDupHelp)
+		cv.CharTree.SetBorderColor(tcell.ColorAqua)
 	})
-	cv.app.attributeView.Table.SetFocusFunc(func() {
+	cv.CharTree.SetBlurFunc(func() {
+		cv.CharTree.SetBorderColor(tview.Styles.BorderColor)
+	})
+
+	cv.CharPane.SetFocusFunc(func() {
 		cv.SetReturnFocus(cv.app.attributeView.Table)
 		cv.app.updateFooterHelp("[aqua::b]Sheet[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]F12[white] Help  [yellow]Ctrl+E[white] Edit  [yellow]Ctrl+N[white] New")
+		cv.CharPane.SetBorderColor(tcell.ColorAqua)
+	})
+	cv.CharPane.SetBlurFunc(func() {
+		cv.CharPane.SetBorderColor(tview.Styles.BorderColor)
 	})
 }
 

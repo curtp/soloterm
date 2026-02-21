@@ -22,6 +22,7 @@ func (a *App) handleSessionShowNew(e *SessionShowNewEvent) {
 
 func (a *App) handleSessionCancelled(e *SessionCancelledEvent) {
 	a.pages.HidePage(SESSION_MODAL_ID)
+	a.SetFocus(a.gameView.Tree)
 }
 
 func (a *App) handleSessionSelected(e *SessionSelectedEvent) {
@@ -41,12 +42,21 @@ func (a *App) handleSessionSaved(e *SessionSavedEvent) {
 }
 
 func (a *App) handleSessionShowEdit(e *SessionShowEditEvent) {
-	if e.Session == nil {
+	s := e.Session
+	if s == nil && e.SessionID != nil {
+		var err error
+		s, err = a.sessionView.sessionService.GetByID(*e.SessionID)
+		if err != nil {
+			a.notification.ShowError(fmt.Sprintf("Error loading session: %v", err))
+			return
+		}
+	}
+	if s == nil {
 		a.notification.ShowError("Please select a session to edit")
 		return
 	}
 
-	a.sessionView.Form.PopulateForEdit(e.Session)
+	a.sessionView.Form.PopulateForEdit(s)
 	a.pages.ShowPage(SESSION_MODAL_ID)
 	a.SetFocus(a.sessionView.Form)
 }
@@ -73,6 +83,7 @@ func (a *App) handleSessionDeleted(_ *SessionDeletedEvent) {
 	a.pages.HidePage(SESSION_MODAL_ID)
 	a.pages.SwitchToPage(MAIN_PAGE_ID)
 	a.gameView.Refresh()
+	a.sessionView.Reset()
 	a.sessionView.Refresh()
 	a.SetFocus(a.gameView.Tree)
 	a.notification.ShowSuccess("Session deleted successfully")

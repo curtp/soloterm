@@ -174,7 +174,7 @@ func (a *App) setupUI() {
 }
 
 func (a *App) updateFooterHelp(helpText string) {
-	globalHelp := " [yellow]Tab[white] Navigate  [yellow]Ctrl+R Dice  [yellow]Ctrl+Q[white] Quit  |  "
+	globalHelp := " [yellow]Tab[white] Navigate  [yellow]Ctrl+R[white] Dice  [yellow]Ctrl+Q[white] Quit  |  "
 	a.footer.SetText(globalHelp + helpText)
 }
 

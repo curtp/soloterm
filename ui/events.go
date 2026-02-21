@@ -237,7 +237,8 @@ type SessionShowNewEvent struct {
 
 type SessionShowEditEvent struct {
 	BaseEvent
-	Session *session.Session
+	Session   *session.Session
+	SessionID *int64
 }
 
 type SessionSavedEvent struct {

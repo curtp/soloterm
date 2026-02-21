@@ -71,6 +71,7 @@ func (sf *SessionForm) setupForm() {
 // Reset clears all form fields
 func (sf *SessionForm) Reset(gameID int64) {
 	sf.gameID = &gameID
+	sf.sessionID = nil
 	sf.content = ""
 	sf.nameField.SetText("")
 	sf.ClearFieldErrors()

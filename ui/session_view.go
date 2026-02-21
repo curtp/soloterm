@@ -165,11 +165,6 @@ func (sv *SessionView) setupFileModal() {
 func (sv *SessionView) setupKeyBindings() {
 	sv.TextArea.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
-		case tcell.KeyCtrlE:
-			if sv.currentSessionID != nil {
-				sv.ShowEditModal(*sv.currentSessionID)
-				return nil
-			}
 		case tcell.KeyF12:
 			sv.ShowHelpModal()
 			return nil
@@ -217,7 +212,7 @@ func (sv *SessionView) setupKeyBindings() {
 
 // setupFocusHandlers configures focus event handlers
 func (sv *SessionView) setupFocusHandlers() {
-	editHelp := "[yellow]PgUp/PgDn/↑/↓[white] Scroll  [yellow]F12[white] Help  [yellow]Ctrl+E[white] Edit Name  [yellow]Ctrl+N[white] New  [yellow]Ctrl+T[white] Tag  [yellow]F2[white] Action  [yellow]F3[white] Oracle"
+	editHelp := "[yellow]PgUp/PgDn/↑/↓[white] Scroll  [yellow]F12[white] Help  [yellow]Ctrl+N[white] New  [yellow]Ctrl+T[white] Tag  [yellow]F2[white] Action  [yellow]F3[white] Oracle"
 	newHelp := "[yellow]Ctrl+N[white] New"
 	baseHelp := "[aqua::b]Session[-::-] :: "
 	sv.TextArea.SetFocusFunc(func() {
@@ -226,7 +221,22 @@ func (sv *SessionView) setupFocusHandlers() {
 		} else {
 			sv.app.updateFooterHelp(baseHelp + newHelp)
 		}
+		sv.textAreaFrame.SetBorderColor(tcell.ColorAqua)
 	})
+
+	sv.TextArea.SetBlurFunc(func() {
+		sv.textAreaFrame.SetBorderColor(tview.Styles.BorderColor)
+	})
+}
+
+// Reset removes the state of the view
+func (sv *SessionView) Reset() {
+	sv.currentSessionID = nil
+	sv.currentSession = nil
+	sv.isLoading = false
+	sv.isDirty = false
+	sv.isImporting = false
+
 }
 
 // Refresh reloads the session tree from the database and restores selection
@@ -366,7 +376,7 @@ func (sv *SessionView) ShowHelpModal() {
 [yellow]Down arrow[white]: Move down.
 [yellow]Up arrow[white]: Move up.
 [yellow]Ctrl-A, Home[white]: Move to the beginning of the current line.
-[yellow]End[white]: Move to the end of the current line.
+[yellow]Ctrl-E, End[white]: Move to the end of the current line.
 [yellow]Ctrl-F, page down[white]: Move down by one page.
 [yellow]Ctrl-B, page up[white]: Move up by one page.
 [yellow]Alt-Up arrow[white]: Scroll the page up.

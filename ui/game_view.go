@@ -120,9 +120,20 @@ func (gv *GameView) setupKeyBindings() {
 	gv.Tree.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyCtrlE:
-			game := gv.getSelectedGame()
-			if game != nil {
-				gv.ShowEditModal(game)
+			selection := gv.GetCurrentSelection()
+			if selection == nil {
+				break
+			}
+			if selection.SessionID != nil {
+				gv.app.HandleEvent(&SessionShowEditEvent{
+					BaseEvent: BaseEvent{action: SESSION_SHOW_EDIT},
+					SessionID: selection.SessionID,
+				})
+			} else {
+				game := gv.getSelectedGame()
+				if game != nil {
+					gv.ShowEditModal(game)
+				}
 			}
 		case tcell.KeyCtrlN:
 			gv.ShowNewModal()
@@ -136,6 +147,10 @@ func (gv *GameView) setupKeyBindings() {
 func (gv *GameView) setupFocusHandlers() {
 	gv.Tree.SetFocusFunc(func() {
 		gv.app.updateFooterHelp("[aqua::b]Games[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Space[white] Select/Expand  [yellow]Ctrl+E[white] Edit  [yellow]Ctrl+N[white] New")
+		gv.Tree.SetBorderColor(tcell.ColorAqua)
+	})
+	gv.Tree.SetBlurFunc(func() {
+		gv.Tree.SetBorderColor(tview.Styles.BorderColor)
 	})
 }
 
