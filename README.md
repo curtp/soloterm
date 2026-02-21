@@ -60,5 +60,5 @@ When lauching the roller from within the session log, you can insert the roll re
 This is a little side project that I used to learn Go. I don't intend this to be an application I plan on building a support structure around.
 
 * If you want to fork the code and alter it, go for it. The license is MIT, so do what you want.
-* If you want to create a PR, cool. I can't guarantee I'll accept it, but it would be fun to see.
+* PRs welcome! But please file bugs and or enhancements and refer to them.
 * If you find a problem with the app, I'm not surprised. I've tested it and used Claude to help me write tests, so there shouldn't be anything huge. Feel free to open an issue here and if I get time I'll check it out. Or, if you like, fix it and submit a PR.
