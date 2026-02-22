@@ -8,10 +8,21 @@ import (
 	"mellium.im/filechooser"
 )
 
+// ImportPosition controls where imported content is placed in the text area.
+type ImportPosition int
+
+const (
+	ImportReplace  ImportPosition = iota // Replace all current content (default)
+	ImportBefore                         // Insert before current content
+	ImportAfter                          // Append after current content
+	ImportAtCursor                       // Insert at the cursor position
+)
+
 // FileForm represents a form for importing/exporting files
 type FileForm struct {
 	*sharedui.DataForm
-	pathField    *filechooser.PathInputField
+	pathField     *filechooser.PathInputField
+	positionField *tview.DropDown
 	lastErrorText string
 }
 
@@ -33,6 +44,17 @@ func NewFileForm() *FileForm {
 		tcell.StyleDefault.Foreground(tcell.ColorBlack).Background(tcell.ColorAqua),
 	)
 
+	ff.positionField = tview.NewDropDown().
+		SetLabel("Insert at").
+		SetOptions([]string{
+			"Replace (default)",
+			"Before current",
+			"After current",
+			"At cursor",
+		}, nil).
+		SetFieldBackgroundColor(tcell.ColorDefault).
+		SetCurrentOption(0)
+
 	ff.setupForm()
 	return ff
 }
@@ -45,6 +67,22 @@ func (ff *FileForm) setupForm() {
 	ff.SetBorder(false)
 	ff.SetButtonsAlign(tview.AlignCenter)
 	ff.SetItemPadding(1)
+}
+
+// SetImportMode rebuilds the form items for import (with position selector) or export (path only).
+func (ff *FileForm) SetImportMode(isImport bool) {
+	ff.Clear(false) // clear items, keep buttons
+	ff.AddFormItem(ff.pathField)
+	if isImport {
+		ff.positionField.SetCurrentOption(0)
+		ff.AddFormItem(ff.positionField)
+	}
+}
+
+// GetImportPosition returns the currently selected import position.
+func (ff *FileForm) GetImportPosition() ImportPosition {
+	idx, _ := ff.positionField.GetCurrentOption()
+	return ImportPosition(idx)
 }
 
 // Reset clears the form fields and error, setting the path to defaultPath

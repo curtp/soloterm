@@ -234,3 +234,126 @@ func TestSessionView_ImportReplacesExistingContent(t *testing.T) {
 	// Verify content was replaced
 	assert.Equal(t, "Brand new content", app.sessionView.TextArea.GetText())
 }
+
+func TestSessionView_ImportPosition_ShowsDropdownForImport(t *testing.T) {
+	app := setupTestApp(t)
+	g := createGame(t, app, "Test Game")
+	s := createSession(t, app, g.ID, "Session")
+	app.sessionView.currentSessionID = &s.ID
+	app.sessionView.Refresh()
+
+	// Import modal should have path field + position dropdown (2 items)
+	app.SetFocus(app.sessionView.TextArea)
+	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlO)
+	assert.True(t, app.isPageVisible(FILE_MODAL_ID))
+	assert.Equal(t, 2, app.sessionView.FileForm.GetFormItemCount(), "Expected path and position fields for import")
+}
+
+func TestSessionView_ImportPosition_HidesDropdownForExport(t *testing.T) {
+	app := setupTestApp(t)
+	g := createGame(t, app, "Test Game")
+	s := createSession(t, app, g.ID, "Session")
+	app.sessionView.currentSessionID = &s.ID
+	app.sessionView.Refresh()
+
+	// Export modal should have only the path field (1 item)
+	app.SetFocus(app.sessionView.TextArea)
+	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlX)
+	assert.True(t, app.isPageVisible(FILE_MODAL_ID))
+	assert.Equal(t, 1, app.sessionView.FileForm.GetFormItemCount(), "Expected only path field for export")
+}
+
+func TestSessionView_ImportPosition_Before(t *testing.T) {
+	app := setupTestApp(t)
+	g := createGame(t, app, "Test Game")
+	s := createSession(t, app, g.ID, "Session")
+	app.sessionView.currentSessionID = &s.ID
+	app.sessionView.Refresh()
+	app.sessionView.isLoading = true
+	app.sessionView.TextArea.SetText("existing\n", false)
+	app.sessionView.isLoading = false
+
+	tmpDir := t.TempDir()
+	importPath := filepath.Join(tmpDir, "import.md")
+	err := os.WriteFile(importPath, []byte("prefix\n"), 0644)
+	require.NoError(t, err)
+
+	app.SetFocus(app.sessionView.TextArea)
+	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlO)
+	app.sessionView.FileForm.positionField.SetCurrentOption(int(ImportBefore))
+	app.sessionView.FileForm.pathField.SetText(importPath)
+	testHelper.SimulateKey(app.sessionView.FileForm, app.Application, tcell.KeyCtrlS)
+
+	assert.Equal(t, "prefix\nexisting\n", app.sessionView.TextArea.GetText())
+}
+
+func TestSessionView_ImportPosition_After(t *testing.T) {
+	app := setupTestApp(t)
+	g := createGame(t, app, "Test Game")
+	s := createSession(t, app, g.ID, "Session")
+	app.sessionView.currentSessionID = &s.ID
+	app.sessionView.Refresh()
+	app.sessionView.isLoading = true
+	app.sessionView.TextArea.SetText("existing\n", false)
+	app.sessionView.isLoading = false
+
+	tmpDir := t.TempDir()
+	importPath := filepath.Join(tmpDir, "import.md")
+	err := os.WriteFile(importPath, []byte("appended\n"), 0644)
+	require.NoError(t, err)
+
+	app.SetFocus(app.sessionView.TextArea)
+	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlO)
+	app.sessionView.FileForm.positionField.SetCurrentOption(int(ImportAfter))
+	app.sessionView.FileForm.pathField.SetText(importPath)
+	testHelper.SimulateKey(app.sessionView.FileForm, app.Application, tcell.KeyCtrlS)
+
+	assert.Equal(t, "existing\nappended\n", app.sessionView.TextArea.GetText())
+}
+
+func TestSessionView_ImportPosition_AtCursor(t *testing.T) {
+	app := setupTestApp(t)
+	g := createGame(t, app, "Test Game")
+	s := createSession(t, app, g.ID, "Session")
+	app.sessionView.currentSessionID = &s.ID
+	app.sessionView.Refresh()
+	// SetText with cursorAtTheEnd=false places cursor at position 0 (the beginning)
+	app.sessionView.isLoading = true
+	app.sessionView.TextArea.SetText("AFTER", false)
+	app.sessionView.isLoading = false
+
+	tmpDir := t.TempDir()
+	importPath := filepath.Join(tmpDir, "import.md")
+	err := os.WriteFile(importPath, []byte("BEFORE "), 0644)
+	require.NoError(t, err)
+
+	app.SetFocus(app.sessionView.TextArea)
+	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlO)
+	app.sessionView.FileForm.positionField.SetCurrentOption(int(ImportAtCursor))
+	app.sessionView.FileForm.pathField.SetText(importPath)
+	testHelper.SimulateKey(app.sessionView.FileForm, app.Application, tcell.KeyCtrlS)
+
+	assert.Equal(t, "BEFORE AFTER", app.sessionView.TextArea.GetText())
+}
+
+func TestSessionView_ImportPosition_ResetsToReplaceOnReopen(t *testing.T) {
+	app := setupTestApp(t)
+	g := createGame(t, app, "Test Game")
+	s := createSession(t, app, g.ID, "Session")
+	app.sessionView.currentSessionID = &s.ID
+	app.sessionView.Refresh()
+
+	app.SetFocus(app.sessionView.TextArea)
+
+	// Open import modal and change position to After
+	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlO)
+	app.sessionView.FileForm.positionField.SetCurrentOption(int(ImportAfter))
+	idx, _ := app.sessionView.FileForm.positionField.GetCurrentOption()
+	assert.Equal(t, int(ImportAfter), idx)
+
+	// Cancel and reopen — position should reset to Replace
+	testHelper.SimulateKey(app.sessionView.FileForm, app.Application, tcell.KeyEscape)
+	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlO)
+	idx, _ = app.sessionView.FileForm.positionField.GetCurrentOption()
+	assert.Equal(t, int(ImportReplace), idx, "Expected position to reset to Replace on reopen")
+}

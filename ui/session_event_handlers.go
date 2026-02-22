@@ -101,6 +101,7 @@ func (a *App) handleSessionShowImport(_ *SessionShowImportEvent) {
 		return
 	}
 	a.sessionView.isImporting = true
+	a.sessionView.FileForm.SetImportMode(true)
 	a.sessionView.FileForm.Reset(dirs.ExportDir())
 	a.sessionView.fileFormContainer.SetTitle(" Import File ")
 	a.sessionView.FileForm.GetButton(0).SetLabel("Import")
@@ -114,6 +115,7 @@ func (a *App) handleSessionShowExport(_ *SessionShowExportEvent) {
 		return
 	}
 	a.sessionView.isImporting = false
+	a.sessionView.FileForm.SetImportMode(false)
 	a.sessionView.FileForm.Reset(dirs.ExportDir())
 	a.sessionView.fileFormContainer.SetTitle(" Export File ")
 	a.sessionView.FileForm.GetButton(0).SetLabel("Export")
@@ -143,11 +145,29 @@ func (a *App) handleSessionImport(_ *SessionImportEvent) {
 		return
 	}
 
-	sv.isLoading = true
-	sv.TextArea.SetText(string(data), false)
-	sv.isLoading = false
-	sv.isDirty = true
-	sv.updateTitle()
+	content := string(data)
+	switch sv.FileForm.GetImportPosition() {
+	case ImportBefore:
+		sv.isLoading = true
+		sv.TextArea.SetText(content+sv.TextArea.GetText(), false)
+		sv.isLoading = false
+		sv.isDirty = true
+		sv.updateTitle()
+	case ImportAfter:
+		sv.isLoading = true
+		sv.TextArea.SetText(sv.TextArea.GetText()+content, false)
+		sv.isLoading = false
+		sv.isDirty = true
+		sv.updateTitle()
+	case ImportAtCursor:
+		sv.InsertAtCursor(content) // ChangedFunc handles isDirty + updateTitle
+	default: // ImportReplace
+		sv.isLoading = true
+		sv.TextArea.SetText(content, false)
+		sv.isLoading = false
+		sv.isDirty = true
+		sv.updateTitle()
+	}
 	sv.Autosave()
 
 	a.HandleEvent(&SessionImportDoneEvent{

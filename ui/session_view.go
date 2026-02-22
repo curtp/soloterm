@@ -153,7 +153,7 @@ func (sv *SessionView) setupFileModal() {
 			tview.NewFlex().
 				SetDirection(tview.FlexRow).
 				AddItem(nil, 0, 1, false).
-				AddItem(sv.fileFormContainer, 10, 1, true).
+				AddItem(sv.fileFormContainer, 12, 1, true).
 				AddItem(nil, 0, 1, false),
 			60, 1, true,
 		).
