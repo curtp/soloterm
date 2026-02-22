@@ -133,6 +133,7 @@ func (a *App) setupUI() {
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 			a.pages.HidePage(ABOUT_MODAL_ID)
 		})
+	a.aboutModal.SetBorderColor(Style.BorderFocusColor)
 
 	// Create app-level modals
 	a.helpModal = NewHelpModal(a)
