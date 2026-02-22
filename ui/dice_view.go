@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"fmt"
 	"soloterm/domain/dice"
 	"strings"
 
@@ -16,6 +15,7 @@ type DiceView struct {
 	TextArea         *tview.TextArea
 	resultView       *tview.TextView
 	diceModalContent *tview.Flex
+	diceFrame        *tview.Frame
 	returnFocus      tview.Primitive // Field to restore focus to after dice selection
 }
 
@@ -56,11 +56,11 @@ func (dv *DiceView) setupModal() {
 		AddItem(dv.resultView, 0, 1, false)
 
 	// Wrap in a frame for padding between border and content
-	diceFrame := tview.NewFrame(dv.diceModalContent).
+	dv.diceFrame = tview.NewFrame(dv.diceModalContent).
 		SetBorders(1, 0, 0, 0, 1, 1)
-	diceFrame.SetBorder(true).
+	dv.diceFrame.SetBorder(true).
 		SetTitleAlign(tview.AlignLeft).
-		SetTitle("[::b] Roll Dice ([yellow]Esc[white] Close) [-::-]")
+		SetTitle("[::b] Roll Dice ([" + Style.HelpKeyTextColor + "]Esc[" + Style.NormalTextColor + "] Close) [-::-]")
 
 	// Center the modal on screen
 	dv.Modal = tview.NewFlex().
@@ -69,22 +69,26 @@ func (dv *DiceView) setupModal() {
 			tview.NewFlex().
 				SetDirection(tview.FlexRow).
 				AddItem(nil, 0, 1, false).
-				AddItem(diceFrame, 18, 0, true).
+				AddItem(dv.diceFrame, 18, 0, true).
 				AddItem(nil, 0, 1, false),
 			60, 1, true, // Width of the modal in columns
 		).
 		AddItem(nil, 0, 1, false)
 
-	dv.Modal.SetFocusFunc(func() {
+	dv.TextArea.SetFocusFunc(func() {
 		var b strings.Builder
-		b.WriteString("[aqua::b]Roll Dice[-::-] :: [yellow]Ctrl+R[white] Roll  ")
+		b.WriteString("[" + Style.ContextLabelTextColor + "::b]Roll Dice[-::-] :: [" + Style.HelpKeyTextColor + "]Ctrl+R[" + Style.NormalTextColor + "] Roll  ")
 		if dv.CanInsert() {
-			b.WriteString("[yellow]Ctrl+O[white] Insert  ")
+			b.WriteString("[" + Style.HelpKeyTextColor + "]Ctrl+O[" + Style.NormalTextColor + "] Insert  ")
 		}
-		b.WriteString("[yellow]F12[white] Help  [yellow]Esc[white] Close")
+		b.WriteString("[" + Style.HelpKeyTextColor + "]F12[" + Style.NormalTextColor + "] Help  [" + Style.HelpKeyTextColor + "]Esc[" + Style.NormalTextColor + "] Close")
 		dv.app.updateFooterHelp(b.String())
+		dv.diceFrame.SetBorderColor(Style.BorderFocusColor)
 	})
 
+	dv.TextArea.SetBlurFunc(func() {
+		dv.diceFrame.SetBorderColor(Style.BorderColor)
+	})
 }
 
 func (dv *DiceView) Refresh() {
@@ -123,36 +127,30 @@ func (dv *DiceView) setupKeyBindings() {
 }
 
 func (dv *DiceView) roll() {
-	dv.resultView.SetText("")
-
 	resultGroups := dice.Roll(dv.TextArea.GetText())
 
-	var b strings.Builder
+	var output strings.Builder
 	for _, group := range resultGroups {
-		b.Reset()
 		if group.Label != "" {
-			b.WriteString("[yellow]" + group.Label + ":[white] ")
+			output.WriteString("[" + Style.HelpKeyTextColor + "]" + tview.Escape(group.Label) + ":[" + Style.NormalTextColor + "] ")
 		}
 
-		includeComma := false
-		if len(group.Results) > 1 {
-			includeComma = true
-		}
 		for i, result := range group.Results {
 			if result.Err != nil {
-				b.WriteString(fmt.Sprintf("[red]%s[white]", result.Err))
+				output.WriteString("[" + Style.ErrorTextColor + "]" + tview.Escape(result.Err.Error()) + "[" + Style.NormalTextColor + "]")
 			} else {
-				b.WriteString("[lime]" + result.Notation + "[white] = " + result.Breakdown)
+				output.WriteString("[" + Style.SuccessTextColor + "]" + tview.Escape(result.Notation) + "[" + Style.NormalTextColor + "] = " + result.Breakdown)
 			}
 
-			if includeComma && i < len(group.Results)-1 {
-				b.WriteString(", ")
+			if i < len(group.Results)-1 {
+				output.WriteString(", ")
 			}
 		}
 
-		dv.resultView.SetText(dv.resultView.GetText(false) + b.String() + "\r\n")
+		output.WriteString("\n")
 	}
 
+	dv.resultView.SetText(output.String())
 }
 
 func (dv *DiceView) CanInsert() bool {
@@ -160,7 +158,11 @@ func (dv *DiceView) CanInsert() bool {
 }
 
 func (dv *DiceView) buildHelpText() string {
-	return `[green]Input Format[white]
+	return strings.NewReplacer(
+		"[yellow]", "["+Style.HelpKeyTextColor+"]",
+		"[white]", "["+Style.NormalTextColor+"]",
+		"[green]", "["+Style.HelpSectionColor+"]",
+	).Replace(`[green]Input Format[white]
 
 One roll per line. Labels are optional. Multiple
 dice expressions on one line are separated by
@@ -203,5 +205,5 @@ commas.
 
   [yellow]NdF[white]      Roll N Fate/Fudge dice (-1, 0, +1)
   [yellow]4dF[white]      Standard Fate roll
-  [yellow]4dF+2[white]    Fate roll with +2 bonus`
+  [yellow]4dF+2[white]    Fate roll with +2 bonus`)
 }

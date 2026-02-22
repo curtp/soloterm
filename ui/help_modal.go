@@ -57,7 +57,7 @@ func NewHelpModal(app *App) *HelpModal {
 
 // Show configures the modal with the given title, text, and return focus target.
 func (hm *HelpModal) Show(title, text string, returnFocus tview.Primitive) {
-	hm.frame.SetTitle(" [::b]" + title + " ([yellow]Esc[white] Close) ")
+	hm.frame.SetTitle(" [::b]" + title + " ([" + Style.HelpKeyTextColor + "]Esc[" + Style.NormalTextColor + "] Close) ")
 	hm.textView.SetText(text)
 	hm.returnFocus = returnFocus
 }

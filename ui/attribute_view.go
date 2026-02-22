@@ -4,6 +4,7 @@ import (
 	"slices"
 	"soloterm/domain/character"
 	sharedui "soloterm/shared/ui"
+	"strings"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -120,8 +121,13 @@ func (av *AttributeView) setupModal() {
 		).
 		AddItem(nil, 0, 1, false)
 
-	av.Modal.SetFocusFunc(func() {
+	av.Form.SetFocusFunc(func() {
 		av.app.SetModalHelpMessage(*av.Form.DataForm)
+		av.ModalContent.SetBorderColor(Style.BorderFocusColor)
+	})
+
+	av.Form.SetBlurFunc(func() {
+		av.ModalContent.SetBorderColor(Style.BorderColor)
 	})
 }
 
@@ -312,7 +318,11 @@ func (av *AttributeView) ShowHelpModal() {
 		BaseEvent:   BaseEvent{action: SHOW_HELP},
 		Title:       "Character Sheet Help",
 		ReturnFocus: av.Table,
-		Text: `Scroll Down To View All Help Options
+		Text: strings.NewReplacer(
+			"[yellow]", "["+Style.HelpKeyTextColor+"]",
+			"[white]", "["+Style.NormalTextColor+"]",
+			"[green]", "["+Style.HelpSectionColor+"]",
+		).Replace(`Scroll Down To View All Help Options
 
 [green]What to Track?[white]
 
@@ -324,6 +334,6 @@ It's recommended to only track the bare essentials like health, or key pieces of
 [yellow]Value[white]: Value to assign to the entry (10/10, 2, +2). It may be blank.
 [yellow]Group[white]: Organizes related entries together. Entries with the same group number will be displayed in the same section.
 [yellow]Position[white]: Controls the order within a group. Position 0 is shown first and will be styled if there are other entries in the same group.
-`,
+`),
 	})
 }

@@ -100,7 +100,7 @@ func (ff *FileForm) GetPath() string {
 
 // ShowError displays an error message on the form
 func (ff *FileForm) ShowError(msg string) {
-	ff.lastErrorText = "[red]" + msg
+	ff.lastErrorText = "[" + Style.ErrorTextColor + "]" + msg
 	ff.NotifyHelpTextChange(ff.lastErrorText)
 }
 

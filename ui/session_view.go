@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"soloterm/domain/session"
 	sharedui "soloterm/shared/ui"
+	"strings"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -31,7 +32,7 @@ type SessionView struct {
 }
 
 const (
-	DEFAULT_SECTION_TITLE = " [::b]Select/Add Session To View (Ctrl+L)"
+	DEFAULT_SECTION_TITLE = " [::b]Select/Add Session To View (Ctrl+L) "
 )
 
 // NewSessionView creates a new session view helper
@@ -100,12 +101,16 @@ func (sv *SessionView) setupModal() {
 			60, 1, true, // Dynamic width: expands to fit content (up to screen width)
 		).
 		AddItem(nil, 0, 1, false)
-	sv.Modal.SetBackgroundColor(tcell.ColorBlack)
+	// sv.Modal.SetBackgroundColor(tcell.ColorBlack)
 
-	sv.Modal.SetFocusFunc(func() {
+	sv.Form.SetFocusFunc(func() {
 		sv.app.SetModalHelpMessage(*sv.Form.DataForm)
+		sv.Form.SetBorderColor(Style.BorderFocusColor)
 	})
 
+	sv.Form.SetBlurFunc(func() {
+		sv.Form.SetBorderColor(Style.BorderColor)
+	})
 }
 
 // setupFileModal configures the file import/export form modal
@@ -147,6 +152,14 @@ func (sv *SessionView) setupFileModal() {
 	sv.fileFormContainer.SetBorder(true).
 		SetTitleAlign(tview.AlignLeft)
 
+	sv.FileForm.SetFocusFunc(func() {
+		sv.fileFormContainer.SetBorderColor(Style.BorderFocusColor)
+	})
+
+	sv.FileForm.SetBlurFunc(func() {
+		sv.fileFormContainer.SetBorderColor(Style.BorderColor)
+	})
+
 	sv.FileModal = tview.NewFlex().
 		AddItem(nil, 0, 1, false).
 		AddItem(
@@ -158,7 +171,7 @@ func (sv *SessionView) setupFileModal() {
 			60, 1, true,
 		).
 		AddItem(nil, 0, 1, false)
-	sv.FileModal.SetBackgroundColor(tcell.ColorBlack)
+	// sv.FileModal.SetBackgroundColor(tcell.ColorBlack)
 }
 
 // setupKeyBindings configures keyboard shortcuts for the session tree
@@ -212,20 +225,20 @@ func (sv *SessionView) setupKeyBindings() {
 
 // setupFocusHandlers configures focus event handlers
 func (sv *SessionView) setupFocusHandlers() {
-	editHelp := "[yellow]PgUp/PgDn/↑/↓[white] Scroll  [yellow]F12[white] Help  [yellow]Ctrl+N[white] New  [yellow]Ctrl+T[white] Tag  [yellow]F2[white] Action  [yellow]F3[white] Oracle"
-	newHelp := "[yellow]Ctrl+N[white] New"
-	baseHelp := "[aqua::b]Session[-::-] :: "
+	editHelp := "[" + Style.HelpKeyTextColor + "]PgUp/PgDn/↑/↓[" + Style.NormalTextColor + "] Scroll  [" + Style.HelpKeyTextColor + "]F12[" + Style.NormalTextColor + "] Help  [" + Style.HelpKeyTextColor + "]Ctrl+N[" + Style.NormalTextColor + "] New  [" + Style.HelpKeyTextColor + "]Ctrl+T[" + Style.NormalTextColor + "] Tag  [" + Style.HelpKeyTextColor + "]F2[" + Style.NormalTextColor + "] Action  [" + Style.HelpKeyTextColor + "]F3[" + Style.NormalTextColor + "] Oracle"
+	newHelp := "[" + Style.HelpKeyTextColor + "]Ctrl+N[" + Style.NormalTextColor + "] New"
+	baseHelp := "[" + Style.ContextLabelTextColor + "::b]Session[-::-] :: "
 	sv.TextArea.SetFocusFunc(func() {
 		if sv.currentSessionID != nil {
 			sv.app.updateFooterHelp(baseHelp + editHelp)
 		} else {
 			sv.app.updateFooterHelp(baseHelp + newHelp)
 		}
-		sv.textAreaFrame.SetBorderColor(tcell.ColorAqua)
+		sv.textAreaFrame.SetBorderColor(Style.BorderFocusColor)
 	})
 
 	sv.TextArea.SetBlurFunc(func() {
-		sv.textAreaFrame.SetBorderColor(tview.Styles.BorderColor)
+		sv.textAreaFrame.SetBorderColor(Style.BorderColor)
 	})
 }
 
@@ -353,7 +366,16 @@ func (sv *SessionView) ShowHelpModal() {
 		BaseEvent:   BaseEvent{action: SHOW_HELP},
 		Title:       "Session Help",
 		ReturnFocus: sv.TextArea,
-		Text: `Scroll Down To View All Help Options
+		Text:        sv.buildHelpText(),
+	})
+}
+
+func (sv *SessionView) buildHelpText() string {
+	return strings.NewReplacer(
+		"[yellow]", "["+Style.HelpKeyTextColor+"]",
+		"[white]", "["+Style.NormalTextColor+"]",
+		"[green]", "["+Style.HelpSectionColor+"]",
+	).Replace(`Scroll Down To View All Help Options
 
 [green]Session Management
 
@@ -399,8 +421,7 @@ Type to enter text.
 [green]Undo
 
 [yellow]Ctrl-Z[white]: Undo.
-[yellow]Ctrl-Y[white]: Redo.`,
-	})
+[yellow]Ctrl-Y[white]: Redo.`)
 }
 
 // ShowEditModal displays the session form modal for editing an existing session
@@ -421,11 +442,12 @@ func (sv *SessionView) updateTitle() {
 	if sv.currentSession == nil {
 		return
 	}
-	title := " [::b]" + sv.currentSession.GameName + ": " + sv.currentSession.Name + " (Ctrl+L) "
+	body := tview.Escape(sv.currentSession.GameName) + ": " + tview.Escape(sv.currentSession.Name)
+	prefix := ""
 	if sv.isDirty {
-		title = " [red]●[-] [::b]" + sv.currentSession.GameName + ": " + sv.currentSession.Name + " (Ctrl+L) "
+		prefix = "[" + Style.ErrorTextColor + "]●[-] "
 	}
-	sv.textAreaFrame.SetTitle(title)
+	sv.textAreaFrame.SetTitle(" " + prefix + "[::b]" + body + " (Ctrl+L) ")
 }
 
 // Autosave persists the current TextArea content if dirty

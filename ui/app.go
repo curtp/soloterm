@@ -74,6 +74,8 @@ func NewApp(db *database.DBStore, cfg *config.Config, info AppInfo) *App {
 	tagService := tag.NewService(sessionRepo)
 	sessionService := session.NewService(sessionRepo)
 
+	Style.Apply()
+
 	app := &App{
 		Application: tview.NewApplication(),
 		info:        info,
@@ -150,7 +152,7 @@ func (a *App) setupUI() {
 		AddPage(DICE_MODAL_ID, a.diceView.Modal, true, false).
 		AddPage(HELP_MODAL_ID, a.helpModal, true, false).
 		AddPage(CONFIRM_MODAL_ID, a.confirmModal, true, false) // Confirm always on top
-	a.pages.SetBackgroundColor(tcell.ColorDefault)
+	// a.pages.SetBackgroundColor(tcell.ColorDefault)
 
 	// Create notification flex (initially hidden - just shows pages)
 	a.notificationFlex = tview.NewFlex().
@@ -174,18 +176,18 @@ func (a *App) setupUI() {
 }
 
 func (a *App) updateFooterHelp(helpText string) {
-	globalHelp := " [yellow]Tab[white] Navigate  [yellow]Ctrl+R[white] Dice  [yellow]Ctrl+Q[white] Quit  |  "
+	globalHelp := " [" + Style.HelpKeyTextColor + "]Tab[" + Style.NormalTextColor + "] Navigate  [" + Style.HelpKeyTextColor + "]Ctrl+R[" + Style.NormalTextColor + "] Dice  [" + Style.HelpKeyTextColor + "]Ctrl+Q[" + Style.NormalTextColor + "] Quit  |  "
 	a.footer.SetText(globalHelp + helpText)
 }
 
 func (a *App) SetModalHelpMessage(form sharedui.DataForm) {
 	editing := form.GetButtonCount() == 3
-	deleteHelp := "[yellow]Ctrl+D[white] Delete"
+	deleteHelp := "[" + Style.HelpKeyTextColor + "]Ctrl+D[" + Style.NormalTextColor + "] Delete"
 	actionMsg := "Add"
 	if editing {
 		actionMsg = "Edit"
 	}
-	helpMsg := "[aqua::b]" + actionMsg + "[-::-] :: [yellow]Ctrl+S[white] Save  [yellow]Esc[white] Cancel "
+	helpMsg := "[" + Style.ContextLabelTextColor + "::b]" + actionMsg + "[-::-] :: [" + Style.HelpKeyTextColor + "]Ctrl+S[" + Style.NormalTextColor + "] Save  [" + Style.HelpKeyTextColor + "]Esc[" + Style.NormalTextColor + "] Cancel "
 	if form.GetButtonCount() == 3 {
 		helpMsg += " " + deleteHelp
 	}

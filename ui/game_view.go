@@ -61,7 +61,7 @@ func (gv *GameView) setupTreeView() {
 		SetTitleAlign(tview.AlignLeft)
 
 	// Placeholder root node
-	root := tview.NewTreeNode("Games").SetColor(tcell.ColorYellow).SetSelectable(false)
+	root := tview.NewTreeNode("Games").SetColor(Style.TopTreeNodeColor).SetSelectable(false)
 	gv.Tree.SetRoot(root).SetCurrentNode(root)
 
 	// Set up selection handler for the tree (triggered by Space)
@@ -107,10 +107,15 @@ func (gv *GameView) setupModal() {
 			60, 1, true, // Dynamic width: expands to fit content (up to screen width)
 		).
 		AddItem(nil, 0, 1, false)
-	gv.Modal.SetBackgroundColor(tcell.ColorBlack)
+	//gv.Modal.SetBackgroundColor(tcell.ColorBlack)
 
-	gv.Modal.SetFocusFunc(func() {
+	gv.Form.SetFocusFunc(func() {
 		gv.app.SetModalHelpMessage(*gv.Form.DataForm)
+		gv.Form.SetBorderColor(Style.BorderFocusColor)
+	})
+
+	gv.Form.SetBlurFunc(func() {
+		gv.Form.SetBorderColor(Style.BorderColor)
 	})
 
 }
@@ -146,11 +151,11 @@ func (gv *GameView) setupKeyBindings() {
 // setupFocusHandlers configures focus event handlers
 func (gv *GameView) setupFocusHandlers() {
 	gv.Tree.SetFocusFunc(func() {
-		gv.app.updateFooterHelp("[aqua::b]Games[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Space[white] Select/Expand  [yellow]Ctrl+E[white] Edit  [yellow]Ctrl+N[white] New")
-		gv.Tree.SetBorderColor(tcell.ColorAqua)
+		gv.app.updateFooterHelp("[" + Style.ContextLabelTextColor + "::b]Games[-::-] :: [" + Style.HelpKeyTextColor + "]↑/↓[" + Style.NormalTextColor + "] Navigate  [" + Style.HelpKeyTextColor + "]Space[" + Style.NormalTextColor + "] Select/Expand  [" + Style.HelpKeyTextColor + "]Ctrl+E[" + Style.NormalTextColor + "] Edit  [" + Style.HelpKeyTextColor + "]Ctrl+N[" + Style.NormalTextColor + "] New")
+		gv.Tree.SetBorderColor(Style.BorderFocusColor)
 	})
 	gv.Tree.SetBlurFunc(func() {
-		gv.Tree.SetBorderColor(tview.Styles.BorderColor)
+		gv.Tree.SetBorderColor(Style.BorderColor)
 	})
 }
 
@@ -171,7 +176,7 @@ func (gv *GameView) Refresh() {
 	if err != nil {
 		// Show error in tree
 		errorNode := tview.NewTreeNode("Error loading games: " + err.Error()).
-			SetColor(tcell.ColorRed)
+			SetColor(Style.ErrorMessageColor)
 		root.AddChild(errorNode)
 		return
 	}
@@ -179,7 +184,7 @@ func (gv *GameView) Refresh() {
 	if len(games) == 0 {
 		// No games yet
 		placeholder := tview.NewTreeNode("(No Games Yet - Press Ctrl+N to Add)").
-			SetColor(tcell.ColorGray)
+			SetColor(Style.EmptyStateMessageColor)
 		root.AddChild(placeholder)
 		return
 	}
@@ -187,9 +192,9 @@ func (gv *GameView) Refresh() {
 	// Add each game to the tree
 	for _, g := range games {
 		reference := &GameState{GameID: &g.Game.ID}
-		gameNode := tview.NewTreeNode(g.Game.Name).
+		gameNode := tview.NewTreeNode(tview.Escape(g.Game.Name)).
 			SetReference(reference).
-			SetColor(tcell.ColorLime).
+			SetColor(Style.ParentTreeNodeColor).
 			SetSelectable(true).
 			SetExpanded(false)
 		root.AddChild(gameNode)
@@ -203,15 +208,15 @@ func (gv *GameView) Refresh() {
 		// Load sessions for this game
 		if len(g.Sessions) == 0 {
 			sessionPlaceholder := tview.NewTreeNode("(No sessions yet)").
-				SetColor(tcell.ColorGray).
+				SetColor(Style.EmptyStateMessageColor).
 				SetSelectable(false)
 			gameNode.AddChild(sessionPlaceholder)
 		} else {
 			for _, s := range g.Sessions {
 				reference = &GameState{GameID: &g.Game.ID, SessionID: &s.ID}
-				sessionNode := tview.NewTreeNode(s.Name + " (" + s.CreatedAt.Format("2006-01-02") + ")").
+				sessionNode := tview.NewTreeNode(tview.Escape(s.Name) + " (" + s.CreatedAt.Format("2006-01-02") + ")").
 					SetReference(reference).
-					SetColor(tcell.ColorAqua).
+					SetColor(Style.ChildTreeNodeColor).
 					SetSelectable(true).
 					SetExpanded(false)
 				gameNode.AddChild(sessionNode)

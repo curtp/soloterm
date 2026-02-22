@@ -100,14 +100,14 @@ func (gf *GameForm) updateFieldLabels() {
 
 	// Update name field label
 	if gf.HasFieldError("name") {
-		gf.nameField.SetLabel("[red]Name[white]")
+		gf.nameField.SetLabel("[" + Style.ErrorTextColor + "]Name[" + Style.NormalTextColor + "]")
 	} else {
 		gf.nameField.SetLabel("Name")
 	}
 
 	// Update description field label
 	if gf.HasFieldError("description") {
-		gf.descriptionField.SetLabel("[red]Description[white]")
+		gf.descriptionField.SetLabel("[" + Style.ErrorTextColor + "]Description[" + Style.NormalTextColor + "]")
 	} else {
 		gf.descriptionField.SetLabel("Description")
 	}

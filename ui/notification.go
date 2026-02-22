@@ -52,13 +52,13 @@ func (n *Notification) Show(notifType NotificationType, message string) {
 	var coloredMessage string
 	switch notifType {
 	case NotificationInfo:
-		coloredMessage = "[aqua::b]ⓘ " + message + "[-::-]"
+		coloredMessage = "[" + Style.ContextLabelTextColor + "::b]ⓘ " + message + "[-::-]"
 	case NotificationSuccess:
-		coloredMessage = "[lime::b]✅ " + message + "[-::-]"
+		coloredMessage = "[" + Style.SuccessTextColor + "::b]✅ " + message + "[-::-]"
 	case NotificationWarning:
-		coloredMessage = "[yellow::b]⚠️ " + message + "[-::-]"
+		coloredMessage = "[" + Style.HelpKeyTextColor + "::b]⚠️ " + message + "[-::-]"
 	case NotificationError:
-		coloredMessage = "[pink::b]❌ " + message + "[-::-]"
+		coloredMessage = "[" + Style.NotificationErrorColor + "::b]❌ " + message + "[-::-]"
 	}
 
 	n.SetText(coloredMessage)

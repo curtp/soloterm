@@ -166,30 +166,35 @@ func (cv *CharacterView) setupCharacterModal() {
 		).
 		AddItem(nil, 0, 1, false)
 
-	cv.Modal.SetFocusFunc(func() {
+	cv.Form.SetFocusFunc(func() {
 		cv.app.SetModalHelpMessage(*cv.Form.DataForm)
+		cv.Form.SetBorderColor(Style.BorderFocusColor)
+	})
+
+	cv.Form.SetBlurFunc(func() {
+		cv.Form.SetBorderColor(Style.BorderColor)
 	})
 }
 
 // setupFocusHandlers configures focus event handlers
 func (cv *CharacterView) setupFocusHandlers() {
-	editDupHelp := "[yellow]Ctrl+E[white] Edit  [yellow]Ctrl+D[white] Duplicate"
+	editDupHelp := "[" + Style.HelpKeyTextColor + "]Ctrl+E[" + Style.NormalTextColor + "] Edit  [" + Style.HelpKeyTextColor + "]Ctrl+D[" + Style.NormalTextColor + "] Duplicate"
 	cv.CharTree.SetFocusFunc(func() {
 		cv.SetReturnFocus(cv.CharTree)
-		cv.app.updateFooterHelp("[aqua::b]Characters[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]Space/Enter[white] Select/Expand  [yellow]Ctrl+N[white] New  " + editDupHelp)
-		cv.CharTree.SetBorderColor(tcell.ColorAqua)
+		cv.app.updateFooterHelp("[" + Style.ContextLabelTextColor + "::b]Characters[-::-] :: [" + Style.HelpKeyTextColor + "]↑/↓[" + Style.NormalTextColor + "] Navigate  [" + Style.HelpKeyTextColor + "]Space/Enter[" + Style.NormalTextColor + "] Select/Expand  [" + Style.HelpKeyTextColor + "]Ctrl+N[" + Style.NormalTextColor + "] New  " + editDupHelp)
+		cv.CharTree.SetBorderColor(Style.BorderFocusColor)
 	})
 	cv.CharTree.SetBlurFunc(func() {
-		cv.CharTree.SetBorderColor(tview.Styles.BorderColor)
+		cv.CharTree.SetBorderColor(Style.BorderColor)
 	})
 
 	cv.CharPane.SetFocusFunc(func() {
 		cv.SetReturnFocus(cv.app.attributeView.Table)
-		cv.app.updateFooterHelp("[aqua::b]Sheet[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]F12[white] Help  [yellow]Ctrl+E[white] Edit  [yellow]Ctrl+N[white] New")
-		cv.CharPane.SetBorderColor(tcell.ColorAqua)
+		cv.app.updateFooterHelp("[" + Style.ContextLabelTextColor + "::b]Sheet[-::-] :: [" + Style.HelpKeyTextColor + "]↑/↓[" + Style.NormalTextColor + "] Navigate  [" + Style.HelpKeyTextColor + "]F12[" + Style.NormalTextColor + "] Help  [" + Style.HelpKeyTextColor + "]Ctrl+E[" + Style.NormalTextColor + "] Edit  [" + Style.HelpKeyTextColor + "]Ctrl+N[" + Style.NormalTextColor + "] New")
+		cv.CharPane.SetBorderColor(Style.BorderFocusColor)
 	})
 	cv.CharPane.SetBlurFunc(func() {
-		cv.CharPane.SetBorderColor(tview.Styles.BorderColor)
+		cv.CharPane.SetBorderColor(Style.BorderColor)
 	})
 }
 
@@ -210,7 +215,7 @@ func (cv *CharacterView) RefreshTree() {
 
 	root := cv.CharTree.GetRoot()
 	if root == nil {
-		root = tview.NewTreeNode("Systems").SetColor(tcell.ColorYellow).SetSelectable(false)
+		root = tview.NewTreeNode("Systems").SetColor(Style.TopTreeNodeColor).SetSelectable(false)
 		cv.CharTree.SetRoot(root).SetCurrentNode(root)
 	}
 	root.ClearChildren()
@@ -220,7 +225,7 @@ func (cv *CharacterView) RefreshTree() {
 	if err != nil {
 		// Show error in tree
 		errorNode := tview.NewTreeNode("Error loading characters: " + err.Error()).
-			SetColor(tcell.ColorRed)
+			SetColor(Style.ErrorMessageColor)
 		root.AddChild(errorNode)
 		return
 	}
@@ -228,7 +233,7 @@ func (cv *CharacterView) RefreshTree() {
 	if len(charsBySystem) == 0 {
 		// No characters yet
 		placeholder := tview.NewTreeNode("(No Characters Yet - Press Ctrl+N to Add)").
-			SetColor(tcell.ColorGray)
+			SetColor(Style.EmptyStateMessageColor)
 		root.AddChild(placeholder)
 		return
 	}
@@ -240,8 +245,8 @@ func (cv *CharacterView) RefreshTree() {
 	// Loop over the keys (systems) and add them and their respective characters to the tree
 	for _, system := range keys {
 		// Create system node
-		systemNode := tview.NewTreeNode(system).
-			SetColor(tcell.ColorLime).
+		systemNode := tview.NewTreeNode(tview.Escape(system)).
+			SetColor(Style.ParentTreeNodeColor).
 			SetSelectable(true).
 			SetExpanded(false)
 		root.AddChild(systemNode)
@@ -253,9 +258,9 @@ func (cv *CharacterView) RefreshTree() {
 
 		// Add character nodes under the system
 		for _, c := range charsBySystem[system] {
-			charNode := tview.NewTreeNode(c.Name).
+			charNode := tview.NewTreeNode(tview.Escape(c.Name)).
 				SetReference(c.ID).
-				SetColor(tcell.ColorAqua).
+				SetColor(Style.ChildTreeNodeColor).
 				SetSelectable(true)
 			systemNode.AddChild(charNode)
 
@@ -314,9 +319,9 @@ func (cv *CharacterView) RefreshDisplay() {
 // displayCharacterInfo displays character information in the character info view
 func (cv *CharacterView) displayCharacterInfo(char *character.Character) {
 	charInfo := "[aqua::b]" + char.Name + "[-::-]\n"
-	charInfo += "[yellow::bi]      System:[white::-] " + char.System + "\n"
-	charInfo += "[yellow::bi]  Role/Class:[white::-] " + char.Role + "\n"
-	charInfo += "[yellow::bi]Species/Race:[white::-] " + char.Species
+	charInfo += "[" + Style.HelpKeyTextColor + "::bi]      System:[white::-] " + tview.Escape(char.System) + "\n"
+	charInfo += "[" + Style.HelpKeyTextColor + "::bi]  Role/Class:[white::-] " + tview.Escape(char.Role) + "\n"
+	charInfo += "[" + Style.HelpKeyTextColor + "::bi]Species/Race:[white::-] " + tview.Escape(char.Species)
 	cv.InfoView.SetText(charInfo)
 }
 

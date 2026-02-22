@@ -91,7 +91,7 @@ func (sf *SessionForm) updateFieldLabels() {
 
 	// Update name field label
 	if sf.HasFieldError("name") {
-		sf.nameField.SetLabel("[red]Name[white]")
+		sf.nameField.SetLabel("[" + Style.ErrorTextColor + "]Name[" + Style.NormalTextColor + "]")
 	} else {
 		sf.nameField.SetLabel("Name")
 	}

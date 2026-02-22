@@ -107,7 +107,7 @@ func (a *App) handleSessionShowImport(_ *SessionShowImportEvent) {
 	a.sessionView.FileForm.GetButton(0).SetLabel("Import")
 	a.pages.ShowPage(FILE_MODAL_ID)
 	a.SetFocus(a.sessionView.FileForm)
-	a.updateFooterHelp("[aqua::b]Import[-::-] :: [yellow]Ctrl+S[white] Import  [yellow]Esc[white] Cancel")
+	a.updateFooterHelp("[" + Style.ContextLabelTextColor + "::b]Import[-::-] :: [" + Style.HelpKeyTextColor + "]Ctrl+S[" + Style.NormalTextColor + "] Import  [" + Style.HelpKeyTextColor + "]Esc[" + Style.NormalTextColor + "] Cancel")
 }
 
 func (a *App) handleSessionShowExport(_ *SessionShowExportEvent) {
@@ -121,7 +121,7 @@ func (a *App) handleSessionShowExport(_ *SessionShowExportEvent) {
 	a.sessionView.FileForm.GetButton(0).SetLabel("Export")
 	a.pages.ShowPage(FILE_MODAL_ID)
 	a.SetFocus(a.sessionView.FileForm)
-	a.updateFooterHelp("[aqua::b]Export[-::-] :: [yellow]Ctrl+S[white] Export  [yellow]Esc[white] Cancel")
+	a.updateFooterHelp("[" + Style.ContextLabelTextColor + "::b]Export[-::-] :: [" + Style.HelpKeyTextColor + "]Ctrl+S[" + Style.NormalTextColor + "] Export  [" + Style.HelpKeyTextColor + "]Esc[" + Style.NormalTextColor + "] Cancel")
 }
 
 func (a *App) handleSessionImport(_ *SessionImportEvent) {

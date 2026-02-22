@@ -112,28 +112,28 @@ func (cf *CharacterForm) updateFieldLabels() {
 
 	// Update name field label
 	if cf.HasFieldError("name") {
-		cf.nameField.SetLabel("[red]Name[white]")
+		cf.nameField.SetLabel("[" + Style.ErrorTextColor + "]Name[" + Style.NormalTextColor + "]")
 	} else {
 		cf.nameField.SetLabel("Name")
 	}
 
 	// Update system field label
 	if cf.HasFieldError("system") {
-		cf.systemField.SetLabel("[red]System[white]")
+		cf.systemField.SetLabel("[" + Style.ErrorTextColor + "]System[" + Style.NormalTextColor + "]")
 	} else {
 		cf.systemField.SetLabel("System")
 	}
 
 	// Update role field label
 	if cf.HasFieldError("role") {
-		cf.roleField.SetLabel("[red]Role/Class[white]")
+		cf.roleField.SetLabel("[" + Style.ErrorTextColor + "]Role/Class[" + Style.NormalTextColor + "]")
 	} else {
 		cf.roleField.SetLabel("Role/Class")
 	}
 
 	// Update species field label
 	if cf.HasFieldError("species") {
-		cf.speciesField.SetLabel("[red]Species/Race[white]")
+		cf.speciesField.SetLabel("[" + Style.ErrorTextColor + "]Species/Race[" + Style.NormalTextColor + "]")
 	} else {
 		cf.speciesField.SetLabel("Species/Race")
 	}

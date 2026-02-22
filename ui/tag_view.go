@@ -5,6 +5,7 @@ import (
 	"soloterm/config"
 	"soloterm/domain/tag"
 	"soloterm/shared/text"
+	"strings"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -17,6 +18,7 @@ type TagView struct {
 	tagService      *tag.Service
 	Modal           *tview.Flex
 	tagModalContent *tview.Flex
+	tagFrame        *tview.Frame
 	tagList         *tview.List
 	TagTable        *tview.Table
 	returnFocus     tview.Primitive // Field to restore focus to after tag selection
@@ -53,11 +55,11 @@ func (tv *TagView) setupModal() {
 		AddItem(tv.TagTable, 0, 1, true)
 
 	// Wrap in a frame for padding between border and content
-	tagFrame := tview.NewFrame(tv.tagModalContent).
+	tv.tagFrame = tview.NewFrame(tv.tagModalContent).
 		SetBorders(1, 1, 0, 0, 1, 1)
-	tagFrame.SetBorder(true).
+	tv.tagFrame.SetBorder(true).
 		SetTitleAlign(tview.AlignLeft).
-		SetTitle("[::b] Select Tag ([yellow]Esc[white] Close) [-::-]")
+		SetTitle("[::b] Select Tag ([" + Style.HelpKeyTextColor + "]Esc[" + Style.NormalTextColor + "] Close) [-::-]")
 
 	// Center the modal on screen
 	tv.Modal = tview.NewFlex().
@@ -66,16 +68,20 @@ func (tv *TagView) setupModal() {
 			tview.NewFlex().
 				SetDirection(tview.FlexRow).
 				AddItem(nil, 0, 1, false).
-				AddItem(tagFrame, 25, 0, true).
+				AddItem(tv.tagFrame, 25, 0, true).
 				AddItem(nil, 0, 1, false),
 			70, 1, true, // Width of the modal in columns
 		).
 		AddItem(nil, 0, 1, false)
 
-	tv.Modal.SetFocusFunc(func() {
-		tv.app.updateFooterHelp("[aqua::b]Tags[-::-] :: [yellow]↑/↓[white] Navigate  [yellow]F12[white] Help  [yellow]Enter[white] Select  [yellow]Esc[white] Close")
+	tv.TagTable.SetFocusFunc(func() {
+		tv.app.updateFooterHelp("[" + Style.ContextLabelTextColor + "::b]Tags[-::-] :: [" + Style.HelpKeyTextColor + "]↑/↓[" + Style.NormalTextColor + "] Navigate  [" + Style.HelpKeyTextColor + "]F12[" + Style.NormalTextColor + "] Help  [" + Style.HelpKeyTextColor + "]Enter[" + Style.NormalTextColor + "] Select  [" + Style.HelpKeyTextColor + "]Esc[" + Style.NormalTextColor + "] Close")
+		tv.tagFrame.SetBorderColor(Style.BorderFocusColor)
 	})
 
+	tv.TagTable.SetBlurFunc(func() {
+		tv.tagFrame.SetBorderColor(Style.BorderColor)
+	})
 }
 
 func (tv *TagView) Refresh() {
@@ -194,7 +200,7 @@ func (tv *TagView) setupKeyBindings() {
 
 func (tv *TagView) buildHelpText() string {
 	closeWords := text.FormatWordList(tv.cfg.TagExcludeWords, `"`)
-	return fmt.Sprintf(`[green]What Are Tags?[white]
+	raw := fmt.Sprintf(`[green]What Are Tags?[white]
 
 Tags are inline markers you add to your session
 text to track things like locations, NPCs, events,
@@ -232,4 +238,10 @@ You can add, remove, or modify the available tags
 and close words by editing the configuration file:
 
 [aqua]%s[white]`, closeWords, tv.cfg.FullFilePath)
+	return strings.NewReplacer(
+		"[yellow]", "["+Style.HelpKeyTextColor+"]",
+		"[white]", "["+Style.NormalTextColor+"]",
+		"[green]", "["+Style.HelpSectionColor+"]",
+		"[aqua]", "["+Style.ContextLabelTextColor+"]",
+	).Replace(raw)
 }

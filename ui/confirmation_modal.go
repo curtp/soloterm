@@ -26,6 +26,8 @@ func NewConfirmationModal() *ConfirmationModal {
 			}
 		})
 
+	cm.SetBorderColor(Style.BorderFocusColor)
+
 	return cm
 }
 
