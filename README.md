@@ -8,6 +8,10 @@ People expressed interest in it, so I thought I'd put it up here on Github.
 
 So, the code may not be the best quality, but it does work!
 
+To install, download the latest executable from [Releases](https://github.com/curtp/soloterm/releases).
+
+To see where the data and logs are written, press F1.
+
 ## Features
 * Create multiple games and track multiple sessions per game
 * Create simple characters for quick reference in the app
