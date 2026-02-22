@@ -377,9 +377,11 @@ func (sv *SessionView) buildHelpText() string {
 		"[green]", "["+Style.HelpSectionColor+"]",
 	).Replace(`Scroll Down To View All Help Options
 
-[green]Session Management
+[green]Session Management[white]
 
 Select the session in the game view to edit the name or delete the session.
+
+[yellow]Note:[white] Do not paste large amounts of text into the session log. It is slow. Instead, use Import (see the help below)
 
 [yellow]Ctrl+N[white]: Add a new session.
 [yellow]Ctrl+O[white]: Import content from a file.
@@ -421,7 +423,13 @@ Type to enter text.
 [green]Undo
 
 [yellow]Ctrl-Z[white]: Undo.
-[yellow]Ctrl-Y[white]: Redo.`)
+[yellow]Ctrl-Y[white]: Redo.
+
+[green]Import/Export
+
+[yellow]Ctrl-O[white]: Open a text file to import. You can choose where the imported text is inserted into the log.
+[yellow]Ctrl-X[white]: Export the current session to a text file.
+`)
 }
 
 // ShowEditModal displays the session form modal for editing an existing session
