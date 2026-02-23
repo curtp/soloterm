@@ -1,5 +1,8 @@
 package ui
 
+import (
+	syslog "log"
+)
 
 func (a *App) handleAttributeSaved(e *AttributeSavedEvent) {
 	a.attributeView.Form.ClearFieldErrors()
@@ -49,7 +52,12 @@ func (a *App) handleAttributeDeleteFailed(e *AttributeDeleteFailedEvent) {
 
 func (a *App) handleAttributeShowNew(e *AttributeShowNewEvent) {
 	a.attributeView.ModalContent.SetTitle(" New Entry ")
-	attrs, _ := a.attributeView.attrService.GetForCharacter(e.CharacterID)
+	attrs, err := a.attributeView.attrService.GetForCharacter(e.CharacterID)
+	if err != nil {
+		syslog.Printf("Failed to open the New Entry modal: %s", err)
+		a.notification.ShowError("Failed to open new entry form: " + err.Error())
+		return
+	}
 	a.attributeView.Form.Reset(e.CharacterID, attrs)
 	if e.SelectedAttribute != nil {
 		a.attributeView.Form.SelectGroup(e.SelectedAttribute.Group)
@@ -60,7 +68,12 @@ func (a *App) handleAttributeShowNew(e *AttributeShowNewEvent) {
 
 func (a *App) handleAttributeShowEdit(e *AttributeShowEditEvent) {
 	a.attributeView.ModalContent.SetTitle(" Edit Entry ")
-	attrs, _ := a.attributeView.attrService.GetForCharacter(e.Attribute.CharacterID)
+	attrs, err := a.attributeView.attrService.GetForCharacter(e.Attribute.CharacterID)
+	if err != nil {
+		syslog.Printf("Failed to open the edit entry modal: %s", err)
+		a.notification.ShowError("Failed to open edit entry modal: " + err.Error())
+		return
+	}
 	a.attributeView.Form.PopulateForEdit(e.Attribute, attrs)
 	a.pages.ShowPage(ATTRIBUTE_MODAL_ID)
 	a.SetFocus(a.attributeView.Form)
@@ -69,6 +82,7 @@ func (a *App) handleAttributeShowEdit(e *AttributeShowEditEvent) {
 func (a *App) handleAttributeReorder(e *AttributeReorderEvent) {
 	movedID, err := a.attributeView.attrService.Reorder(e.CharacterID, e.AttributeID, e.Direction)
 	if err != nil {
+		syslog.Printf("Failed to reorder the entry: %s", err)
 		a.notification.ShowError("Failed to reorder: " + err.Error())
 		return
 	}
