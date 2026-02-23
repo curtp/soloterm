@@ -101,10 +101,7 @@ func (s *AttributeService) Reorder(characterID, attributeID int64, direction int
 		if neighbor.PositionInGroup == 0 {
 			return 0, nil // Children cannot displace the group header.
 		}
-		if err = s.repo.UpdatePosition(curr.ID, neighbor.Group, neighbor.PositionInGroup); err != nil {
-			return 0, err
-		}
-		if err = s.repo.UpdatePosition(neighbor.ID, curr.Group, curr.PositionInGroup); err != nil {
+		if err = s.repo.SwapPositions(curr.ID, curr.PositionInGroup, neighbor.ID, neighbor.PositionInGroup); err != nil {
 			return 0, err
 		}
 	}
