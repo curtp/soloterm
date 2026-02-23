@@ -177,7 +177,7 @@ func (a *App) setupUI() {
 }
 
 func (a *App) updateFooterHelp(helpText string) {
-	globalHelp := " [" + Style.HelpKeyTextColor + "]Tab[" + Style.NormalTextColor + "] Navigate  [" + Style.HelpKeyTextColor + "]Ctrl+R[" + Style.NormalTextColor + "] Dice  [" + Style.HelpKeyTextColor + "]Ctrl+Q[" + Style.NormalTextColor + "] Quit  |  "
+	globalHelp := " [" + Style.HelpKeyTextColor + "]F1[" + Style.NormalTextColor + "] About  [" + Style.HelpKeyTextColor + "]Tab[" + Style.NormalTextColor + "] Navigate  [" + Style.HelpKeyTextColor + "]Ctrl+R[" + Style.NormalTextColor + "] Dice  [" + Style.HelpKeyTextColor + "]Ctrl+Q[" + Style.NormalTextColor + "] Quit  |  "
 	a.footer.SetText(globalHelp + helpText)
 }
 
