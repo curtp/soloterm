@@ -225,14 +225,20 @@ func (sv *SessionView) setupKeyBindings() {
 
 // setupFocusHandlers configures focus event handlers
 func (sv *SessionView) setupFocusHandlers() {
-	editHelp := "[" + Style.HelpKeyTextColor + "]PgUp/PgDn/↑/↓[" + Style.NormalTextColor + "] Scroll  [" + Style.HelpKeyTextColor + "]F12[" + Style.NormalTextColor + "] Help  [" + Style.HelpKeyTextColor + "]Ctrl+N[" + Style.NormalTextColor + "] New  [" + Style.HelpKeyTextColor + "]Ctrl+T[" + Style.NormalTextColor + "] Tag  [" + Style.HelpKeyTextColor + "]F2[" + Style.NormalTextColor + "] Action  [" + Style.HelpKeyTextColor + "]F3[" + Style.NormalTextColor + "] Oracle"
-	newHelp := "[" + Style.HelpKeyTextColor + "]Ctrl+N[" + Style.NormalTextColor + "] New"
-	baseHelp := "[" + Style.ContextLabelTextColor + "::b]Session[-::-] :: "
 	sv.TextArea.SetFocusFunc(func() {
 		if sv.currentSessionID != nil {
-			sv.app.updateFooterHelp(baseHelp + editHelp)
+			sv.app.updateFooterHelp(helpBar("Session", []helpEntry{
+				{"PgUp/PgDn/↑/↓", "Scroll"},
+				{"F12", "Help"},
+				{"Ctrl+N", "New"},
+				{"Ctrl+T", "Tag"},
+				{"F2", "Action"},
+				{"F3", "Oracle"},
+			}))
 		} else {
-			sv.app.updateFooterHelp(baseHelp + newHelp)
+			sv.app.updateFooterHelp(helpBar("Session", []helpEntry{
+				{"Ctrl+N", "New"},
+			}))
 		}
 		sv.textAreaFrame.SetBorderColor(Style.BorderFocusColor)
 	})

@@ -75,7 +75,12 @@ func (tv *TagView) setupModal() {
 		AddItem(nil, 0, 1, false)
 
 	tv.TagTable.SetFocusFunc(func() {
-		tv.app.updateFooterHelp("[" + Style.ContextLabelTextColor + "::b]Tags[-::-] :: [" + Style.HelpKeyTextColor + "]↑/↓[" + Style.NormalTextColor + "] Navigate  [" + Style.HelpKeyTextColor + "]F12[" + Style.NormalTextColor + "] Help  [" + Style.HelpKeyTextColor + "]Enter[" + Style.NormalTextColor + "] Select  [" + Style.HelpKeyTextColor + "]Esc[" + Style.NormalTextColor + "] Close")
+		tv.app.updateFooterHelp(helpBar("Tags", []helpEntry{
+			{"↑/↓", "Navigate"},
+			{"F12", "Help"},
+			{"Enter", "Select"},
+			{"Esc", "Close"},
+		}))
 		tv.tagFrame.SetBorderColor(Style.BorderFocusColor)
 	})
 

@@ -151,7 +151,12 @@ func (gv *GameView) setupKeyBindings() {
 // setupFocusHandlers configures focus event handlers
 func (gv *GameView) setupFocusHandlers() {
 	gv.Tree.SetFocusFunc(func() {
-		gv.app.updateFooterHelp("[" + Style.ContextLabelTextColor + "::b]Games[-::-] :: [" + Style.HelpKeyTextColor + "]↑/↓[" + Style.NormalTextColor + "] Navigate  [" + Style.HelpKeyTextColor + "]Space/Enter[" + Style.NormalTextColor + "] Select/Expand  [" + Style.HelpKeyTextColor + "]Ctrl+E[" + Style.NormalTextColor + "] Edit  [" + Style.HelpKeyTextColor + "]Ctrl+N[" + Style.NormalTextColor + "] New")
+		gv.app.updateFooterHelp(helpBar("Games", []helpEntry{
+			{"↑/↓", "Navigate"},
+			{"Space/Enter", "Select/Expand"},
+			{"Ctrl+E", "Edit"},
+			{"Ctrl+N", "New"},
+		}))
 		gv.Tree.SetBorderColor(Style.BorderFocusColor)
 	})
 	gv.Tree.SetBlurFunc(func() {

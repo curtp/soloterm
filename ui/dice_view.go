@@ -76,13 +76,12 @@ func (dv *DiceView) setupModal() {
 		AddItem(nil, 0, 1, false)
 
 	dv.TextArea.SetFocusFunc(func() {
-		var b strings.Builder
-		b.WriteString("[" + Style.ContextLabelTextColor + "::b]Roll Dice[-::-] :: [" + Style.HelpKeyTextColor + "]Ctrl+R[" + Style.NormalTextColor + "] Roll  ")
+		entries := []helpEntry{{"Ctrl+R", "Roll"}}
 		if dv.CanInsert() {
-			b.WriteString("[" + Style.HelpKeyTextColor + "]Ctrl+O[" + Style.NormalTextColor + "] Insert  ")
+			entries = append(entries, helpEntry{"Ctrl+O", "Insert"})
 		}
-		b.WriteString("[" + Style.HelpKeyTextColor + "]F12[" + Style.NormalTextColor + "] Help  [" + Style.HelpKeyTextColor + "]Esc[" + Style.NormalTextColor + "] Close")
-		dv.app.updateFooterHelp(b.String())
+		entries = append(entries, helpEntry{"F12", "Help"}, helpEntry{"Esc", "Close"})
+		dv.app.updateFooterHelp(helpBar("Roll Dice", entries))
 		dv.diceFrame.SetBorderColor(Style.BorderFocusColor)
 	})
 

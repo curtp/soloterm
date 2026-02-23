@@ -177,22 +177,29 @@ func (a *App) setupUI() {
 }
 
 func (a *App) updateFooterHelp(helpText string) {
-	globalHelp := " [" + Style.HelpKeyTextColor + "]F1[" + Style.NormalTextColor + "] About  [" + Style.HelpKeyTextColor + "]Tab[" + Style.NormalTextColor + "] Navigate  [" + Style.HelpKeyTextColor + "]Ctrl+R[" + Style.NormalTextColor + "] Dice  [" + Style.HelpKeyTextColor + "]Ctrl+Q[" + Style.NormalTextColor + "] Quit  |  "
+	globalHelp := " " + helpBar("", []helpEntry{
+		{"F1", "About"},
+		{"Tab", "Navigate"},
+		{"Ctrl+R", "Dice"},
+		{"Ctrl+Q", "Quit"},
+	}) + " | "
 	a.footer.SetText(globalHelp + helpText)
 }
 
 func (a *App) SetModalHelpMessage(form sharedui.DataForm) {
 	editing := form.GetButtonCount() == 3
-	deleteHelp := "[" + Style.HelpKeyTextColor + "]Ctrl+D[" + Style.NormalTextColor + "] Delete"
 	actionMsg := "Add"
 	if editing {
 		actionMsg = "Edit"
 	}
-	helpMsg := "[" + Style.ContextLabelTextColor + "::b]" + actionMsg + "[-::-] :: [" + Style.HelpKeyTextColor + "]Ctrl+S[" + Style.NormalTextColor + "] Save  [" + Style.HelpKeyTextColor + "]Esc[" + Style.NormalTextColor + "] Cancel "
-	if form.GetButtonCount() == 3 {
-		helpMsg += " " + deleteHelp
+	entries := []helpEntry{
+		{"Ctrl+S", "Save"},
+		{"Esc", "Cancel"},
 	}
-	a.updateFooterHelp(helpMsg)
+	if editing {
+		entries = append(entries, helpEntry{"Ctrl+D", "Delete"})
+	}
+	a.updateFooterHelp(helpBar(actionMsg, entries))
 }
 
 func (a *App) setupKeyBindings() {

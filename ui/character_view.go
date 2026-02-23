@@ -178,10 +178,15 @@ func (cv *CharacterView) setupCharacterModal() {
 
 // setupFocusHandlers configures focus event handlers
 func (cv *CharacterView) setupFocusHandlers() {
-	editDupHelp := "[" + Style.HelpKeyTextColor + "]Ctrl+E[" + Style.NormalTextColor + "] Edit  [" + Style.HelpKeyTextColor + "]Ctrl+D[" + Style.NormalTextColor + "] Duplicate"
 	cv.CharTree.SetFocusFunc(func() {
 		cv.SetReturnFocus(cv.CharTree)
-		cv.app.updateFooterHelp("[" + Style.ContextLabelTextColor + "::b]Characters[-::-] :: [" + Style.HelpKeyTextColor + "]↑/↓[" + Style.NormalTextColor + "] Navigate  [" + Style.HelpKeyTextColor + "]Space/Enter[" + Style.NormalTextColor + "] Select/Expand  [" + Style.HelpKeyTextColor + "]Ctrl+N[" + Style.NormalTextColor + "] New  " + editDupHelp)
+		cv.app.updateFooterHelp(helpBar("Characters", []helpEntry{
+			{"↑/↓", "Navigate"},
+			{"Space/Enter", "Select/Expand"},
+			{"Ctrl+N", "New"},
+			{"Ctrl+E", "Edit"},
+			{"Ctrl+D", "Duplicate"},
+		}))
 		cv.CharTree.SetBorderColor(Style.BorderFocusColor)
 	})
 	cv.CharTree.SetBlurFunc(func() {
@@ -190,7 +195,13 @@ func (cv *CharacterView) setupFocusHandlers() {
 
 	cv.CharPane.SetFocusFunc(func() {
 		cv.SetReturnFocus(cv.app.attributeView.Table)
-		cv.app.updateFooterHelp("[" + Style.ContextLabelTextColor + "::b]Sheet[-::-] :: [" + Style.HelpKeyTextColor + "]↑/↓[" + Style.NormalTextColor + "] Navigate  [" + Style.HelpKeyTextColor + "]F12[" + Style.NormalTextColor + "] Help  [" + Style.HelpKeyTextColor + "]Ctrl+E[" + Style.NormalTextColor + "] Edit  [" + Style.HelpKeyTextColor + "]Ctrl+N[" + Style.NormalTextColor + "] New  [" + Style.HelpKeyTextColor + "]Ctrl+U/D[" + Style.NormalTextColor + "] Move Entry or Section Up/Down")
+		cv.app.updateFooterHelp(helpBar("Sheet", []helpEntry{
+			{"↑/↓", "Navigate"},
+			{"F12", "Help"},
+			{"Ctrl+E", "Edit"},
+			{"Ctrl+N", "New"},
+			{"Ctrl+U/D", "Move Entry or Section Up/Down"},
+		}))
 		cv.CharPane.SetBorderColor(Style.BorderFocusColor)
 	})
 	cv.CharPane.SetBlurFunc(func() {
