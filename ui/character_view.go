@@ -190,7 +190,7 @@ func (cv *CharacterView) setupFocusHandlers() {
 
 	cv.CharPane.SetFocusFunc(func() {
 		cv.SetReturnFocus(cv.app.attributeView.Table)
-		cv.app.updateFooterHelp("[" + Style.ContextLabelTextColor + "::b]Sheet[-::-] :: [" + Style.HelpKeyTextColor + "]↑/↓[" + Style.NormalTextColor + "] Navigate  [" + Style.HelpKeyTextColor + "]F12[" + Style.NormalTextColor + "] Help  [" + Style.HelpKeyTextColor + "]Ctrl+E[" + Style.NormalTextColor + "] Edit  [" + Style.HelpKeyTextColor + "]Ctrl+N[" + Style.NormalTextColor + "] New  [" + Style.HelpKeyTextColor + "]Ctrl+U/D[" + Style.NormalTextColor + "] Move Entry Up/Down  [" + Style.HelpKeyTextColor + "]Shift+U/D[" + Style.NormalTextColor + "] Move Group Up/Down")
+		cv.app.updateFooterHelp("[" + Style.ContextLabelTextColor + "::b]Sheet[-::-] :: [" + Style.HelpKeyTextColor + "]↑/↓[" + Style.NormalTextColor + "] Navigate  [" + Style.HelpKeyTextColor + "]F12[" + Style.NormalTextColor + "] Help  [" + Style.HelpKeyTextColor + "]Ctrl+E[" + Style.NormalTextColor + "] Edit  [" + Style.HelpKeyTextColor + "]Ctrl+N[" + Style.NormalTextColor + "] New  [" + Style.HelpKeyTextColor + "]Ctrl+U/D[" + Style.NormalTextColor + "] Move Entry or Section Up/Down")
 		cv.CharPane.SetBorderColor(Style.BorderFocusColor)
 	})
 	cv.CharPane.SetBlurFunc(func() {

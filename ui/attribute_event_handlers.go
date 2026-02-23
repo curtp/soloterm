@@ -1,6 +1,5 @@
 package ui
 
-import "fmt"
 
 func (a *App) handleAttributeSaved(e *AttributeSavedEvent) {
 	a.attributeView.Form.ClearFieldErrors()
@@ -50,27 +49,25 @@ func (a *App) handleAttributeDeleteFailed(e *AttributeDeleteFailedEvent) {
 
 func (a *App) handleAttributeShowNew(e *AttributeShowNewEvent) {
 	a.attributeView.ModalContent.SetTitle(" New Entry ")
-	a.attributeView.Form.Reset(e.CharacterID)
-
-	// If there's a selected attribute, use its group and position as defaults
+	attrs, _ := a.attributeView.attrService.GetForCharacter(e.CharacterID)
+	a.attributeView.Form.Reset(e.CharacterID, attrs)
 	if e.SelectedAttribute != nil {
-		a.attributeView.Form.groupField.SetText(fmt.Sprintf("%d", e.SelectedAttribute.Group))
-		a.attributeView.Form.positionField.SetText(fmt.Sprintf("%d", e.SelectedAttribute.PositionInGroup+1))
+		a.attributeView.Form.SelectGroup(e.SelectedAttribute.Group)
 	}
-
 	a.pages.ShowPage(ATTRIBUTE_MODAL_ID)
 	a.SetFocus(a.attributeView.Form)
 }
 
 func (a *App) handleAttributeShowEdit(e *AttributeShowEditEvent) {
 	a.attributeView.ModalContent.SetTitle(" Edit Entry ")
-	a.attributeView.Form.PopulateForEdit(e.Attribute)
+	attrs, _ := a.attributeView.attrService.GetForCharacter(e.Attribute.CharacterID)
+	a.attributeView.Form.PopulateForEdit(e.Attribute, attrs)
 	a.pages.ShowPage(ATTRIBUTE_MODAL_ID)
 	a.SetFocus(a.attributeView.Form)
 }
 
 func (a *App) handleAttributeReorder(e *AttributeReorderEvent) {
-	movedID, err := a.attributeView.attrService.Reorder(e.CharacterID, e.AttributeID, e.Direction, e.GroupMove)
+	movedID, err := a.attributeView.attrService.Reorder(e.CharacterID, e.AttributeID, e.Direction)
 	if err != nil {
 		a.notification.ShowError("Failed to reorder: " + err.Error())
 		return

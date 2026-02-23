@@ -47,10 +47,13 @@ func (s *AttributeService) GetForCharacter(character_id int64) ([]*Attribute, er
 
 // Reorder moves an attribute up or down in the display order.
 // direction: -1 = up, +1 = down.
-// groupMove: false = swap the selected item with its adjacent neighbor;
-//            true  = move the selected item's entire group past the adjacent group.
+//
+// The move type is determined by the selected item's position:
+//   - PositionInGroup == 0 (header or standalone): moves the entire group.
+//   - PositionInGroup > 0 (child): moves within its group only; cannot cross group boundaries.
+//
 // Returns the moved attribute's ID on success, 0 on a boundary no-op, or an error.
-func (s *AttributeService) Reorder(characterID, attributeID int64, direction int, groupMove bool) (int64, error) {
+func (s *AttributeService) Reorder(characterID, attributeID int64, direction int) (int64, error) {
 	attrs, err := s.repo.GetForCharacter(characterID)
 	if err != nil {
 		return 0, err
@@ -70,8 +73,8 @@ func (s *AttributeService) Reorder(characterID, attributeID int64, direction int
 
 	curr := attrs[idx]
 
-	if groupMove {
-		// Walk in direction until we find an item in a different group.
+	if curr.PositionInGroup == 0 {
+		// Header or standalone: move the entire group past the adjacent group.
 		neighborGroup := -1
 		for i := idx + direction; i >= 0 && i < len(attrs); i += direction {
 			if attrs[i].Group != curr.Group {
@@ -86,11 +89,18 @@ func (s *AttributeService) Reorder(characterID, attributeID int64, direction int
 			return 0, err
 		}
 	} else {
+		// Child: move within group only; stop at group boundaries.
 		neighborIdx := idx + direction
 		if neighborIdx < 0 || neighborIdx >= len(attrs) {
-			return 0, nil // Already at boundary.
+			return 0, nil // Already at list boundary.
 		}
 		neighbor := attrs[neighborIdx]
+		if neighbor.Group != curr.Group {
+			return 0, nil // At group boundary: children cannot cross.
+		}
+		if neighbor.PositionInGroup == 0 {
+			return 0, nil // Children cannot displace the group header.
+		}
 		if err = s.repo.UpdatePosition(curr.ID, neighbor.Group, neighbor.PositionInGroup); err != nil {
 			return 0, err
 		}

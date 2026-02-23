@@ -209,8 +209,7 @@ type AttributeReorderEvent struct {
 	BaseEvent
 	AttributeID int64
 	CharacterID int64
-	Direction   int  // -1 up, +1 down
-	GroupMove   bool // true = move entire group
+	Direction   int // -1 up, +1 down
 }
 
 // ====== TAG SPECIFIC EVENTS ======

@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"fmt"
 	"soloterm/domain/character"
 	testHelper "soloterm/shared/testing"
 	"testing"
@@ -41,9 +40,10 @@ func createCharacter(t *testing.T, app *App, name string) *character.Character {
 	return char
 }
 
-// createAttr opens the new-attribute modal with Ctrl+N, fills in the fields,
-// saves with Ctrl+S on the form, and returns the created attribute from the DB.
-func createAttr(t *testing.T, app *App, charID int64, group, pos int, name string) *character.Attribute {
+// createAttr opens the new-attribute modal with Ctrl+N, fills in name and value,
+// selects the group via the dropdown (0 = "- New -", 1+ = existing group by index),
+// saves with Ctrl+S, and returns the created attribute from the DB.
+func createAttr(t *testing.T, app *App, charID int64, name string, groupDropdownIdx int) *character.Attribute {
 	t.Helper()
 
 	testHelper.SimulateKey(app.attributeView.Table, app.Application, tcell.KeyCtrlN)
@@ -51,21 +51,19 @@ func createAttr(t *testing.T, app *App, charID int64, group, pos int, name strin
 
 	app.attributeView.Form.nameField.SetText(name)
 	app.attributeView.Form.valueField.SetText("val")
-	app.attributeView.Form.groupField.SetText(fmt.Sprintf("%d", group))
-	app.attributeView.Form.positionField.SetText(fmt.Sprintf("%d", pos))
+	app.attributeView.Form.groupDropDown.SetCurrentOption(groupDropdownIdx)
 
 	testHelper.SimulateKey(app.attributeView.Form, app.Application, tcell.KeyCtrlS)
 	require.False(t, app.isPageVisible(ATTRIBUTE_MODAL_ID), "Expected attribute modal to close after save")
 
-	// Locate the saved attribute in the DB by its name, group, and position.
 	attrs, err := app.attributeView.attrService.GetForCharacter(charID)
 	require.NoError(t, err)
 	for _, a := range attrs {
-		if a.Name == name && a.Group == group && a.PositionInGroup == pos {
+		if a.Name == name {
 			return a
 		}
 	}
-	t.Fatalf("createAttr: could not find saved attribute %q (group=%d pos=%d)", name, group, pos)
+	t.Fatalf("createAttr: could not find saved attribute %q", name)
 	return nil
 }
 
@@ -77,119 +75,104 @@ func reloadAttrs(t *testing.T, app *App, charID int64) []*character.Attribute {
 	return attrs
 }
 
-// --- Ctrl+D: individual move down ---
+// --- Ctrl+D on a child: move down within group ---
 
-func TestAttributeView_CtrlDown_SwapsAdjacentItems(t *testing.T) {
+func TestAttributeView_CtrlDown_ChildSwapsWithNextItem(t *testing.T) {
 	app := setupTestApp(t)
 	char := createCharacter(t, app, "Hero")
 
-	a := createAttr(t, app, char.ID, 0, 0, "Alpha")
-	b := createAttr(t, app, char.ID, 0, 1, "Beta")
-
-	app.attributeView.Select(a.ID)
-	testHelper.SimulateKey(app.attributeView.Table, app.Application, tcell.KeyCtrlD)
-
-	attrs := reloadAttrs(t, app, char.ID)
-	require.Len(t, attrs, 2)
-	assert.Equal(t, b.ID, attrs[0].ID, "Beta should be first after Ctrl+D on Alpha")
-	assert.Equal(t, a.ID, attrs[1].ID, "Alpha should be second after Ctrl+D")
-}
-
-func TestAttributeView_CtrlDown_AtBottom_IsNoop(t *testing.T) {
-	app := setupTestApp(t)
-	char := createCharacter(t, app, "Hero")
-
-	createAttr(t, app, char.ID, 0, 0, "Alpha")
-	b := createAttr(t, app, char.ID, 0, 1, "Beta")
+	createAttr(t, app, char.ID, "Alpha", 0) // header, pos 0
+	b := createAttr(t, app, char.ID, "Beta", 1)  // child, pos 1
+	c := createAttr(t, app, char.ID, "Gamma", 1) // child, pos 2
 
 	app.attributeView.Select(b.ID)
 	testHelper.SimulateKey(app.attributeView.Table, app.Application, tcell.KeyCtrlD)
 
 	attrs := reloadAttrs(t, app, char.ID)
-	require.Len(t, attrs, 2)
-	assert.Equal(t, b.ID, attrs[1].ID, "Beta should remain last after no-op")
+	require.Len(t, attrs, 3)
+	assert.Equal(t, c.ID, attrs[1].ID, "Gamma should be second after Ctrl+D on Beta")
+	assert.Equal(t, b.ID, attrs[2].ID, "Beta should be third after Ctrl+D")
 }
 
-// --- Ctrl+U: individual move up ---
-
-func TestAttributeView_CtrlUp_SwapsAdjacentItems(t *testing.T) {
+func TestAttributeView_CtrlDown_ChildAtGroupBoundary_IsNoop(t *testing.T) {
 	app := setupTestApp(t)
 	char := createCharacter(t, app, "Hero")
 
-	a := createAttr(t, app, char.ID, 0, 0, "Alpha")
-	b := createAttr(t, app, char.ID, 0, 1, "Beta")
+	createAttr(t, app, char.ID, "Alpha", 0)
+	b := createAttr(t, app, char.ID, "Beta", 1)  // child, last in group 0
+	createAttr(t, app, char.ID, "Gamma", 0)       // standalone in group 1
+
+	app.attributeView.Select(b.ID)
+	testHelper.SimulateKey(app.attributeView.Table, app.Application, tcell.KeyCtrlD)
+
+	attrs := reloadAttrs(t, app, char.ID)
+	require.Len(t, attrs, 3)
+	assert.Equal(t, b.ID, attrs[1].ID, "Beta should remain at position 1 — children cannot cross group boundaries")
+}
+
+// --- Ctrl+U on a child: move up within group ---
+
+func TestAttributeView_CtrlUp_ChildSwapsWithSiblingAbove(t *testing.T) {
+	app := setupTestApp(t)
+	char := createCharacter(t, app, "Hero")
+
+	createAttr(t, app, char.ID, "Alpha", 0) // header, pos 0 — stays put
+	b := createAttr(t, app, char.ID, "Beta", 1)  // child, pos 1
+	c := createAttr(t, app, char.ID, "Gamma", 1) // child, pos 2
+
+	app.attributeView.Select(c.ID)
+	testHelper.SimulateKey(app.attributeView.Table, app.Application, tcell.KeyCtrlU)
+
+	attrs := reloadAttrs(t, app, char.ID)
+	require.Len(t, attrs, 3)
+	assert.Equal(t, c.ID, attrs[1].ID, "Gamma should be at pos 1 after Ctrl+U")
+	assert.Equal(t, b.ID, attrs[2].ID, "Beta should be at pos 2 after Ctrl+U on Gamma")
+}
+
+func TestAttributeView_CtrlUp_ChildAtHeaderBoundary_IsNoop(t *testing.T) {
+	app := setupTestApp(t)
+	char := createCharacter(t, app, "Hero")
+
+	a := createAttr(t, app, char.ID, "Alpha", 0) // header
+	b := createAttr(t, app, char.ID, "Beta", 1)  // child directly below header
 
 	app.attributeView.Select(b.ID)
 	testHelper.SimulateKey(app.attributeView.Table, app.Application, tcell.KeyCtrlU)
 
 	attrs := reloadAttrs(t, app, char.ID)
 	require.Len(t, attrs, 2)
-	assert.Equal(t, b.ID, attrs[0].ID, "Beta should be first after Ctrl+U")
-	assert.Equal(t, a.ID, attrs[1].ID, "Alpha should be second after Ctrl+U on Beta")
+	assert.Equal(t, a.ID, attrs[0].ID, "Alpha should remain the header")
+	assert.Equal(t, b.ID, attrs[1].ID, "Beta should remain the child")
 }
 
-func TestAttributeView_CtrlUp_AtTop_IsNoop(t *testing.T) {
+// --- Ctrl+D/U on a header or standalone: move entire group ---
+
+func TestAttributeView_CtrlDown_StandaloneMovesGroup(t *testing.T) {
 	app := setupTestApp(t)
 	char := createCharacter(t, app, "Hero")
 
-	a := createAttr(t, app, char.ID, 0, 0, "Alpha")
-	createAttr(t, app, char.ID, 0, 1, "Beta")
-
-	app.attributeView.Select(a.ID)
-	testHelper.SimulateKey(app.attributeView.Table, app.Application, tcell.KeyCtrlU)
-
-	attrs := reloadAttrs(t, app, char.ID)
-	require.Len(t, attrs, 2)
-	assert.Equal(t, a.ID, attrs[0].ID, "Alpha should remain first after no-op")
-}
-
-// --- Ctrl+D crossing a group boundary ---
-
-func TestAttributeView_CtrlDown_CrossGroupBoundary(t *testing.T) {
-	app := setupTestApp(t)
-	char := createCharacter(t, app, "Hero")
-
-	a := createAttr(t, app, char.ID, 0, 0, "Alpha")
-	b := createAttr(t, app, char.ID, 1, 0, "Beta")
+	a := createAttr(t, app, char.ID, "Alpha", 0) // standalone group 0
+	b := createAttr(t, app, char.ID, "Beta", 0)  // standalone group 1
 
 	app.attributeView.Select(a.ID)
 	testHelper.SimulateKey(app.attributeView.Table, app.Application, tcell.KeyCtrlD)
 
 	attrs := reloadAttrs(t, app, char.ID)
 	require.Len(t, attrs, 2)
-	assert.Equal(t, b.ID, attrs[0].ID, "Beta should be first (group 0) after boundary cross")
-	assert.Equal(t, a.ID, attrs[1].ID, "Alpha should be second (group 1) after boundary cross")
+	assert.Equal(t, b.ID, attrs[0].ID, "Beta should be first after Ctrl+D on standalone Alpha")
+	assert.Equal(t, a.ID, attrs[1].ID, "Alpha should be second")
 }
 
-// --- D (Shift+D): group move down ---
-
-func TestAttributeView_GroupDown_SwapsGroups(t *testing.T) {
+func TestAttributeView_CtrlDown_HeaderMovesEntireGroup(t *testing.T) {
 	app := setupTestApp(t)
 	char := createCharacter(t, app, "Hero")
 
-	a := createAttr(t, app, char.ID, 0, 0, "Stats")
-	b := createAttr(t, app, char.ID, 1, 0, "Skills")
+	header := createAttr(t, app, char.ID, "Stats", 0)  // group 0, pos 0
+	child := createAttr(t, app, char.ID, "HP", 1)      // group 0, pos 1
+	other := createAttr(t, app, char.ID, "Skills", 0)  // group 1
 
-	app.attributeView.Select(a.ID)
-	testHelper.SimulateRune(app.attributeView.Table, app.Application, 'D')
-
-	attrs := reloadAttrs(t, app, char.ID)
-	require.Len(t, attrs, 2)
-	assert.Equal(t, b.ID, attrs[0].ID, "Skills should be first after D on Stats group")
-	assert.Equal(t, a.ID, attrs[1].ID, "Stats should be second after D")
-}
-
-func TestAttributeView_GroupDown_MovesEntireGroup(t *testing.T) {
-	app := setupTestApp(t)
-	char := createCharacter(t, app, "Hero")
-
-	header := createAttr(t, app, char.ID, 0, 0, "Stats")
-	child := createAttr(t, app, char.ID, 0, 1, "HP")
-	other := createAttr(t, app, char.ID, 1, 0, "Skills")
-
-	// Select the child (not the header) to verify group move works from any item.
-	app.attributeView.Select(child.ID)
-	testHelper.SimulateRune(app.attributeView.Table, app.Application, 'D')
+	app.attributeView.Select(header.ID)
+	testHelper.SimulateKey(app.attributeView.Table, app.Application, tcell.KeyCtrlD)
 
 	attrs := reloadAttrs(t, app, char.ID)
 	require.Len(t, attrs, 3)
@@ -198,48 +181,46 @@ func TestAttributeView_GroupDown_MovesEntireGroup(t *testing.T) {
 	assert.Equal(t, child.ID, attrs[2].ID, "HP child should be third")
 }
 
-func TestAttributeView_GroupDown_AtBottom_IsNoop(t *testing.T) {
+func TestAttributeView_CtrlDown_HeaderAtBottom_IsNoop(t *testing.T) {
 	app := setupTestApp(t)
 	char := createCharacter(t, app, "Hero")
 
-	createAttr(t, app, char.ID, 0, 0, "Stats")
-	b := createAttr(t, app, char.ID, 1, 0, "Skills")
+	createAttr(t, app, char.ID, "Stats", 0)
+	b := createAttr(t, app, char.ID, "Skills", 0)
 
 	app.attributeView.Select(b.ID)
-	testHelper.SimulateRune(app.attributeView.Table, app.Application, 'D')
+	testHelper.SimulateKey(app.attributeView.Table, app.Application, tcell.KeyCtrlD)
 
 	attrs := reloadAttrs(t, app, char.ID)
 	require.Len(t, attrs, 2)
 	assert.Equal(t, b.ID, attrs[1].ID, "Skills should remain last after no-op")
 }
 
-// --- U (Shift+U): group move up ---
-
-func TestAttributeView_GroupUp_SwapsGroups(t *testing.T) {
+func TestAttributeView_CtrlUp_StandaloneMovesGroup(t *testing.T) {
 	app := setupTestApp(t)
 	char := createCharacter(t, app, "Hero")
 
-	a := createAttr(t, app, char.ID, 0, 0, "Stats")
-	b := createAttr(t, app, char.ID, 1, 0, "Skills")
+	a := createAttr(t, app, char.ID, "Stats", 0)
+	b := createAttr(t, app, char.ID, "Skills", 0)
 
 	app.attributeView.Select(b.ID)
-	testHelper.SimulateRune(app.attributeView.Table, app.Application, 'U')
+	testHelper.SimulateKey(app.attributeView.Table, app.Application, tcell.KeyCtrlU)
 
 	attrs := reloadAttrs(t, app, char.ID)
 	require.Len(t, attrs, 2)
-	assert.Equal(t, b.ID, attrs[0].ID, "Skills should be first after U")
-	assert.Equal(t, a.ID, attrs[1].ID, "Stats should be second after U on Skills")
+	assert.Equal(t, b.ID, attrs[0].ID, "Skills should be first after Ctrl+U")
+	assert.Equal(t, a.ID, attrs[1].ID, "Stats should be second")
 }
 
-func TestAttributeView_GroupUp_AtTop_IsNoop(t *testing.T) {
+func TestAttributeView_CtrlUp_HeaderAtTop_IsNoop(t *testing.T) {
 	app := setupTestApp(t)
 	char := createCharacter(t, app, "Hero")
 
-	a := createAttr(t, app, char.ID, 0, 0, "Stats")
-	createAttr(t, app, char.ID, 1, 0, "Skills")
+	a := createAttr(t, app, char.ID, "Stats", 0)
+	createAttr(t, app, char.ID, "Skills", 0)
 
 	app.attributeView.Select(a.ID)
-	testHelper.SimulateRune(app.attributeView.Table, app.Application, 'U')
+	testHelper.SimulateKey(app.attributeView.Table, app.Application, tcell.KeyCtrlU)
 
 	attrs := reloadAttrs(t, app, char.ID)
 	require.Len(t, attrs, 2)
@@ -252,8 +233,8 @@ func TestAttributeView_ReorderRestoresFocus(t *testing.T) {
 	app := setupTestApp(t)
 	char := createCharacter(t, app, "Hero")
 
-	a := createAttr(t, app, char.ID, 0, 0, "Alpha")
-	createAttr(t, app, char.ID, 0, 1, "Beta")
+	a := createAttr(t, app, char.ID, "Alpha", 0) // standalone group 0
+	createAttr(t, app, char.ID, "Beta", 0)        // standalone group 1
 
 	app.attributeView.Select(a.ID)
 	testHelper.SimulateKey(app.attributeView.Table, app.Application, tcell.KeyCtrlD)
@@ -267,4 +248,120 @@ func TestAttributeView_NoCharacterSelected_ReorderIsIgnored(t *testing.T) {
 	app := setupTestApp(t)
 	// No character selected; the input capture shows a warning and swallows the event.
 	testHelper.SimulateKey(app.attributeView.Table, app.Application, tcell.KeyDown)
+}
+
+// --- Group dropdown: new group assignment ---
+
+func TestAttributeView_NewAttr_NewGroup_AssignsCorrectGroupAndPosition(t *testing.T) {
+	app := setupTestApp(t)
+	char := createCharacter(t, app, "Hero")
+
+	// First "- New -" → group 0, position 0
+	alpha := createAttr(t, app, char.ID, "Alpha", 0)
+	assert.Equal(t, 0, alpha.Group, "First new group should be group 0")
+	assert.Equal(t, 0, alpha.PositionInGroup, "First item in new group should be position 0")
+
+	// Second "- New -" → group 1, position 0
+	beta := createAttr(t, app, char.ID, "Beta", 0)
+	assert.Equal(t, 1, beta.Group, "Second new group should be group 1")
+	assert.Equal(t, 0, beta.PositionInGroup, "First item in second new group should be position 0")
+}
+
+// --- Group dropdown: append to existing group ---
+
+func TestAttributeView_NewAttr_ExistingGroup_AppendsToEnd(t *testing.T) {
+	app := setupTestApp(t)
+	char := createCharacter(t, app, "Hero")
+
+	alpha := createAttr(t, app, char.ID, "Alpha", 0) // group 0, pos 0
+	beta := createAttr(t, app, char.ID, "Beta", 1)   // append to group 0 → pos 1
+	gamma := createAttr(t, app, char.ID, "Gamma", 1) // append again → pos 2
+
+	assert.Equal(t, alpha.Group, beta.Group, "Beta should be in the same group as Alpha")
+	assert.Equal(t, 1, beta.PositionInGroup, "Beta should be at position 1")
+	assert.Equal(t, alpha.Group, gamma.Group, "Gamma should be in the same group as Alpha")
+	assert.Equal(t, 2, gamma.PositionInGroup, "Gamma should be at position 2")
+}
+
+// --- Group dropdown: correct headers are shown ---
+
+func TestAttributeView_NewAttr_DropdownShowsGroupHeaders(t *testing.T) {
+	app := setupTestApp(t)
+	char := createCharacter(t, app, "Hero")
+
+	createAttr(t, app, char.ID, "Stats", 0)  // group 0
+	createAttr(t, app, char.ID, "Skills", 0) // group 1
+
+	// Open the new entry modal — handler fetches attrs and rebuilds groupHeaders.
+	testHelper.SimulateKey(app.attributeView.Table, app.Application, tcell.KeyCtrlN)
+	require.True(t, app.isPageVisible(ATTRIBUTE_MODAL_ID))
+
+	headers := app.attributeView.Form.groupHeaders
+	require.Len(t, headers, 2, "Dropdown should list 2 existing groups")
+	assert.Equal(t, "Stats", headers[0].Name, "First group header should be Stats")
+	assert.Equal(t, "Skills", headers[1].Name, "Second group header should be Skills")
+
+	testHelper.SimulateKey(app.attributeView.Form, app.Application, tcell.KeyEscape)
+}
+
+// --- Edit mode: group and position are preserved ---
+
+func TestAttributeView_EditAttr_PreservesGroupAndPosition(t *testing.T) {
+	app := setupTestApp(t)
+	char := createCharacter(t, app, "Hero")
+
+	createAttr(t, app, char.ID, "Alpha", 0)        // group 0, pos 0
+	beta := createAttr(t, app, char.ID, "Beta", 1) // group 0, pos 1
+
+	app.attributeView.Select(beta.ID)
+	testHelper.SimulateKey(app.attributeView.Table, app.Application, tcell.KeyCtrlE)
+	require.True(t, app.isPageVisible(ATTRIBUTE_MODAL_ID))
+
+	// Only change the name; leave the group dropdown on its pre-selected value.
+	app.attributeView.Form.nameField.SetText("Beta Updated")
+	testHelper.SimulateKey(app.attributeView.Form, app.Application, tcell.KeyCtrlS)
+	require.False(t, app.isPageVisible(ATTRIBUTE_MODAL_ID))
+
+	attrs := reloadAttrs(t, app, char.ID)
+	var updated *character.Attribute
+	for _, a := range attrs {
+		if a.ID == beta.ID {
+			updated = a
+			break
+		}
+	}
+	require.NotNil(t, updated)
+	assert.Equal(t, "Beta Updated", updated.Name)
+	assert.Equal(t, beta.Group, updated.Group, "Group should be preserved after edit")
+	assert.Equal(t, beta.PositionInGroup, updated.PositionInGroup, "Position should be preserved after edit")
+}
+
+func TestAttributeView_EditAttr_ChangingGroupAppendsToNewGroup(t *testing.T) {
+	app := setupTestApp(t)
+	char := createCharacter(t, app, "Hero")
+
+	createAttr(t, app, char.ID, "Alpha", 0) // group 0, pos 0
+	beta := createAttr(t, app, char.ID, "Beta", 0)  // group 1, pos 0
+	gamma := createAttr(t, app, char.ID, "Gamma", 1) // group 0, pos 1 (appended to Alpha's group)
+
+	// Edit Gamma and move it to Beta's group (dropdown index 2).
+	app.attributeView.Select(gamma.ID)
+	testHelper.SimulateKey(app.attributeView.Table, app.Application, tcell.KeyCtrlE)
+	require.True(t, app.isPageVisible(ATTRIBUTE_MODAL_ID))
+
+	app.attributeView.Form.groupDropDown.SetCurrentOption(2) // dropdown: 0="-New-", 1="Alpha", 2="Beta"
+	testHelper.SimulateKey(app.attributeView.Form, app.Application, tcell.KeyCtrlS)
+	require.False(t, app.isPageVisible(ATTRIBUTE_MODAL_ID))
+
+	attrs := reloadAttrs(t, app, char.ID)
+	var gammaAfter *character.Attribute
+	for _, a := range attrs {
+		if a.ID == gamma.ID {
+			gammaAfter = a
+			break
+		}
+	}
+	require.NotNil(t, gammaAfter)
+	assert.Equal(t, beta.Group, gammaAfter.Group, "Gamma should now be in Beta's group")
+	assert.Equal(t, 1, gammaAfter.PositionInGroup, "Gamma should be appended after Beta (pos 1)")
 }

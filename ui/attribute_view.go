@@ -72,48 +72,27 @@ func (av *AttributeView) setupTable() {
 				av.ShowEditModal(attr)
 			}
 			return nil
-		// Ctrl+U — individual move up
+		// Ctrl+U: move up. Ctrl+D: move down.
+		// Headers/standalones (position 0) move their entire group.
+		// Children (position > 0) move within their group only.
 		case tcell.KeyCtrlU:
 			attr := av.GetSelected()
 			if attr != nil {
 				av.app.HandleEvent(&AttributeReorderEvent{
 					BaseEvent:   BaseEvent{action: ATTRIBUTE_REORDER},
-					AttributeID: attr.ID, CharacterID: attr.CharacterID, Direction: -1, GroupMove: false,
+					AttributeID: attr.ID, CharacterID: attr.CharacterID, Direction: -1,
 				})
 			}
 			return nil
-		// Ctrl+D — individual move down
 		case tcell.KeyCtrlD:
 			attr := av.GetSelected()
 			if attr != nil {
 				av.app.HandleEvent(&AttributeReorderEvent{
 					BaseEvent:   BaseEvent{action: ATTRIBUTE_REORDER},
-					AttributeID: attr.ID, CharacterID: attr.CharacterID, Direction: 1, GroupMove: false,
+					AttributeID: attr.ID, CharacterID: attr.CharacterID, Direction: 1,
 				})
 			}
 			return nil
-		// U (Shift+U) — group move up; D (Shift+D) — group move down
-		case tcell.KeyRune:
-			switch event.Rune() {
-			case 'U':
-				attr := av.GetSelected()
-				if attr != nil {
-					av.app.HandleEvent(&AttributeReorderEvent{
-						BaseEvent:   BaseEvent{action: ATTRIBUTE_REORDER},
-						AttributeID: attr.ID, CharacterID: attr.CharacterID, Direction: -1, GroupMove: true,
-					})
-				}
-				return nil
-			case 'D':
-				attr := av.GetSelected()
-				if attr != nil {
-					av.app.HandleEvent(&AttributeReorderEvent{
-						BaseEvent:   BaseEvent{action: ATTRIBUTE_REORDER},
-						AttributeID: attr.ID, CharacterID: attr.CharacterID, Direction: 1, GroupMove: true,
-					})
-				}
-				return nil
-			}
 		}
 
 		return event
@@ -156,7 +135,7 @@ func (av *AttributeView) setupModal() {
 			tview.NewFlex().
 				SetDirection(tview.FlexRow).
 				AddItem(nil, 0, 1, false).
-				AddItem(av.ModalContent, 16, 1, true). // Increased height for help text
+				AddItem(av.ModalContent, 14, 1, true). // Increased height for help text
 				AddItem(nil, 0, 1, false),
 			60, 1, true, // Fixed width
 		).
@@ -373,12 +352,11 @@ It's recommended to only track the bare essentials like health, or key pieces of
 
 [yellow]Name[white]: Name of the entry (HP, XP, Level). May be the name of a section header (Skills, Gear, Stats)
 [yellow]Value[white]: Value to assign to the entry (10/10, 2, +2). It may be blank.
-[yellow]Group[white]: Organizes related entries together. Entries with the same group number will be displayed in the same section.
-[yellow]Position[white]: Controls the order within a group. Position 0 is shown first and will be styled if there are other entries in the same group.
+[yellow]Section[white]: Pick "- New -" to create a new section or pick an existing section to add the entry too.
 
 [green]Moving entries[white]
-[yellow]Ctrl-U/D:[white] Move an individual entry up/down 1 position
-[yellow]Shift-U/D:[white] Move an entire group up/down 1 position
+[yellow]Ctrl-U/D:[white] Sections/standalones move their entire section. Children move within their section only.
+[yellow]To move an entry to a different section:[white] edit the entry (Ctrl-E) and pick a new section.
 `),
 	})
 }
