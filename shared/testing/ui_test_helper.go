@@ -7,8 +7,13 @@ import (
 
 // SimulateKey simulates a key press on a tview primitive.
 // The event is sent directly to the primitive's input handler.
-func SimulateKey(p tview.Primitive, app *tview.Application, key tcell.Key) {
-	event := tcell.NewEventKey(key, 0, tcell.ModNone)
+// An optional modifier mask (e.g. tcell.ModShift, tcell.ModCtrl) may be supplied.
+func SimulateKey(p tview.Primitive, app *tview.Application, key tcell.Key, mod ...tcell.ModMask) {
+	modifier := tcell.ModNone
+	if len(mod) > 0 {
+		modifier = mod[0]
+	}
+	event := tcell.NewEventKey(key, 0, modifier)
 
 	if handler := p.InputHandler(); handler != nil {
 		handler(event, func(p tview.Primitive) { app.SetFocus(p) })
@@ -16,8 +21,13 @@ func SimulateKey(p tview.Primitive, app *tview.Application, key tcell.Key) {
 }
 
 // SimulateRune simulates pressing a character key (e.g., 'n', 'j', 'k')
-func SimulateRune(p tview.Primitive, app *tview.Application, ch rune) {
-	event := tcell.NewEventKey(tcell.KeyRune, ch, tcell.ModNone)
+func SimulateRune(p tview.Primitive, app *tview.Application, ch rune, mod ...tcell.ModMask) {
+	modifier := tcell.ModNone
+	if len(mod) > 0 {
+		modifier = mod[0]
+	}
+	event := tcell.NewEventKey(tcell.KeyRune, ch, modifier)
+
 	if handler := p.InputHandler(); handler != nil {
 		handler(event, func(p tview.Primitive) { app.SetFocus(p) })
 	}

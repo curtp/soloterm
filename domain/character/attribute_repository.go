@@ -91,6 +91,26 @@ func (r *AttributeRepository) GetForCharacter(character_id int64) ([]*Attribute,
 	return attributes, nil
 }
 
+// Swaps two groups position
+func (r *AttributeRepository) SwapGroups(characterID int64, groupA, groupB int) error {
+	query := `UPDATE attributes
+              SET attribute_group = CASE
+                  WHEN attribute_group = ? THEN ?
+                  WHEN attribute_group = ? THEN ?
+              END,
+              updated_at = datetime('now','subsec')
+              WHERE attribute_group IN (?, ?) AND character_id = ?`
+	_, err := r.db.Connection.Exec(query, groupA, groupB, groupB, groupA, groupA, groupB, characterID)
+	return err
+}
+
+// Moves an attribute to a new position
+func (r *AttributeRepository) UpdatePosition(id int64, group, position int) error {
+	query := `UPDATE attributes SET attribute_group = ?, position_in_group = ?, updated_at = datetime('now','subsec') WHERE id = ?`
+	_, err := r.db.Connection.Exec(query, group, position, id)
+	return err
+}
+
 // insert inserts a new attribute record
 func (r *AttributeRepository) insert(attribute *Attribute) error {
 	query := `

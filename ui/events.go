@@ -38,6 +38,7 @@ const (
 	ATTRIBUTE_CANCEL            UserAction = "attribute_cancel"
 	ATTRIBUTE_SHOW_NEW          UserAction = "attribute_show_new"
 	ATTRIBUTE_SHOW_EDIT         UserAction = "attribute_show_edit"
+	ATTRIBUTE_REORDER           UserAction = "attribute_reorder"
 	TAG_SELECTED                UserAction = "tag_selected"
 	TAG_CANCEL                  UserAction = "tag_cancel"
 	TAG_SHOW                    UserAction = "tag_show"
@@ -202,6 +203,14 @@ type AttributeShowNewEvent struct {
 type AttributeShowEditEvent struct {
 	BaseEvent
 	Attribute *character.Attribute
+}
+
+type AttributeReorderEvent struct {
+	BaseEvent
+	AttributeID int64
+	CharacterID int64
+	Direction   int  // -1 up, +1 down
+	GroupMove   bool // true = move entire group
 }
 
 // ====== TAG SPECIFIC EVENTS ======

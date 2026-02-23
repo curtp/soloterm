@@ -12,12 +12,12 @@ import (
 
 // AttributeView provides attribute UI operations
 type AttributeView struct {
-	app         *App
-	attrService *character.AttributeService
-	attrOrder   []int64
-	Table       *tview.Table
-	Form        *AttributeForm
-	Modal       *tview.Flex
+	app          *App
+	attrService  *character.AttributeService
+	attrOrder    []int64
+	Table        *tview.Table
+	Form         *AttributeForm
+	Modal        *tview.Flex
 	ModalContent *tview.Flex
 }
 
@@ -60,19 +60,60 @@ func (av *AttributeView) setupTable() {
 			return nil
 		}
 
-		// Handle Ctrl+N or Insert key to add new attribute
-		if event.Key() == tcell.KeyCtrlN {
+		switch event.Key() {
+		// Handle Ctrl+N to add a new attribute
+		case tcell.KeyCtrlN:
 			av.ShowNewModal()
 			return nil
-		}
-
 		// Handle Ctrl+E to edit selected attribute
-		if event.Key() == tcell.KeyCtrlE {
+		case tcell.KeyCtrlE:
 			attr := av.GetSelected()
 			if attr != nil {
 				av.ShowEditModal(attr)
 			}
 			return nil
+		// Ctrl+U — individual move up
+		case tcell.KeyCtrlU:
+			attr := av.GetSelected()
+			if attr != nil {
+				av.app.HandleEvent(&AttributeReorderEvent{
+					BaseEvent:   BaseEvent{action: ATTRIBUTE_REORDER},
+					AttributeID: attr.ID, CharacterID: attr.CharacterID, Direction: -1, GroupMove: false,
+				})
+			}
+			return nil
+		// Ctrl+D — individual move down
+		case tcell.KeyCtrlD:
+			attr := av.GetSelected()
+			if attr != nil {
+				av.app.HandleEvent(&AttributeReorderEvent{
+					BaseEvent:   BaseEvent{action: ATTRIBUTE_REORDER},
+					AttributeID: attr.ID, CharacterID: attr.CharacterID, Direction: 1, GroupMove: false,
+				})
+			}
+			return nil
+		// U (Shift+U) — group move up; D (Shift+D) — group move down
+		case tcell.KeyRune:
+			switch event.Rune() {
+			case 'U':
+				attr := av.GetSelected()
+				if attr != nil {
+					av.app.HandleEvent(&AttributeReorderEvent{
+						BaseEvent:   BaseEvent{action: ATTRIBUTE_REORDER},
+						AttributeID: attr.ID, CharacterID: attr.CharacterID, Direction: -1, GroupMove: true,
+					})
+				}
+				return nil
+			case 'D':
+				attr := av.GetSelected()
+				if attr != nil {
+					av.app.HandleEvent(&AttributeReorderEvent{
+						BaseEvent:   BaseEvent{action: ATTRIBUTE_REORDER},
+						AttributeID: attr.ID, CharacterID: attr.CharacterID, Direction: 1, GroupMove: true,
+					})
+				}
+				return nil
+			}
 		}
 
 		return event
@@ -334,6 +375,10 @@ It's recommended to only track the bare essentials like health, or key pieces of
 [yellow]Value[white]: Value to assign to the entry (10/10, 2, +2). It may be blank.
 [yellow]Group[white]: Organizes related entries together. Entries with the same group number will be displayed in the same section.
 [yellow]Position[white]: Controls the order within a group. Position 0 is shown first and will be styled if there are other entries in the same group.
+
+[green]Moving entries[white]
+[yellow]Ctrl-U/D:[white] Move an individual entry up/down 1 position
+[yellow]Shift-U/D:[white] Move an entire group up/down 1 position
 `),
 	})
 }

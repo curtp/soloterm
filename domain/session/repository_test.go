@@ -6,6 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	// Blank import to register the games table migration (GetByID / GetAllForGame JOIN games)
+	_ "soloterm/domain/game"
 	testhelper "soloterm/shared/testing"
 )
 
@@ -74,8 +76,12 @@ func TestRepository_Get(t *testing.T) {
 
 	repo := NewRepository(db)
 
+	// Create the games that sessions will reference via JOIN
+	gameID1 := testhelper.CreateTestGame(t, db, "Game 1")
+	gameID2 := testhelper.CreateTestGame(t, db, "Game 2")
+
 	// Create multiple sessions to interact with
-	session1, _ := NewSession(1)
+	session1, _ := NewSession(gameID1)
 	session1.Name = "a name"
 	session1.Content = "session content"
 
@@ -86,7 +92,7 @@ func TestRepository_Get(t *testing.T) {
 
 	session1ID := session1.ID
 
-	session2, _ := NewSession(1)
+	session2, _ := NewSession(gameID1)
 	session2.Name = "another name"
 	session2.Content = "session content"
 
@@ -95,7 +101,7 @@ func TestRepository_Get(t *testing.T) {
 		t.Fatalf("Save() insert failed: %v", err)
 	}
 
-	session3, _ := NewSession(2)
+	session3, _ := NewSession(gameID2)
 	session3.Name = "a name"
 	session3.Content = "session content"
 
@@ -128,7 +134,7 @@ func TestRepository_Get(t *testing.T) {
 
 	t.Run("get all for game", func(t *testing.T) {
 		// Test: Get all sessions for a specific session
-		sessions, err := repo.GetAllForGame(1)
+		sessions, err := repo.GetAllForGame(gameID1)
 		if err != nil {
 			t.Fatalf("GetByID() failed: %v", err)
 		}

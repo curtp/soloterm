@@ -23,6 +23,10 @@ func NewHelpModal(app *App) *HelpModal {
 
 	hm.textView.SetFocusFunc(func() {
 		hm.textView.ScrollToBeginning()
+		hm.frame.SetBorderColor(Style.BorderFocusColor)
+	})
+	hm.textView.SetBlurFunc(func() {
+		hm.frame.SetBorderColor(Style.BorderColor)
 	})
 
 	hm.frame = tview.NewFrame(hm.textView).

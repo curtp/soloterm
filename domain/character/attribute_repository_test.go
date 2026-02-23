@@ -160,6 +160,147 @@ func TestAttributeRepository_GetByID(t *testing.T) {
 	})
 }
 
+func TestAttributeRepository_UpdatePosition(t *testing.T) {
+	db := testhelper.SetupTestDB(t)
+	defer testhelper.TeardownTestDB(t, db)
+
+	repo := NewRepository(db)
+	attrRepo := NewAttributeRepository(db)
+
+	character, _ := NewCharacter("Test Character", "FlexD6", "Fighter", "Human")
+	repo.Save(character)
+
+	t.Run("updates group and position", func(t *testing.T) {
+		attr, _ := NewAttribute(character.ID, 0, 0, "Strength", "10")
+		attrRepo.Save(attr)
+
+		err := attrRepo.UpdatePosition(attr.ID, 2, 3)
+		if err != nil {
+			t.Fatalf("UpdatePosition() failed: %v", err)
+		}
+
+		retrieved, err := attrRepo.GetByID(attr.ID)
+		if err != nil {
+			t.Fatalf("GetByID() failed: %v", err)
+		}
+		if retrieved.Group != 2 {
+			t.Errorf("Expected Group=2, got %d", retrieved.Group)
+		}
+		if retrieved.PositionInGroup != 3 {
+			t.Errorf("Expected PositionInGroup=3, got %d", retrieved.PositionInGroup)
+		}
+	})
+
+	t.Run("no error for non-existent id", func(t *testing.T) {
+		err := attrRepo.UpdatePosition(999999, 0, 0)
+		if err != nil {
+			t.Errorf("UpdatePosition() expected no error for non-existent id, got: %v", err)
+		}
+	})
+}
+
+func TestAttributeRepository_SwapGroups(t *testing.T) {
+	db := testhelper.SetupTestDB(t)
+	defer testhelper.TeardownTestDB(t, db)
+
+	repo := NewRepository(db)
+	attrRepo := NewAttributeRepository(db)
+
+	character, _ := NewCharacter("Test Character", "FlexD6", "Fighter", "Human")
+	repo.Save(character)
+
+	t.Run("swaps two single-item groups", func(t *testing.T) {
+		a, _ := NewAttribute(character.ID, 10, 0, "Alpha", "1")
+		attrRepo.Save(a)
+		b, _ := NewAttribute(character.ID, 20, 0, "Beta", "2")
+		attrRepo.Save(b)
+
+		err := attrRepo.SwapGroups(character.ID, 10, 20)
+		if err != nil {
+			t.Fatalf("SwapGroups() failed: %v", err)
+		}
+
+		aAfter, _ := attrRepo.GetByID(a.ID)
+		bAfter, _ := attrRepo.GetByID(b.ID)
+
+		if aAfter.Group != 20 {
+			t.Errorf("Alpha: expected Group=20, got %d", aAfter.Group)
+		}
+		if bAfter.Group != 10 {
+			t.Errorf("Beta: expected Group=10, got %d", bAfter.Group)
+		}
+	})
+
+	t.Run("swaps all items in multi-item groups", func(t *testing.T) {
+		header, _ := NewAttribute(character.ID, 30, 0, "Stats", "")
+		attrRepo.Save(header)
+		child1, _ := NewAttribute(character.ID, 30, 1, "HP", "10")
+		attrRepo.Save(child1)
+		child2, _ := NewAttribute(character.ID, 30, 2, "XP", "0")
+		attrRepo.Save(child2)
+
+		standalone, _ := NewAttribute(character.ID, 40, 0, "Gear", "")
+		attrRepo.Save(standalone)
+
+		err := attrRepo.SwapGroups(character.ID, 30, 40)
+		if err != nil {
+			t.Fatalf("SwapGroups() failed: %v", err)
+		}
+
+		for _, id := range []int64{header.ID, child1.ID, child2.ID} {
+			a, _ := attrRepo.GetByID(id)
+			if a.Group != 40 {
+				t.Errorf("id=%d: expected Group=40, got %d", id, a.Group)
+			}
+		}
+		gearAfter, _ := attrRepo.GetByID(standalone.ID)
+		if gearAfter.Group != 30 {
+			t.Errorf("Gear: expected Group=30, got %d", gearAfter.Group)
+		}
+	})
+
+	t.Run("does not affect other characters", func(t *testing.T) {
+		other, _ := NewCharacter("Other Character", "FlexD6", "Rogue", "Elf")
+		repo.Save(other)
+
+		bystander, _ := NewAttribute(other.ID, 50, 0, "Bystander", "x")
+		attrRepo.Save(bystander)
+		target, _ := NewAttribute(character.ID, 50, 0, "Target", "y")
+		attrRepo.Save(target)
+		target2, _ := NewAttribute(character.ID, 60, 0, "Target2", "z")
+		attrRepo.Save(target2)
+
+		err := attrRepo.SwapGroups(character.ID, 50, 60)
+		if err != nil {
+			t.Fatalf("SwapGroups() failed: %v", err)
+		}
+
+		bystanderAfter, _ := attrRepo.GetByID(bystander.ID)
+		if bystanderAfter.Group != 50 {
+			t.Errorf("Bystander on other character should not be affected: expected Group=50, got %d", bystanderAfter.Group)
+		}
+	})
+
+	t.Run("does not affect unrelated groups", func(t *testing.T) {
+		unrelated, _ := NewAttribute(character.ID, 70, 0, "Unrelated", "q")
+		attrRepo.Save(unrelated)
+		g80, _ := NewAttribute(character.ID, 80, 0, "G80", "r")
+		attrRepo.Save(g80)
+		g90, _ := NewAttribute(character.ID, 90, 0, "G90", "s")
+		attrRepo.Save(g90)
+
+		err := attrRepo.SwapGroups(character.ID, 80, 90)
+		if err != nil {
+			t.Fatalf("SwapGroups() failed: %v", err)
+		}
+
+		unrelatedAfter, _ := attrRepo.GetByID(unrelated.ID)
+		if unrelatedAfter.Group != 70 {
+			t.Errorf("Unrelated group should not be affected: expected Group=70, got %d", unrelatedAfter.Group)
+		}
+	})
+}
+
 func TestAttributeRepository_Delete(t *testing.T) {
 	// Setup
 	db := testhelper.SetupTestDB(t)

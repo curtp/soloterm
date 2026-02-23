@@ -357,6 +357,8 @@ func (a *App) HandleEvent(event Event) {
 		dispatch(event, a.handleAttributeShowNew)
 	case ATTRIBUTE_SHOW_EDIT:
 		dispatch(event, a.handleAttributeShowEdit)
+	case ATTRIBUTE_REORDER:
+		dispatch(event, a.handleAttributeReorder)
 	case TAG_SELECTED:
 		dispatch(event, a.handleTagSelected)
 	case TAG_CANCEL:

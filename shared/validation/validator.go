@@ -6,6 +6,7 @@ package validation
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -82,15 +83,21 @@ func (v *Validator) GetError(identifier string) []string {
 }
 
 // Error implements the error interface.
-// Aggregates all errors into a semicolon delimited string.
+// Aggregates all errors into a semicolon delimited string, sorted by identifier.
 func (v *Validator) Error() string {
 	if len(v.Errors) == 0 {
 		return ""
 	}
 
+	keys := make([]string, 0, len(v.Errors))
+	for identifier := range v.Errors {
+		keys = append(keys, identifier)
+	}
+	slices.Sort(keys)
+
 	var errMsgs []string
-	for identifier, messages := range v.Errors {
-		errMsgs = append(errMsgs, fmt.Sprintf("%s: %s", identifier, strings.Join(messages, ", ")))
+	for _, identifier := range keys {
+		errMsgs = append(errMsgs, fmt.Sprintf("%s: %s", identifier, strings.Join(v.Errors[identifier], ", ")))
 	}
 	return strings.Join(errMsgs, "; ")
 }

@@ -68,3 +68,16 @@ func (a *App) handleAttributeShowEdit(e *AttributeShowEditEvent) {
 	a.pages.ShowPage(ATTRIBUTE_MODAL_ID)
 	a.SetFocus(a.attributeView.Form)
 }
+
+func (a *App) handleAttributeReorder(e *AttributeReorderEvent) {
+	movedID, err := a.attributeView.attrService.Reorder(e.CharacterID, e.AttributeID, e.Direction, e.GroupMove)
+	if err != nil {
+		a.notification.ShowError("Failed to reorder: " + err.Error())
+		return
+	}
+	a.characterView.RefreshDisplay()
+	if movedID != 0 {
+		a.attributeView.Select(movedID)
+	}
+	a.SetFocus(a.attributeView.Table)
+}

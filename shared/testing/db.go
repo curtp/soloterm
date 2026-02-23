@@ -37,6 +37,22 @@ func SetupTestDB(t *testing.T) *database.DBStore {
 	return db
 }
 
+// CreateTestGame inserts a game row and returns its ID.
+// Requires the games table to exist (blank-import soloterm/domain/game in your test file).
+func CreateTestGame(t *testing.T, db *database.DBStore, name string) int64 {
+	t.Helper()
+	var id int64
+	err := db.Connection.QueryRow(
+		`INSERT INTO games (name, description, created_at, updated_at)
+		 VALUES (?, '', datetime('now'), datetime('now')) RETURNING id`,
+		name,
+	).Scan(&id)
+	if err != nil {
+		t.Fatalf("CreateTestGame: failed to create game %q: %v", name, err)
+	}
+	return id
+}
+
 // TeardownTestDB closes the database connection.
 // Use with defer: defer TeardownTestDB(t, db)
 func TeardownTestDB(t *testing.T, db *database.DBStore) {
