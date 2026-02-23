@@ -160,7 +160,7 @@ func TestAttributeRepository_GetByID(t *testing.T) {
 	})
 }
 
-func TestAttributeRepository_UpdatePosition(t *testing.T) {
+func TestAttributeRepository_SwapPositions(t *testing.T) {
 	db := testhelper.SetupTestDB(t)
 	defer testhelper.TeardownTestDB(t, db)
 
@@ -170,31 +170,44 @@ func TestAttributeRepository_UpdatePosition(t *testing.T) {
 	character, _ := NewCharacter("Test Character", "FlexD6", "Fighter", "Human")
 	repo.Save(character)
 
-	t.Run("updates group and position", func(t *testing.T) {
-		attr, _ := NewAttribute(character.ID, 0, 0, "Strength", "10")
-		attrRepo.Save(attr)
+	t.Run("swaps positions of two siblings", func(t *testing.T) {
+		a, _ := NewAttribute(character.ID, 0, 1, "Alpha", "1")
+		attrRepo.Save(a)
+		b, _ := NewAttribute(character.ID, 0, 2, "Beta", "2")
+		attrRepo.Save(b)
 
-		err := attrRepo.UpdatePosition(attr.ID, 2, 3)
+		err := attrRepo.SwapPositions(a.ID, a.PositionInGroup, b.ID, b.PositionInGroup)
 		if err != nil {
-			t.Fatalf("UpdatePosition() failed: %v", err)
+			t.Fatalf("SwapPositions() failed: %v", err)
 		}
 
-		retrieved, err := attrRepo.GetByID(attr.ID)
-		if err != nil {
-			t.Fatalf("GetByID() failed: %v", err)
+		aAfter, _ := attrRepo.GetByID(a.ID)
+		bAfter, _ := attrRepo.GetByID(b.ID)
+
+		if aAfter.PositionInGroup != 2 {
+			t.Errorf("Alpha: expected PositionInGroup=2, got %d", aAfter.PositionInGroup)
 		}
-		if retrieved.Group != 2 {
-			t.Errorf("Expected Group=2, got %d", retrieved.Group)
-		}
-		if retrieved.PositionInGroup != 3 {
-			t.Errorf("Expected PositionInGroup=3, got %d", retrieved.PositionInGroup)
+		if bAfter.PositionInGroup != 1 {
+			t.Errorf("Beta: expected PositionInGroup=1, got %d", bAfter.PositionInGroup)
 		}
 	})
 
-	t.Run("no error for non-existent id", func(t *testing.T) {
-		err := attrRepo.UpdatePosition(999999, 0, 0)
+	t.Run("does not affect other attributes", func(t *testing.T) {
+		a, _ := NewAttribute(character.ID, 1, 1, "Gamma", "3")
+		attrRepo.Save(a)
+		b, _ := NewAttribute(character.ID, 1, 2, "Delta", "4")
+		attrRepo.Save(b)
+		bystander, _ := NewAttribute(character.ID, 1, 3, "Bystander", "5")
+		attrRepo.Save(bystander)
+
+		err := attrRepo.SwapPositions(a.ID, a.PositionInGroup, b.ID, b.PositionInGroup)
 		if err != nil {
-			t.Errorf("UpdatePosition() expected no error for non-existent id, got: %v", err)
+			t.Fatalf("SwapPositions() failed: %v", err)
+		}
+
+		bystanderAfter, _ := attrRepo.GetByID(bystander.ID)
+		if bystanderAfter.PositionInGroup != 3 {
+			t.Errorf("Bystander should be unchanged: expected PositionInGroup=3, got %d", bystanderAfter.PositionInGroup)
 		}
 	})
 }

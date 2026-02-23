@@ -104,13 +104,6 @@ func (r *AttributeRepository) SwapGroups(characterID int64, groupA, groupB int) 
 	return err
 }
 
-// Moves an attribute to a new position
-func (r *AttributeRepository) UpdatePosition(id int64, group, position int) error {
-	query := `UPDATE attributes SET attribute_group = ?, position_in_group = ?, updated_at = datetime('now','subsec') WHERE id = ?`
-	_, err := r.db.Connection.Exec(query, group, position, id)
-	return err
-}
-
 // SwapPositions atomically swaps the position_in_group of two attributes within the same group.
 func (r *AttributeRepository) SwapPositions(idA int64, posA int, idB int64, posB int) error {
 	query := `UPDATE attributes
