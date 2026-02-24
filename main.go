@@ -10,7 +10,7 @@ import (
 	"soloterm/ui"
 )
 
-const version = "1.0.12"
+const version = "1.0.13"
 
 func main() {
 	log.SetOutput(os.Stdout)
