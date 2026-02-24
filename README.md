@@ -29,7 +29,7 @@ Sessions is just a text area where you can type out your log. There's no formatt
 You can import/export session logs however, so those who like to use Markdown can still do so. It just won't be formatted in the terminal.
 
 ### Lonelog Tags
-![Screenshot](docs/using_tags.png)
+![Screenshot](docs/using_tags.png?v=1)
 
 Check out [Lonelog](https://zeruhur.itch.io/lonelog) for using tags in your TTRPG session logs.
 
@@ -43,7 +43,7 @@ Picking one of those tags will insert it into the log where you can fill out the
 When the application starts, it creates a config.yaml file which you can edit to change the tags which are available. See the log written to the terminal when the application starts to see where the config.yaml file is located.
 
 ## Characters
-![Screenshot](docs/characters.png)
+![Screenshot](docs/characters.png?v=1)
 
 There are 2 sections for managing characters in the app. The top section is where you add a characters information (name, system, role, species). The bottom section is the sheet where you track attributes.
 
@@ -54,7 +54,7 @@ It's recommended to track only simple things here. It's not a rich character she
 Depending on the game you're playing, the entire character sheet may fit in this area.
 
 ## Rolling Dice
-![Screenshot](docs/rolling_dice.png)
+![Screenshot](docs/rolling_dice.png?v=1)
 
 You can roll dice from anywhere in the app. It follows the typical dice notation and allows tagging rolls with a label.
 
