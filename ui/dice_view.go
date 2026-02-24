@@ -222,6 +222,7 @@ commas.
   [yellow]2d6, 1d8[white]
   [yellow]Attack: 1d20+5[white]
   [yellow]Attack: 1d20+5, 1d6[white]
+  [yellow]Attack (Hard): 1d8, 1d10[white]
 
 [green]Basic Notation[white]
 
@@ -242,14 +243,16 @@ commas.
   [yellow]4d6kh3[white]   Roll 4d6, keep 3 highest
   [yellow]2d20kh1[white]  Advantage (keep highest)
   [yellow]2d20kl1[white]  Disadvantage (keep lowest)
+  
+  (n) = dropped die in results
 
 [green]Success Counting (Versus)[white]
 
   [yellow]NdXvT[white]    Count dice rolling T or higher
-  [yellow]NdXevT[white]   Exploding: reroll and add on max
-  [yellow]NdXrvT[white]   Reroll: add extra die on max
+  [yellow]NdXevT[white]   Exploding: a match rerolls and adds to that die's total
+  [yellow]NdXrvT[white]   Reroll: a match adds an extra die to the roll
 
-  [yellow]6d10v8[white]   Roll 6d10, count successes ≥ 8
+  [yellow]6d10v8[white]   Roll 6d10, count successes >= 8
 
 [green]Fudge / Fate Dice[white]
 
