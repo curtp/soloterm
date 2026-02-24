@@ -85,12 +85,12 @@ func connectWithPath(dbPath string) (*DBStore, error) {
 		if err != nil {
 			return nil, err
 		}
+	}
 
-		_, err = dbStore.Connection.Exec("PRAGMA foreign_keys = ON")
-		if err != nil {
-			return nil, err
-		}
-
+	// Always enforce foreign keys, including in-memory test databases
+	_, err = dbStore.Connection.Exec("PRAGMA foreign_keys = ON")
+	if err != nil {
+		return nil, err
 	}
 
 	return &dbStore, nil

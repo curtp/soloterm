@@ -16,10 +16,11 @@ func TestRepository_Save(t *testing.T) {
 	db := testhelper.SetupTestDB(t)
 	defer testhelper.TeardownTestDB(t, db)
 	repo := NewRepository(db)
+	gameID := testhelper.CreateTestGame(t, db, "Test Game")
 
 	t.Run("save new session", func(t *testing.T) {
 
-		session, _ := NewSession(1)
+		session, _ := NewSession(gameID)
 		session.Name = "a name"
 		session.Content = "session content"
 
@@ -37,7 +38,7 @@ func TestRepository_Save(t *testing.T) {
 
 	t.Run("update existing session", func(t *testing.T) {
 		// Create initial session
-		session, _ := NewSession(1)
+		session, _ := NewSession(gameID)
 		session.Name = "a name"
 		session.Content = "session content"
 
@@ -149,8 +150,9 @@ func TestRepository_Delete(t *testing.T) {
 	db := testhelper.SetupTestDB(t)
 	defer testhelper.TeardownTestDB(t, db)
 	repo := NewRepository(db)
+	gameID := testhelper.CreateTestGame(t, db, "Test Game")
 
-	session, _ := NewSession(1)
+	session, _ := NewSession(gameID)
 	session.Name = "a name"
 	session.Content = "some content"
 
@@ -159,7 +161,7 @@ func TestRepository_Delete(t *testing.T) {
 		t.Fatalf("Save() update failed: %v", err)
 	}
 
-	session2, _ := NewSession(1)
+	session2, _ := NewSession(gameID)
 	session2.Name = "another name"
 	session2.Content = "some content"
 
@@ -168,7 +170,7 @@ func TestRepository_Delete(t *testing.T) {
 		t.Fatalf("Save() update failed: %v", err)
 	}
 
-	session3, _ := NewSession(1)
+	session3, _ := NewSession(gameID)
 	session3.Name = "yet another name"
 	session3.Content = "some content"
 
@@ -217,8 +219,9 @@ func TestRepository_DeleteAllForGame(t *testing.T) {
 	db := testhelper.SetupTestDB(t)
 	defer testhelper.TeardownTestDB(t, db)
 	repo := NewRepository(db)
+	gameID := testhelper.CreateTestGame(t, db, "Test Game")
 
-	session, _ := NewSession(1)
+	session, _ := NewSession(gameID)
 	session.Name = "a name"
 	session.Content = "some content"
 
@@ -227,7 +230,7 @@ func TestRepository_DeleteAllForGame(t *testing.T) {
 		t.Fatalf("Save() update failed: %v", err)
 	}
 
-	session2, _ := NewSession(1)
+	session2, _ := NewSession(gameID)
 	session2.Name = "another name"
 	session2.Content = "some content"
 
@@ -236,7 +239,7 @@ func TestRepository_DeleteAllForGame(t *testing.T) {
 		t.Fatalf("Save() update failed: %v", err)
 	}
 
-	session3, _ := NewSession(1)
+	session3, _ := NewSession(gameID)
 	session3.Name = "yet another name"
 	session3.Content = "some content"
 
@@ -261,7 +264,7 @@ func TestRepository_DeleteAllForGame(t *testing.T) {
 
 	t.Run("delete all for session", func(t *testing.T) {
 		// Delete them
-		count, err := repo.DeleteAllForGame(1)
+		count, err := repo.DeleteAllForGame(gameID)
 		if err != nil {
 			t.Fatalf("Delete() failed: %v", err)
 		}
