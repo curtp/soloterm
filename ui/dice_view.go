@@ -2,6 +2,7 @@ package ui
 
 import (
 	"soloterm/domain/dice"
+	"strconv"
 	"strings"
 
 	"github.com/gdamore/tcell/v2"
@@ -138,7 +139,7 @@ func (dv *DiceView) roll() {
 			if result.Err != nil {
 				output.WriteString("[" + Style.ErrorTextColor + "]" + tview.Escape(result.Err.Error()) + "[" + Style.NormalTextColor + "]")
 			} else {
-				output.WriteString("[" + Style.SuccessTextColor + "]" + tview.Escape(result.Notation) + "[" + Style.NormalTextColor + "] -> " + result.Breakdown)
+				output.WriteString("[" + Style.SuccessTextColor + "]" + tview.Escape(result.Notation) + "[" + Style.NormalTextColor + "] -> " + dv.formatDiceResult(result))
 			}
 
 			if i < len(group.Results)-1 {
@@ -150,6 +151,56 @@ func (dv *DiceView) roll() {
 	}
 
 	dv.resultView.SetText(output.String())
+}
+
+// formatDiceResult renders a roll result as "total [d1 d2 d3]" where dropped
+// dice are shown in grey. All dice are merged into a single sorted bracket.
+func (dv *DiceView) formatDiceResult(result dice.RollResult) string {
+	var b strings.Builder
+	b.WriteString(strconv.Itoa(result.Total))
+
+	if len(result.Rolls)+len(result.Dropped) <= 1 {
+		return b.String()
+	}
+
+	b.WriteString(" [")
+
+	// Merge-sort kept (Rolls) and dropped (Dropped) into display order.
+	// Both slices are already sorted by the dice library.
+	type die struct {
+		val     int
+		dropped bool
+	}
+	all := make([]die, 0, len(result.Rolls)+len(result.Dropped))
+	ri, di := 0, 0
+	for ri < len(result.Rolls) && di < len(result.Dropped) {
+		if result.Rolls[ri] <= result.Dropped[di] {
+			all = append(all, die{result.Rolls[ri], false})
+			ri++
+		} else {
+			all = append(all, die{result.Dropped[di], true})
+			di++
+		}
+	}
+	for ; ri < len(result.Rolls); ri++ {
+		all = append(all, die{result.Rolls[ri], false})
+	}
+	for ; di < len(result.Dropped); di++ {
+		all = append(all, die{result.Dropped[di], true})
+	}
+
+	for i, d := range all {
+		if i > 0 {
+			b.WriteString(" ")
+		}
+		if d.dropped {
+			b.WriteString("[grey](" + strconv.Itoa(d.val) + ")[" + Style.NormalTextColor + "]")
+		} else {
+			b.WriteString(strconv.Itoa(d.val))
+		}
+	}
+	b.WriteString("]")
+	return b.String()
 }
 
 func (dv *DiceView) CanInsert() bool {

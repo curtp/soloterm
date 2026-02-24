@@ -50,11 +50,20 @@ func Roll(input string) []RollGroup {
 				continue
 			}
 
-			group.Results = append(group.Results, RollResult{
-				Notation:  notation,
-				Total:     result.Int(),
-				Breakdown: result.String(),
-			})
+			rr := RollResult{
+				Notation: notation,
+				Total:    result.Int(),
+			}
+			switch r := result.(type) {
+			case rollapi.StdResult:
+				rr.Rolls = r.Rolls
+				rr.Dropped = r.Dropped
+			case rollapi.VsResult:
+				rr.Rolls = r.Rolls
+			case rollapi.FudgeResult:
+				rr.Rolls = r.Rolls
+			}
+			group.Results = append(group.Results, rr)
 		}
 
 		if len(group.Results) > 0 {

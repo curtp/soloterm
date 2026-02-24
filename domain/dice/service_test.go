@@ -147,11 +147,11 @@ func TestRoll_ResultValues(t *testing.T) {
 		assert.Equal(t, "2d6+3", result.Notation)
 	})
 
-	t.Run("breakdown is non-empty on success", func(t *testing.T) {
+	t.Run("rolls is non-empty on success", func(t *testing.T) {
 		groups := Roll("2d6")
 		result := groups[0].Results[0]
 		assert.NoError(t, result.Err)
-		assert.NotEmpty(t, result.Breakdown)
+		assert.NotEmpty(t, result.Rolls)
 	})
 }
 
@@ -163,7 +163,7 @@ func TestRoll_InvalidNotation(t *testing.T) {
 		result := groups[0].Results[0]
 		assert.Error(t, result.Err)
 		assert.Zero(t, result.Total)
-		assert.Empty(t, result.Breakdown)
+		assert.Empty(t, result.Rolls)
 	})
 
 	t.Run("invalid notation does not prevent other rolls in same group", func(t *testing.T) {
