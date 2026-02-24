@@ -354,9 +354,17 @@ It's recommended to only track the bare essentials like health, or key pieces of
 [yellow]Value[white]: Value to assign to the entry (10/10, 2, +2). It may be blank.
 [yellow]Section[white]: Pick "- New -" to create a new section or pick an existing section to add the entry too.
 
-[green]Moving entries[white]
-[yellow]Ctrl-U/D:[white] Sections/standalones move their entire section. Children move within their section only.
-[yellow]To move an entry to a different section:[white] edit the entry (Ctrl-E) and pick a new section.
+[green]Moving Entries[white]
+
+[yellow]Ctrl+U / Ctrl+D[white]  Move entry up or down.
+
+  Underlined entries (section headers) move with
+  all their entries as a group.
+
+  Indented entries move within their section only.
+
+To move an entry to a different section, edit it
+([yellow]Ctrl+E[white]) and choose a new section.
 `),
 	})
 }
