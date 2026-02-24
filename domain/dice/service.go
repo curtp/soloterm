@@ -36,7 +36,7 @@ func Roll(input string) []RollGroup {
 		}
 
 		for notation := range strings.SplitSeq(line, ",") {
-			notation = strings.TrimSpace(notation)
+			notation = strings.ToLower(strings.TrimSpace(notation))
 			if notation == "" {
 				continue
 			}
