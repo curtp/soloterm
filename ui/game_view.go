@@ -57,7 +57,7 @@ func (gv *GameView) setupForm() {
 func (gv *GameView) setupTreeView() {
 	gv.Tree = tview.NewTreeView()
 	gv.Tree.SetBorder(true).
-		SetTitle(" [::b]Games & Sessions (Ctrl+G) ").
+		SetTitle(" [::b]Games & Sessions ([" + Style.HelpKeyTextColor + "]Ctrl+G[" + Style.NormalTextColor + "]) ").
 		SetTitleAlign(tview.AlignLeft)
 
 	// Placeholder root node

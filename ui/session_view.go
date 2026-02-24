@@ -234,6 +234,7 @@ func (sv *SessionView) setupFocusHandlers() {
 				{"Ctrl+T", "Tag"},
 				{"F2", "Action"},
 				{"F3", "Oracle"},
+				{"F4", "Dice"},
 			}))
 		} else {
 			sv.app.updateFooterHelp(helpBar("Session", []helpEntry{
@@ -390,8 +391,8 @@ Select the session in the game view to edit the name or delete the session.
 [yellow]Note:[white] Do not paste large amounts of text into the session log. It is slow. Instead, use Import (see the help below)
 
 [yellow]Ctrl+N[white]: Add a new session.
-[yellow]Ctrl+O[white]: Import content from a file.
-[yellow]Ctrl+X[white]: Export content to a file.
+[yellow]Ctrl-O[white]: Open a text file to import. You can choose where the imported text is inserted into the log.
+[yellow]Ctrl-X[white]: Export the current session to a text file.
 
 [green][:::https://zeruhur.itch.io/lonelog]Lonelog[:::-] https://zeruhur.itch.io/lonelog
 
@@ -425,16 +426,8 @@ Type to enter text.
 [yellow]Ctrl-K[white]: Delete until the end of the line.
 [yellow]Ctrl-W[white]: Delete the rest of the word.
 [yellow]Ctrl-U[white]: Delete the current line.
-
-[green]Undo
-
 [yellow]Ctrl-Z[white]: Undo.
 [yellow]Ctrl-Y[white]: Redo.
-
-[green]Import/Export
-
-[yellow]Ctrl-O[white]: Open a text file to import. You can choose where the imported text is inserted into the log.
-[yellow]Ctrl-X[white]: Export the current session to a text file.
 `)
 }
 
@@ -461,7 +454,7 @@ func (sv *SessionView) updateTitle() {
 	if sv.isDirty {
 		prefix = "[" + Style.ErrorTextColor + "]●[-] "
 	}
-	sv.textAreaFrame.SetTitle(" " + prefix + "[::b]" + body + " (Ctrl+L) ")
+	sv.textAreaFrame.SetTitle(" " + prefix + "[::b]" + body + " ([" + Style.HelpKeyTextColor + "]Ctrl+L[" + Style.NormalTextColor + "]) ")
 }
 
 // Autosave persists the current TextArea content if dirty

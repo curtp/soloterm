@@ -26,6 +26,7 @@ func DefaultTagTypes() []TagType {
 		{Label: "NPC", Template: "[N: | ]"},
 		{Label: "Player Character", Template: "[PC: | ]"},
 		{Label: "Scene", Template: "[Scene: | ]"},
+		{Label: "Table", Template: "tbl: -> "},
 		{Label: "Thread", Template: "[Thread: | ]"},
 		{Label: "Timer", Template: "[Timer: | ]"},
 		{Label: "Track", Template: "[Track: | ]"},

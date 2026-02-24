@@ -70,7 +70,7 @@ func (cv *CharacterView) setupCharacterPane() {
 
 	cv.CharPane = tview.NewFrame(charDetails).
 		SetBorders(0, 0, 0, 0, 1, 1)
-	cv.CharPane.SetTitle(" [::b]Character Sheet (Ctrl+S) ").
+	cv.CharPane.SetTitle(" [::b]Character Sheet ([" + Style.HelpKeyTextColor + "]Ctrl+S[" + Style.NormalTextColor + "]) ").
 		SetTitleAlign(tview.AlignLeft).
 		SetBorder(true)
 
@@ -89,7 +89,7 @@ func (cv *CharacterView) setupCharacterPane() {
 func (cv *CharacterView) setupCharacterTree() {
 	cv.CharTree = tview.NewTreeView()
 	cv.CharTree.SetBorder(true).
-		SetTitle(" [::b]Characters (Ctrl+C) ").
+		SetTitle(" [::b]Characters ([" + Style.HelpKeyTextColor + "]Ctrl+C[" + Style.NormalTextColor + "]) ").
 		SetTitleAlign(tview.AlignLeft)
 
 	// Set up selection handler for the tree

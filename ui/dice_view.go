@@ -138,7 +138,7 @@ func (dv *DiceView) roll() {
 			if result.Err != nil {
 				output.WriteString("[" + Style.ErrorTextColor + "]" + tview.Escape(result.Err.Error()) + "[" + Style.NormalTextColor + "]")
 			} else {
-				output.WriteString("[" + Style.SuccessTextColor + "]" + tview.Escape(result.Notation) + "[" + Style.NormalTextColor + "] = " + result.Breakdown)
+				output.WriteString("[" + Style.SuccessTextColor + "]" + tview.Escape(result.Notation) + "[" + Style.NormalTextColor + "] -> " + result.Breakdown)
 			}
 
 			if i < len(group.Results)-1 {
