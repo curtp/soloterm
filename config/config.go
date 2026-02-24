@@ -28,7 +28,9 @@ func (c *Config) Load(workdir string) (*Config, error) {
 
 	// If the file doesn't exist, create it, otherwise read it
 	if c.fileExists(c.FullFilePath) == false {
-		c.writeDefault(c.FullFilePath)
+		if err := c.writeDefault(c.FullFilePath); err != nil {
+			return nil, fmt.Errorf("failed to create default config: %w", err)
+		}
 	}
 
 	// Read the file
