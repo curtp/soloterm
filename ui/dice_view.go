@@ -163,7 +163,7 @@ func (dv *DiceView) formatDiceResult(result dice.RollResult) string {
 		return b.String()
 	}
 
-	b.WriteString(" [")
+	b.WriteString(" {")
 
 	// Merge-sort kept (Rolls) and dropped (Dropped) into display order.
 	// Both slices are already sorted by the dice library.
@@ -199,7 +199,7 @@ func (dv *DiceView) formatDiceResult(result dice.RollResult) string {
 			b.WriteString(strconv.Itoa(d.val))
 		}
 	}
-	b.WriteString("]")
+	b.WriteString("}")
 	return b.String()
 }
 
