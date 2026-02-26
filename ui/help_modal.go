@@ -50,9 +50,9 @@ func NewHelpModal(app *App) *HelpModal {
 			tview.NewFlex().
 				SetDirection(tview.FlexRow).
 				AddItem(nil, 0, 1, false).
-				AddItem(hm.frame, 22, 1, true).
+				AddItem(hm.frame, 0, 3, true).
 				AddItem(nil, 0, 1, false),
-			64, 1, true,
+			0, 3, true,
 		).
 		AddItem(nil, 0, 1, false)
 
