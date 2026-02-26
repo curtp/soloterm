@@ -60,6 +60,11 @@ func (sv *SessionView) Setup() {
 // setupTextArea configures the text area for displaying the session
 func (sv *SessionView) setupTextArea() {
 	sv.TextArea = tview.NewTextArea()
+	sv.TextArea.SetPlaceholder("Select a session to view from the Games view or select a Game and press Ctrl+N here to create a new session.")
+	sv.TextArea.SetPlaceholderStyle(tcell.StyleDefault.
+		Background(Style.PrimitiveBackgroundColor).
+		Foreground(Style.EmptyStateMessageColor))
+
 	sv.TextArea.SetDisabled(true)
 	sv.TextArea.SetChangedFunc(func() {
 		if sv.isLoading {
