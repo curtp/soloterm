@@ -68,15 +68,15 @@ func (tv *TagView) setupModal() {
 			tview.NewFlex().
 				SetDirection(tview.FlexRow).
 				AddItem(nil, 0, 1, false).
-				AddItem(tv.tagFrame, 25, 0, true).
+				AddItem(tv.tagFrame, 0, 4, true).
 				AddItem(nil, 0, 1, false),
-			70, 1, true, // Width of the modal in columns
+			0, 4, true, // Width of the modal in columns
 		).
 		AddItem(nil, 0, 1, false)
 
 	tv.TagTable.SetFocusFunc(func() {
 		tv.app.updateFooterHelp(helpBar("Tags", []helpEntry{
-			{"↑/↓", "Navigate"},
+			{"↑/↓/←/→", "Scroll"},
 			{"F12", "Help"},
 			{"Enter", "Select"},
 			{"Esc", "Close"},
