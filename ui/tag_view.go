@@ -124,6 +124,7 @@ func (tv *TagView) Refresh() {
 		tv.TagTable.SetCell(currentRow, 0, tview.NewTableCell(tagType.Label).
 			SetTextColor(tcell.ColorWhite).
 			SetAlign(tview.AlignLeft).
+			SetMaxWidth(25).
 			SetExpansion(0))
 		tv.TagTable.SetCell(currentRow, 1, tview.NewTableCell(tview.Escape(tagType.Template)).
 			SetTextColor(tcell.ColorWhite).
@@ -139,10 +140,13 @@ func (tv *TagView) Refresh() {
 		tv.TagTable.SetCell(currentRow, 0, tview.NewTableCell("─── Active Tags ───").
 			SetTextColor(tcell.ColorYellow).
 			SetAlign(tview.AlignLeft).
+			SetMaxWidth(25).
+			SetExpansion(0).
 			SetSelectable(false))
 		tv.TagTable.SetCell(currentRow, 1, tview.NewTableCell("").
 			SetTextColor(tcell.ColorYellow).
 			SetAlign(tview.AlignLeft).
+			SetExpansion(1).
 			SetSelectable(false))
 		currentRow++
 
@@ -151,6 +155,7 @@ func (tv *TagView) Refresh() {
 			tv.TagTable.SetCell(currentRow, 0, tview.NewTableCell(tagType.Label).
 				SetTextColor(tcell.ColorWhite).
 				SetAlign(tview.AlignLeft).
+				SetMaxWidth(25).
 				SetExpansion(0))
 			tv.TagTable.SetCell(currentRow, 1, tview.NewTableCell(tview.Escape(tagType.Template)).
 				SetTextColor(tcell.ColorWhite).
