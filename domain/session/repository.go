@@ -130,6 +130,21 @@ func (r *Repository) GetAllContentForGame(gameID int64) ([]string, error) {
 	return contents, nil
 }
 
+func (r *Repository) SearchByGame(gameID int64, term string) ([]*Session, error) {
+	var sessions []*Session
+	query := `
+		SELECT s.*, g.name AS game_name FROM sessions s
+		JOIN games g ON s.game_id = g.id
+		WHERE s.game_id = ? AND LOWER(s.content) LIKE LOWER('%' || ? || '%')
+		ORDER BY s.created_at
+	`
+	err := r.db.Connection.Select(&sessions, query, gameID, term)
+	if err != nil {
+		return nil, err
+	}
+	return sessions, nil
+}
+
 // Inserts a new record
 func (r *Repository) insert(session *Session) error {
 	query := `

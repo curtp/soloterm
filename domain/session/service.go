@@ -42,3 +42,8 @@ func (s *Service) GetByID(id int64) (*Session, error) {
 func (s *Service) GetAllForGame(gameID int64) ([]*Session, error) {
 	return s.repo.GetAllForGame(gameID)
 }
+
+// SearchByGame returns sessions for a game whose content contains the search term (case-insensitive)
+func (s *Service) SearchByGame(gameID int64, term string) ([]*Session, error) {
+	return s.repo.SearchByGame(gameID, term)
+}

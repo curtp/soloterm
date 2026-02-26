@@ -53,6 +53,22 @@ func CreateTestGame(t *testing.T, db *database.DBStore, name string) int64 {
 	return id
 }
 
+// CreateTestSession inserts a session row and returns its ID.
+// Requires the sessions table to exist (blank-import soloterm/domain/session in your test file).
+func CreateTestSession(t *testing.T, db *database.DBStore, gameID int64, name string, content string) int64 {
+	t.Helper()
+	var id int64
+	err := db.Connection.QueryRow(
+		`INSERT INTO sessions (game_id, name, content, created_at, updated_at)
+		 VALUES (?, ?, ?, datetime('now'), datetime('now')) RETURNING id`,
+		gameID, name, content,
+	).Scan(&id)
+	if err != nil {
+		t.Fatalf("CreateTestSession: failed to create session %q: %v", name, err)
+	}
+	return id
+}
+
 // TeardownTestDB closes the database connection.
 // Use with defer: defer TeardownTestDB(t, db)
 func TeardownTestDB(t *testing.T, db *database.DBStore) {

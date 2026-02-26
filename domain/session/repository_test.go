@@ -276,3 +276,51 @@ func TestRepository_DeleteAllForGame(t *testing.T) {
 	})
 
 }
+
+func TestRepository_SearchByGame(t *testing.T) {
+	// Setup
+	db := testhelper.SetupTestDB(t)
+	defer testhelper.TeardownTestDB(t, db)
+	repo := NewRepository(db)
+
+	gameID1 := testhelper.CreateTestGame(t, db, "Game 1")
+	gameID2 := testhelper.CreateTestGame(t, db, "Game 2")
+
+	testhelper.CreateTestSession(t, db, gameID1, "Session One", "The dragon attacked the village")
+	testhelper.CreateTestSession(t, db, gameID1, "Session Two", "The hero found a dragon egg")
+	testhelper.CreateTestSession(t, db, gameID1, "Session Three", "The wizard cast a spell")
+	testhelper.CreateTestSession(t, db, gameID2, "Other Game Session", "The dragon was defeated")
+
+	t.Run("finds matching sessions", func(t *testing.T) {
+		results, err := repo.SearchByGame(gameID1, "dragon")
+		assert.NoError(t, err)
+		assert.Len(t, results, 2)
+	})
+
+	t.Run("is case insensitive", func(t *testing.T) {
+		results, err := repo.SearchByGame(gameID1, "DRAGON")
+		assert.NoError(t, err)
+		assert.Len(t, results, 2)
+	})
+
+	t.Run("does not return sessions from other games", func(t *testing.T) {
+		results, err := repo.SearchByGame(gameID1, "dragon")
+		assert.NoError(t, err)
+		for _, s := range results {
+			assert.Equal(t, gameID1, s.GameID)
+		}
+	})
+
+	t.Run("returns empty when no match", func(t *testing.T) {
+		results, err := repo.SearchByGame(gameID1, "unicorn")
+		assert.NoError(t, err)
+		assert.Empty(t, results)
+	})
+
+	t.Run("populates game name via join", func(t *testing.T) {
+		results, err := repo.SearchByGame(gameID1, "dragon")
+		assert.NoError(t, err)
+		assert.NotEmpty(t, results)
+		assert.Equal(t, "Game 1", results[0].GameName)
+	})
+}
