@@ -406,6 +406,7 @@ Select the session in the game view to edit the name or delete the session.
 [yellow]Ctrl+N[white]: Add a new session.
 [yellow]Ctrl-O[white]: Open a text file to import. You can choose where the imported text is inserted into the log.
 [yellow]Ctrl-X[white]: Export the current session to a text file.
+[yellow]F5[white]: Search the sessions
 
 [green][:::https://zeruhur.itch.io/lonelog]Lonelog[:::-] https://zeruhur.itch.io/lonelog
 
