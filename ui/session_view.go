@@ -204,6 +204,13 @@ func (sv *SessionView) setupKeyBindings() {
 				sv.InsertAtCursor("d: ->\n=> ")
 			}
 			return nil
+		case tcell.KeyF5:
+			if sv.currentSessionID != nil {
+				sv.Autosave()
+				sv.app.HandleEvent(&SearchShowEvent{
+					BaseEvent: BaseEvent{action: SEARCH_SHOW},
+				})
+			}
 		case tcell.KeyCtrlT:
 			if sv.currentSessionID != nil {
 				sv.Autosave()
@@ -240,6 +247,7 @@ func (sv *SessionView) setupFocusHandlers() {
 				{"F2", "Action"},
 				{"F3", "Oracle"},
 				{"F4", "Dice"},
+				{"F5", "Search"},
 			}))
 		} else {
 			sv.app.updateFooterHelp(helpBar("Session", []helpEntry{

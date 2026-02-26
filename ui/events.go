@@ -62,6 +62,9 @@ const (
 	DICE_SHOW                   UserAction = "dice_show"
 	DICE_CANCEL                 UserAction = "dice_cancel"
 	DICE_INSERT_RESULT          UserAction = "dice_insert_result"
+	SEARCH_SHOW                 UserAction = "search_show"
+	SEARCH_CANCEL               UserAction = "search_cancel"
+	SEARCH_SELECT_RESULT        UserAction = "search_select_result"
 )
 
 // Base event interface
@@ -315,5 +318,18 @@ type DiceShowEvent struct {
 }
 
 type DiceInsertResultEvent struct {
+	BaseEvent
+}
+
+// ====== SEARCH SPECIFIC EVENTS ======
+type SearchCancelledEvent struct {
+	BaseEvent
+}
+
+type SearchShowEvent struct {
+	BaseEvent
+}
+
+type SearchSelectResultEvent struct {
 	BaseEvent
 }

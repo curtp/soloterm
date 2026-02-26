@@ -292,6 +292,9 @@ func (gv *GameView) SelectSession(sessionID int64) {
 		if ref != nil {
 			if state, ok := ref.(*GameState); ok && state.SessionID != nil && *state.SessionID == sessionID {
 				foundNode = node
+				if parent != nil {
+					parent.SetExpanded(true)
+				}
 				return false // Stop walking children of this node
 			}
 		}

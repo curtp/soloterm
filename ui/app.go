@@ -28,6 +28,7 @@ const (
 	SESSION_MODAL_ID   string = "sessionModal"
 	HELP_MODAL_ID      string = "helpModal"
 	DICE_MODAL_ID      string = "diceModal"
+	SEARCH_MODAL_ID    string = "searchModal"
 )
 
 type AppInfo struct {
@@ -47,6 +48,7 @@ type App struct {
 	characterView *CharacterView
 	attributeView *AttributeView
 	diceView      *DiceView
+	searchView    *SearchView
 
 	// Layout containers
 	mainFlex         *tview.Flex
@@ -88,6 +90,7 @@ func NewApp(db *database.DBStore, cfg *config.Config, info AppInfo) *App {
 	app.attributeView = NewAttributeView(app, attrService)
 	app.characterView = NewCharacterView(app, charService)
 	app.diceView = NewDiceView(app)
+	app.searchView = NewSearchView(app, sessionService)
 
 	app.setupUI()
 	return app
@@ -151,6 +154,7 @@ func (a *App) setupUI() {
 		AddPage(TAG_MODAL_ID, a.tagView.Modal, true, false).
 		AddPage(FILE_MODAL_ID, a.sessionView.FileModal, true, false).
 		AddPage(DICE_MODAL_ID, a.diceView.Modal, true, false).
+		AddPage(SEARCH_MODAL_ID, a.searchView.Modal, true, false).
 		AddPage(HELP_MODAL_ID, a.helpModal, true, false).
 		AddPage(CONFIRM_MODAL_ID, a.confirmModal, true, false) // Confirm always on top
 	// a.pages.SetBackgroundColor(tcell.ColorDefault)
@@ -412,5 +416,11 @@ func (a *App) HandleEvent(event Event) {
 		dispatch(event, a.handleDiceCancelled)
 	case DICE_INSERT_RESULT:
 		dispatch(event, a.handleDiceInsertResult)
+	case SEARCH_SHOW:
+		dispatch(event, a.handleSearchShow)
+	case SEARCH_CANCEL:
+		dispatch(event, a.handleSearchCancelled)
+	case SEARCH_SELECT_RESULT:
+		dispatch(event, a.handleSearchSelectResult)
 	}
 }
