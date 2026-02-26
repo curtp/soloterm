@@ -196,7 +196,7 @@ func (cv *CharacterView) setupFocusHandlers() {
 	cv.CharPane.SetFocusFunc(func() {
 		cv.SetReturnFocus(cv.app.attributeView.Table)
 		cv.app.updateFooterHelp(helpBar("Sheet", []helpEntry{
-			{"↑/↓", "Navigate"},
+			{"↑/↓/←/→", "Scroll"},
 			{"F12", "Help"},
 			{"Ctrl+E", "Edit"},
 			{"Ctrl+N", "New"},
