@@ -65,6 +65,9 @@ func (sv *SessionView) setupTextArea() {
 	sv.TextArea.SetPlaceholderStyle(tcell.StyleDefault.
 		Background(Style.PrimitiveBackgroundColor).
 		Foreground(Style.EmptyStateMessageColor))
+	sv.TextArea.SetSelectedStyle(tcell.StyleDefault.
+		Background(tcell.ColorYellow).
+		Foreground(Style.ContrastSecondaryTextColor))
 
 	sv.TextArea.SetDisabled(true)
 	sv.TextArea.SetChangedFunc(func() {
