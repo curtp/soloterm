@@ -212,14 +212,11 @@ func (tv *TagView) buildHelpText() string {
 	closeWords := text.FormatWordList(tv.cfg.TagExcludeWords, `"`)
 	raw := fmt.Sprintf(`[green]What Are Tags?[white]
 
-Tags are inline markers you add to your session
-text to track things like locations, NPCs, events,
-and more. They follow Lonelog notation:
+Tags are inline markers you add to your session text to track things like locations, NPCs, events, and more. They follow Lonelog notation:
 
   [yellow][<tag>:<identifier> | <data>][white]
 
-The <data> section is freeform. Use it however you
-like for the tag.
+The <data> section is freeform. Use it however you like for the tag.
 
 [yellow]Examples:[white]
   [L:Entrance | Foreboding]
@@ -227,25 +224,20 @@ like for the tag.
 
 [green]Selecting a Tag[white]
 
-Press [yellow]Ctrl+T[white] to open the tag list, then use
-[yellow]↑/↓[white] to navigate and [yellow]Enter[white] to select. The tag
-template will be inserted at your cursor.
+Press [yellow]Ctrl+T[white] to open the tag list, then use [yellow]↑/↓[white] to navigate and [yellow]Enter[white] to select. The tag template will be inserted at your cursor.
 
-Tags used in your sessions appear under "Active
-Tags" in the tag list for quick reuse.
+Tags used in your sessions appear under "Active Tags" in the tag list for quick reuse.
 
 [green]Closing a Tag[white]
 
-To close a tag so it no longer appears in the
-active list, add %s to its data section.
+To close a tag so it no longer appears in the active list, add %s to its data section.
 
 [yellow]Example:[white]
   [L:Entrance | Foreboding; Closed]
 
 [green]Customizing Tags[white]
 
-You can add, remove, or modify the available tags
-and close words by editing the configuration file:
+You can add, remove, or modify the available tags and close words by editing the configuration file:
 
 [aqua]%s[white]`, closeWords, tv.cfg.FullFilePath)
 	return strings.NewReplacer(

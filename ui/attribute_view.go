@@ -358,13 +358,11 @@ It's recommended to only track the bare essentials like health, or key pieces of
 
 [yellow]Ctrl+U / Ctrl+D[white]  Move entry up or down.
 
-  Underlined entries (section headers) move with
-  all their entries as a group.
+Underlined entries (section headers) move with all their entries as a group.
 
-  Indented entries move within their section only.
+Indented entries move within their section only.
 
-To move an entry to a different section, edit it
-([yellow]Ctrl+E[white]) and choose a new section.
+To move an entry to a different section, edit it ([yellow]Ctrl+E[white]) and choose a new section.
 `),
 	})
 }

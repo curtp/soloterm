@@ -214,9 +214,7 @@ func (dv *DiceView) buildHelpText() string {
 		"[green]", "["+Style.HelpSectionColor+"]",
 	).Replace(`[green]Input Format[white]
 
-One roll per line. Labels are optional. Multiple
-dice expressions on one line are separated by
-commas.
+One roll per line. Labels are optional. Multiple dice expressions on one line are separated by commas.
 
   [yellow]2d6[white]
   [yellow]2d6, 1d8[white]
