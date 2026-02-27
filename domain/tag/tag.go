@@ -2,6 +2,12 @@ package tag
 
 import "soloterm/shared/validation"
 
+const (
+	CHARACTER_ACTION_TAG = "@ \nd: ->\n=> "
+	ORACLE_TAG           = "? \nd: ->\n=> "
+	DICE_TAG             = "d: ->\n=> "
+)
+
 // TagType is the type of tags which are available to the app
 type TagType struct {
 	Label    string `yaml:"label"`
