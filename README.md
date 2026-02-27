@@ -17,6 +17,7 @@ To see where the data and logs are written, press F1.
 * Create simple characters for quick reference in the app
 * Support for tags and quick notations based on [Lonelog](https://zeruhur.itch.io/lonelog)
 * Dice Rolling
+* Searching game sessions
 * Mouse free navigation
 * Import/Export session logs
 
