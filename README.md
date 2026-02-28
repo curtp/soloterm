@@ -43,6 +43,16 @@ Picking one of those tags will insert it into the log where you can fill out the
 ### Configuring Tags
 When the application starts, it creates a config.yaml file which you can edit to change the tags which are available. See the log written to the terminal when the application starts to see where the config.yaml file is located.
 
+## Notes
+![Screenshot](docs/notes_screen.png)
+
+Seperate from sessions is a notes section. Notes are for tracking things that live on beyond sessions, like key NPCs, adventure hooks, locations.
+
+## Searching
+![Screenshot](docs/search.png)
+
+You can search notes and sessions, then quickly jump to the entry by selecting it from the list of results.
+
 ## Characters
 ![Screenshot](docs/characters.png?v=1)
 
