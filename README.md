@@ -38,6 +38,8 @@ When logging your session, you can press keys (F2 = Character Action, F3 = Oracl
 
 The Active Tags section displays the list of "open" tags from all of the logs in the game.
 
+The Notes Tags section includes tags that are in the Notes seciton of the game.
+
 Picking one of those tags will insert it into the log where you can fill out the details.
 
 ### Configuring Tags
