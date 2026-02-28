@@ -5,6 +5,8 @@ import (
 	"time"
 
 	testhelper "soloterm/shared/testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestRepository_Save(t *testing.T) {
@@ -208,4 +210,72 @@ func TestRepository_Delete(t *testing.T) {
 		}
 	})
 
+}
+
+func TestRepository_SaveNotes(t *testing.T) {
+	// Setup
+	db := testhelper.SetupTestDB(t)
+	defer testhelper.TeardownTestDB(t, db)
+
+	repo := NewRepository(db)
+
+	// Create game to delete
+	game, _ := NewGame("Test Game")
+	err := repo.Save(game)
+	if err != nil {
+		t.Fatalf("Save() failed: %v", err)
+	}
+
+	t.Run("add some notes", func(t *testing.T) {
+		err := repo.SaveNotes(game.ID, "these are some notes")
+		if err != nil {
+			t.Fatalf("SaveNotes() failed: %v", err)
+		}
+
+		// Verify it was Updated
+		updatedGame, err := repo.GetByID(game.ID)
+		if err != nil {
+			t.Fatalf("Retrieving notes for id %d failed", game.ID)
+		}
+		assert.Equal(t, "these are some notes", updatedGame.Notes)
+	})
+
+	t.Run("update the notes", func(t *testing.T) {
+		err := repo.SaveNotes(game.ID, "these are some notes")
+		if err != nil {
+			t.Fatalf("SaveNotes() failed: %v", err)
+		}
+
+		// Verify it was Updated
+		updatedGame, err := repo.GetByID(game.ID)
+		if err != nil {
+			t.Fatalf("Retrieving notes for id %d failed", game.ID)
+		}
+		assert.Equal(t, "these are some notes", updatedGame.Notes)
+
+		err = repo.SaveNotes(game.ID, updatedGame.Notes+". And this is an update")
+		if err != nil {
+			t.Fatalf("SaveNotes() failed: %v", err)
+		}
+
+		updatedGame, err = repo.GetByID(game.ID)
+		if err != nil {
+			t.Fatalf("Retrieving notes for id %d failed", game.ID)
+		}
+		assert.Equal(t, "these are some notes. And this is an update", updatedGame.Notes)
+	})
+
+	t.Run("wipe them out", func(t *testing.T) {
+		err := repo.SaveNotes(game.ID, "")
+		if err != nil {
+			t.Fatalf("SaveNotes() failed: %v", err)
+		}
+
+		// Verify it was Updated
+		updatedGame, err := repo.GetByID(game.ID)
+		if err != nil {
+			t.Fatalf("Retrieving notes for id %d failed", game.ID)
+		}
+		assert.Equal(t, "", updatedGame.Notes)
+	})
 }

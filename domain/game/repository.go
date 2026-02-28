@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"soloterm/database"
 )
 
@@ -21,6 +22,7 @@ func NewRepository(db *database.DBStore) *Repository {
 // Automatically manages created_at, and updated_at
 // The game pointer is updated with the current values after save
 func (r *Repository) Save(game *Game) error {
+	log.Printf("Saving game: %+v", game)
 	if game.ID == 0 {
 		// INSERT - new game
 		return r.insert(game)
@@ -84,6 +86,29 @@ func (r *Repository) GetAll() ([]*Game, error) {
 		return nil, err
 	}
 	return games, nil
+}
+
+func (r *Repository) SaveNotes(gameID int64, notes string) error {
+	log.Printf("Setting notes on game %d", gameID)
+	query := `UPDATE games SET notes = ? WHERE id = ?`
+
+	result, err := r.db.Connection.Exec(query, notes, gameID)
+
+	if err != nil {
+		return err
+	}
+
+	// Check if the game was updated
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return fmt.Errorf("id '%d' not found", gameID)
+	}
+
+	return nil
 }
 
 // Inserts a new record

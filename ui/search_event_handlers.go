@@ -20,12 +20,22 @@ func (a *App) handleSearchSelectResult(e *SearchSelectResultEvent) {
 
 	a.pages.HidePage(SEARCH_MODAL_ID)
 
-	// Load the matched session
-	a.sessionView.currentSessionID = &match.sessionID
-	a.sessionView.Refresh()
-
-	// Expand the parent game node and highlight the session in the tree
-	a.gameView.SelectSession(match.sessionID)
+	if match.isNotes {
+		gameState := a.GetSelectedGameState()
+		if gameState == nil || gameState.GameID == nil {
+			return
+		}
+		a.HandleEvent(&GameNotesSelectedEvent{
+			BaseEvent: BaseEvent{action: GAME_NOTES_SELECTED},
+			GameID:    *gameState.GameID,
+		})
+		a.gameView.SelectNotes(*gameState.GameID)
+	} else {
+		// Load the matched session and highlight it in the tree
+		a.sessionView.currentSessionID = &match.sessionID
+		a.sessionView.Refresh()
+		a.gameView.SelectSession(match.sessionID)
+	}
 
 	a.SetFocus(a.sessionView.TextArea)
 

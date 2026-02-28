@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"soloterm/domain/game"
 	"soloterm/domain/session"
 	"soloterm/domain/tag"
 	sharedui "soloterm/shared/ui"
@@ -23,8 +24,10 @@ type SessionView struct {
 	fileFormContainer *tview.Flex
 	app               *App
 	sessionService    *session.Service
+	gameService       *game.Service
 	currentSessionID  *int64
 	currentSession    *session.Session
+	currentGame       *game.Game // set when notes are loaded; nil otherwise
 	isLoading         bool
 	isDirty           bool
 	isImporting       bool
@@ -32,15 +35,21 @@ type SessionView struct {
 	autosaveStop      chan struct{}
 }
 
+// IsNotesMode reports whether the pane is displaying game notes rather than a session.
+func (sv *SessionView) IsNotesMode() bool {
+	return sv.currentSessionID == nil && sv.currentGame != nil
+}
+
 const (
 	DEFAULT_SECTION_TITLE = " [::b]Select/Add Session To View (Ctrl+L) "
 )
 
 // NewSessionView creates a new session view helper
-func NewSessionView(app *App, service *session.Service) *SessionView {
+func NewSessionView(app *App, service *session.Service, gameService *game.Service) *SessionView {
 	sessionView := &SessionView{
 		app:            app,
 		sessionService: service,
+		gameService:    gameService,
 		isDirty:        false,
 	}
 
@@ -209,14 +218,14 @@ func (sv *SessionView) setupKeyBindings() {
 			}
 			return nil
 		case tcell.KeyF5:
-			if sv.currentSessionID != nil {
+			if sv.currentSessionID != nil || sv.IsNotesMode() {
 				sv.Autosave()
 				sv.app.HandleEvent(&SearchShowEvent{
 					BaseEvent: BaseEvent{action: SEARCH_SHOW},
 				})
 			}
 		case tcell.KeyCtrlT:
-			if sv.currentSessionID != nil {
+			if sv.currentSessionID != nil || sv.IsNotesMode() {
 				sv.Autosave()
 				sv.app.HandleEvent(&TagShowEvent{
 					BaseEvent: BaseEvent{action: TAG_SHOW},
@@ -253,6 +262,14 @@ func (sv *SessionView) setupFocusHandlers() {
 				{"F4", "Dice"},
 				{"F5", "Search"},
 			}))
+		} else if sv.IsNotesMode() {
+			sv.app.updateFooterHelp(helpBar("Notes", []helpEntry{
+				{"PgUp/PgDn/↑/↓", "Scroll"},
+				{"F12", "Help"},
+				{"Ctrl+N", "New Session"},
+				{"Ctrl+T", "Tag"},
+				{"F5", "Search"},
+			}))
 		} else {
 			sv.app.updateFooterHelp(helpBar("Session", []helpEntry{
 				{"Ctrl+N", "New"},
@@ -270,19 +287,34 @@ func (sv *SessionView) setupFocusHandlers() {
 func (sv *SessionView) Reset() {
 	sv.currentSessionID = nil
 	sv.currentSession = nil
+	sv.currentGame = nil
 	sv.isLoading = false
 	sv.isDirty = false
 	sv.isImporting = false
+}
 
+func (sv *SessionView) SetText(text string, cursorAtEnd bool) {
+	sv.isLoading = true
+	sv.TextArea.SetText(text, cursorAtEnd)
+	sv.isLoading = false
 }
 
 // Refresh reloads the session tree from the database and restores selection
 func (sv *SessionView) Refresh() {
 	sv.Autosave()
 
+	if sv.IsNotesMode() {
+		sv.updateTitle()
+		if sv.currentGame.Notes != sv.TextArea.GetText() {
+			sv.SetText(sv.currentGame.Notes, false)
+		}
+		sv.TextArea.SetDisabled(false)
+		return
+	}
+
 	if sv.currentSessionID == nil {
 		sv.textAreaFrame.SetTitle(DEFAULT_SECTION_TITLE)
-		sv.TextArea.SetText("", true)
+		sv.SetText("", true)
 		sv.currentSession = nil
 		return
 	}
@@ -298,9 +330,7 @@ func (sv *SessionView) Refresh() {
 
 	// Skip SetText if content is unchanged (e.g. rename) to preserve cursor and scroll
 	if loadedSession.Content != sv.TextArea.GetText() {
-		sv.isLoading = true
-		sv.TextArea.SetText(loadedSession.Content, false)
-		sv.isLoading = false
+		sv.SetText(loadedSession.Content, false)
 	}
 	sv.TextArea.SetDisabled(false)
 }
@@ -386,39 +416,51 @@ func (sv *SessionView) ShowNewModal() {
 }
 
 func (sv *SessionView) ShowHelpModal() {
+	var title string
+	if sv.IsNotesMode() {
+		title = "Notes Help"
+	} else {
+		title = "Session Help"
+	}
+
 	sv.app.HandleEvent(&ShowHelpEvent{
 		BaseEvent:   BaseEvent{action: SHOW_HELP},
-		Title:       "Session Help",
+		Title:       title,
 		ReturnFocus: sv.TextArea,
 		Text:        sv.buildHelpText(),
 	})
 }
 
 func (sv *SessionView) buildHelpText() string {
-	return strings.NewReplacer(
-		"[yellow]", "["+Style.HelpKeyTextColor+"]",
-		"[white]", "["+Style.NormalTextColor+"]",
-		"[green]", "["+Style.HelpSectionColor+"]",
-	).Replace(`Scroll Down To View All Help Options
+	isNotes := sv.IsNotesMode()
+	var b strings.Builder
 
-[green]Session Management[white]
+	b.WriteString("Scroll Down To View All Help Options\n\n")
 
-Select the session in the game view to edit the name or delete the session.
+	if isNotes {
+		b.WriteString("[green]Notes[white]\n\n")
+		b.WriteString("Notes are where you can track things for the entire game. For example, key NPCs, locations, or other details that cross multiple sessions. Notes are also searchable and tags added here will appear in the list of available tags.\n\n")
+	} else {
+		b.WriteString("[green]Session Management[white]\n\n")
+		b.WriteString("Select the session in the game view to edit the name or delete the session.\n\n")
+	}
 
-[yellow]Note:[white] Do not paste large amounts of text into the session log. It is slow. Instead, use Import (see the help below)
+	b.WriteString("[yellow]Note:[white] Do not paste large amounts of text into the session log or notes. It is slow. Instead, use Import.\n\n")
+	b.WriteString("[yellow]Ctrl+N[white]: Add a new session.\n")
+	b.WriteString("[yellow]Ctrl-O[white]: Open a text file to import.\n")
+	b.WriteString("[yellow]Ctrl-X[white]: Export to a text file.\n")
+	b.WriteString("[yellow]F5[white]: Search the notes and sessions.\n")
 
-[yellow]Ctrl+N[white]: Add a new session.
-[yellow]Ctrl-O[white]: Open a text file to import. You can choose where the imported text is inserted into the log.
-[yellow]Ctrl-X[white]: Export the current session to a text file.
-[yellow]F5[white]: Search the sessions
+	if !isNotes {
+		b.WriteString("\n[green][:::https://zeruhur.itch.io/lonelog]Lonelog[:::-] https://zeruhur.itch.io/lonelog\n\n")
+		b.WriteString("[yellow]F2[white]: Insert the Character Action template.\n")
+		b.WriteString("[yellow]F3[white]: Insert the Oracle template.\n")
+		b.WriteString("[yellow]F4[white]: Insert the Dice template.\n")
+	}
 
-[green][:::https://zeruhur.itch.io/lonelog]Lonelog[:::-] https://zeruhur.itch.io/lonelog
+	b.WriteString("[yellow]Ctrl+T[white]: Select a template (NPC, Event, Location, etc.) to insert.\n")
 
-[yellow]F2[white]: Insert the Character Action template.
-[yellow]F3[white]: Insert the Oracle template.
-[yellow]F4[white]: Insert the Dice template.
-[yellow]Ctrl+T[white]: Select a template (NPC, Event, Location, etc.) to insert.
-
+	b.WriteString(`
 [green]Navigation
 
 [yellow]Left arrow[white]: Move left.
@@ -447,6 +489,12 @@ Type to enter text.
 [yellow]Ctrl-Z[white]: Undo.
 [yellow]Ctrl-Y[white]: Redo.
 `)
+
+	return strings.NewReplacer(
+		"[yellow]", "["+Style.HelpKeyTextColor+"]",
+		"[white]", "["+Style.NormalTextColor+"]",
+		"[green]", "["+Style.HelpSectionColor+"]",
+	).Replace(b.String())
 }
 
 // ShowEditModal displays the session form modal for editing an existing session
@@ -464,6 +512,16 @@ func (sv *SessionView) ShowEditModal(sessionID int64) {
 }
 
 func (sv *SessionView) updateTitle() {
+	keyHelp := " ([" + Style.HelpKeyTextColor + "]Ctrl+L[" + Style.NormalTextColor + "]) "
+	if sv.IsNotesMode() {
+		body := tview.Escape(sv.currentGame.Name) + ": Notes"
+		prefix := ""
+		if sv.isDirty {
+			prefix = "[" + Style.ErrorTextColor + "]●[-] "
+		}
+		sv.textAreaFrame.SetTitle(" " + prefix + "[::b]" + body + keyHelp)
+		return
+	}
 	if sv.currentSession == nil {
 		return
 	}
@@ -472,12 +530,28 @@ func (sv *SessionView) updateTitle() {
 	if sv.isDirty {
 		prefix = "[" + Style.ErrorTextColor + "]●[-] "
 	}
-	sv.textAreaFrame.SetTitle(" " + prefix + "[::b]" + body + " ([" + Style.HelpKeyTextColor + "]Ctrl+L[" + Style.NormalTextColor + "]) ")
+	sv.textAreaFrame.SetTitle(" " + prefix + "[::b]" + body + keyHelp)
 }
 
 // Autosave persists the current TextArea content if dirty
 func (sv *SessionView) Autosave() {
-	if !sv.isDirty || sv.currentSession == nil {
+	if !sv.isDirty {
+		return
+	}
+	if sv.IsNotesMode() {
+		content := sv.TextArea.GetText()
+		err := sv.gameService.SaveNotes(sv.currentGame.ID, content)
+		if err != nil {
+			sv.app.notification.ShowError(fmt.Sprintf("Autosave failed: %v", err))
+			return
+		}
+		sv.currentGame.Notes = content
+		sv.isDirty = false
+		sv.updateTitle()
+		sv.stopAutosave()
+		return
+	}
+	if sv.currentSession == nil {
 		return
 	}
 	sv.currentSession.Content = sv.TextArea.GetText()

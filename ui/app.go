@@ -85,12 +85,12 @@ func NewApp(db *database.DBStore, cfg *config.Config, info AppInfo) *App {
 
 	// Initialize views
 	app.gameView = NewGameView(app, gameService, sessionService)
-	app.sessionView = NewSessionView(app, sessionService)
-	app.tagView = NewTagView(app, cfg, tagService)
+	app.sessionView = NewSessionView(app, sessionService, gameService)
+	app.tagView = NewTagView(app, cfg, tagService, gameService)
 	app.attributeView = NewAttributeView(app, attrService)
 	app.characterView = NewCharacterView(app, charService)
 	app.diceView = NewDiceView(app)
-	app.searchView = NewSearchView(app, sessionService)
+	app.searchView = NewSearchView(app, sessionService, gameService)
 
 	app.setupUI()
 	return app
@@ -334,6 +334,8 @@ func (a *App) HandleEvent(event Event) {
 		dispatch(event, a.handleGameShowNew)
 	case GAME_SELECTED:
 		dispatch(event, a.handleGameSelected)
+	case GAME_NOTES_SELECTED:
+		dispatch(event, a.handleGameNotesSelected)
 	case CHARACTER_SAVED:
 		dispatch(event, a.handleCharacterSaved)
 	case CHARACTER_CANCEL:

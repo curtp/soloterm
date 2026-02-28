@@ -17,35 +17,41 @@ func NewService(sessionRepo *session.Repository) *Service {
 	return &Service{sessionRepo: sessionRepo}
 }
 
-// LoadTagsForGame loads both configured tags and recent tags from sessions
-// Returns configured tags first, then recent tags extracted from session content
-func (s *Service) LoadTagsForGame(gameID int64, configTags []TagType, excludeWords []string) ([]TagType, error) {
+// TagsForGame holds the three categories of tags for a game.
+type TagsForGame struct {
+	Config []TagType // configured tag types (from config file)
+	Active []TagType // extracted from session content, filtered by exclude words
+	Notes  []TagType // extracted from notes content, filtered by exclude words
+}
+
+// LoadTagsForGame loads configured tags, active tags from sessions, and notes tags.
+// notesContent is the raw text of the game's notes document.
+func (s *Service) LoadTagsForGame(gameID int64, notesContent string, configTags []TagType, excludeWords []string) (*TagsForGame, error) {
 	// Sort the config tags by label
 	sort.Slice(configTags, func(i, j int) bool {
 		return configTags[i].Label < configTags[j].Label
 	})
 
+	result := &TagsForGame{Config: configTags}
+
 	// If no game selected, just return configured tags
 	if gameID == 0 {
-		return configTags, nil
+		return result, nil
 	}
 
 	// Get all session content for the game
 	contents, err := s.sessionRepo.GetAllContentForGame(gameID)
 	if err != nil {
-		// Return configured tags even if loading fails
-		return configTags, nil
+		return result, nil
 	}
 
-	// Extract recent tags from session content
-	recentTags := s.extractRecentTags(contents, excludeWords)
+	result.Active = s.extractRecentTags(contents, excludeWords)
 
-	// Combine: configured tags first, then recent tags
-	allTags := make([]TagType, 0, len(configTags)+len(recentTags))
-	allTags = append(allTags, configTags...)
-	allTags = append(allTags, recentTags...)
+	if notesContent != "" {
+		result.Notes = s.extractRecentTags([]string{notesContent}, excludeWords)
+	}
 
-	return allTags, nil
+	return result, nil
 }
 
 // extractRecentTags extracts tags from session content, deduplicates by type, keeps most recent

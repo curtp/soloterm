@@ -27,6 +27,11 @@ func (s *Service) Save(g *Game) (*Game, error) {
 	return g, nil
 }
 
+// SaveNotes updates the notes on a game
+func (s *Service) SaveNotes(gameID int64, notes string) error {
+	return s.repo.SaveNotes(gameID, notes)
+}
+
 // Delete removes a game by ID
 func (s *Service) Delete(id int64) error {
 	_, err := s.repo.Delete(id)

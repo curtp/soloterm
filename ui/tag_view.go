@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"soloterm/config"
+	"soloterm/domain/game"
 	"soloterm/domain/tag"
 	"soloterm/shared/text"
 	"strings"
@@ -16,6 +17,7 @@ type TagView struct {
 	app             *App
 	cfg             *config.Config
 	tagService      *tag.Service
+	gameService     *game.Service
 	Modal           *tview.Flex
 	tagModalContent *tview.Flex
 	tagFrame        *tview.Frame
@@ -25,8 +27,8 @@ type TagView struct {
 }
 
 // NewTagView creates a new tag view
-func NewTagView(app *App, cfg *config.Config, tagService *tag.Service) *TagView {
-	tagView := &TagView{app: app, cfg: cfg, tagService: tagService}
+func NewTagView(app *App, cfg *config.Config, tagService *tag.Service, gameService *game.Service) *TagView {
+	tagView := &TagView{app: app, cfg: cfg, tagService: tagService, gameService: gameService}
 
 	tagView.Setup()
 
@@ -109,62 +111,71 @@ func (tv *TagView) Refresh() {
 		gameID = *gameState.GameID
 	}
 
-	// Load tags: configured + recent from logs
-	allTags, err := tv.tagService.LoadTagsForGame(gameID, tv.cfg.TagTypes, tv.cfg.TagExcludeWords)
+	// Fetch notes content for the current game
+	notesContent := ""
+	if gameID != 0 {
+		if g, err := tv.gameService.GetByID(gameID); err == nil {
+			notesContent = g.Notes
+		}
+	}
+
+	// Load tags: configured, active (from sessions), and notes
+	tagsResult, err := tv.tagService.LoadTagsForGame(gameID, notesContent, tv.cfg.TagTypes, tv.cfg.TagExcludeWords)
 	if err != nil {
-		// If loading fails, just show configured tags
-		allTags = tv.cfg.TagTypes
+		tagsResult = &tag.TagsForGame{Config: tv.cfg.TagTypes}
 	}
 
 	currentRow := 1
 
-	// Add configured tags
-	configTags := tv.cfg.TagTypes
-	for _, tagType := range configTags {
-		tv.TagTable.SetCell(currentRow, 0, tview.NewTableCell(tagType.Label).
-			SetTextColor(tcell.ColorWhite).
-			SetAlign(tview.AlignLeft).
-			SetMaxWidth(25).
-			SetExpansion(0))
-		tv.TagTable.SetCell(currentRow, 1, tview.NewTableCell(tview.Escape(tagType.Template)).
-			SetTextColor(tcell.ColorWhite).
-			SetAlign(tview.AlignLeft).
-			SetExpansion(1).
-			SetReference(tagType.Template))
+	for _, tagType := range tagsResult.Config {
+		tv.addTagRow(currentRow, tagType)
 		currentRow++
 	}
 
-	// Add separator if we have recent tags
-	recentTags := allTags[len(configTags):]
-	if len(recentTags) > 0 {
-		tv.TagTable.SetCell(currentRow, 0, tview.NewTableCell("─── Active Tags ───").
-			SetTextColor(tcell.ColorYellow).
-			SetAlign(tview.AlignLeft).
-			SetMaxWidth(25).
-			SetExpansion(0).
-			SetSelectable(false))
-		tv.TagTable.SetCell(currentRow, 1, tview.NewTableCell("").
-			SetTextColor(tcell.ColorYellow).
-			SetAlign(tview.AlignLeft).
-			SetExpansion(1).
-			SetSelectable(false))
+	if len(tagsResult.Active) > 0 {
+		tv.addSectionHeader(currentRow, "─── Active Tags ───")
 		currentRow++
-
-		// Add recent tags
-		for _, tagType := range recentTags {
-			tv.TagTable.SetCell(currentRow, 0, tview.NewTableCell(tagType.Label).
-				SetTextColor(tcell.ColorWhite).
-				SetAlign(tview.AlignLeft).
-				SetMaxWidth(25).
-				SetExpansion(0))
-			tv.TagTable.SetCell(currentRow, 1, tview.NewTableCell(tview.Escape(tagType.Template)).
-				SetTextColor(tcell.ColorWhite).
-				SetAlign(tview.AlignLeft).
-				SetExpansion(1).
-				SetReference(tagType.Template))
+		for _, tagType := range tagsResult.Active {
+			tv.addTagRow(currentRow, tagType)
 			currentRow++
 		}
 	}
+
+	if len(tagsResult.Notes) > 0 {
+		tv.addSectionHeader(currentRow, "─── Notes Tags ───")
+		currentRow++
+		for _, tagType := range tagsResult.Notes {
+			tv.addTagRow(currentRow, tagType)
+			currentRow++
+		}
+	}
+}
+
+func (tv *TagView) addSectionHeader(row int, label string) {
+	tv.TagTable.SetCell(row, 0, tview.NewTableCell(label).
+		SetTextColor(tcell.ColorYellow).
+		SetAlign(tview.AlignLeft).
+		SetMaxWidth(25).
+		SetExpansion(0).
+		SetSelectable(false))
+	tv.TagTable.SetCell(row, 1, tview.NewTableCell("").
+		SetTextColor(tcell.ColorYellow).
+		SetAlign(tview.AlignLeft).
+		SetExpansion(1).
+		SetSelectable(false))
+}
+
+func (tv *TagView) addTagRow(row int, tagType tag.TagType) {
+	tv.TagTable.SetCell(row, 0, tview.NewTableCell(tagType.Label).
+		SetTextColor(tcell.ColorWhite).
+		SetAlign(tview.AlignLeft).
+		SetMaxWidth(25).
+		SetExpansion(0))
+	tv.TagTable.SetCell(row, 1, tview.NewTableCell(tview.Escape(tagType.Template)).
+		SetTextColor(tcell.ColorWhite).
+		SetAlign(tview.AlignLeft).
+		SetExpansion(1).
+		SetReference(tagType.Template))
 }
 
 func (tv *TagView) selectTag() {

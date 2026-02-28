@@ -120,9 +120,7 @@ func TestSessionView_ExportFile(t *testing.T) {
 	// Select the session and add content
 	app.sessionView.currentSessionID = &s.ID
 	app.sessionView.Refresh()
-	app.sessionView.isLoading = true
-	app.sessionView.TextArea.SetText("# Exported Content\n\nSession notes here.", false)
-	app.sessionView.isLoading = false
+	app.sessionView.SetText("# Exported Content\n\nSession notes here.", false)
 
 	// Open export modal via Ctrl+X
 	tmpDir := t.TempDir()
@@ -173,9 +171,7 @@ func TestSessionView_ImportCancelDoesNothing(t *testing.T) {
 	// Select the session and add content
 	app.sessionView.currentSessionID = &s.ID
 	app.sessionView.Refresh()
-	app.sessionView.isLoading = true
-	app.sessionView.TextArea.SetText("Original content", false)
-	app.sessionView.isLoading = false
+	app.sessionView.SetText("Original content", false)
 
 	// Open import modal and cancel
 	app.SetFocus(app.sessionView.TextArea)
@@ -215,9 +211,7 @@ func TestSessionView_ImportReplacesExistingContent(t *testing.T) {
 	// Select the session and set initial content
 	app.sessionView.currentSessionID = &s.ID
 	app.sessionView.Refresh()
-	app.sessionView.isLoading = true
-	app.sessionView.TextArea.SetText("Old content that should be replaced", false)
-	app.sessionView.isLoading = false
+	app.sessionView.SetText("Old content that should be replaced", false)
 
 	// Create a temp file with new content
 	tmpDir := t.TempDir()
@@ -269,9 +263,7 @@ func TestSessionView_ImportPosition_Before(t *testing.T) {
 	s := createSession(t, app, g.ID, "Session")
 	app.sessionView.currentSessionID = &s.ID
 	app.sessionView.Refresh()
-	app.sessionView.isLoading = true
-	app.sessionView.TextArea.SetText("existing\n", false)
-	app.sessionView.isLoading = false
+	app.sessionView.SetText("existing\n", false)
 
 	tmpDir := t.TempDir()
 	importPath := filepath.Join(tmpDir, "import.md")
@@ -293,9 +285,7 @@ func TestSessionView_ImportPosition_After(t *testing.T) {
 	s := createSession(t, app, g.ID, "Session")
 	app.sessionView.currentSessionID = &s.ID
 	app.sessionView.Refresh()
-	app.sessionView.isLoading = true
-	app.sessionView.TextArea.SetText("existing\n", false)
-	app.sessionView.isLoading = false
+	app.sessionView.SetText("existing\n", false)
 
 	tmpDir := t.TempDir()
 	importPath := filepath.Join(tmpDir, "import.md")
@@ -318,9 +308,7 @@ func TestSessionView_ImportPosition_AtCursor(t *testing.T) {
 	app.sessionView.currentSessionID = &s.ID
 	app.sessionView.Refresh()
 	// SetText with cursorAtTheEnd=false places cursor at position 0 (the beginning)
-	app.sessionView.isLoading = true
-	app.sessionView.TextArea.SetText("AFTER", false)
-	app.sessionView.isLoading = false
+	app.sessionView.SetText("AFTER", false)
 
 	tmpDir := t.TempDir()
 	importPath := filepath.Join(tmpDir, "import.md")

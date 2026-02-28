@@ -44,6 +44,12 @@ func createGame(t *testing.T, app *App, name string) *game.Game {
 	return g
 }
 
+func addNotesToGame(t *testing.T, app *App, gameID int64, notes string) {
+	t.Helper()
+	err := app.gameView.gameService.SaveNotes(gameID, notes)
+	require.NoError(t, err, "Failed to set notes on game")
+}
+
 func createSession(t *testing.T, app *App, gameID int64, name string) *session.Session {
 	t.Helper()
 	s := &session.Session{GameID: gameID, Name: name}
@@ -261,8 +267,10 @@ func TestGameView_SelectGame(t *testing.T) {
 	testHelper.SimulateEnter(app.gameView.Tree, app.Application)
 	assert.Equal(t, game.ID, *app.gameView.GetCurrentSelection().GameID)
 
-	// The child node letting them know there are no sessions yet
-	assert.Equal(t, "(No sessions yet)", app.gameView.Tree.GetCurrentNode().GetChildren()[0].GetText())
+	// Game node children: Notes first, then the no-sessions placeholder
+	gameChildren := root.GetChildren()[0].GetChildren()
+	assert.Equal(t, "Notes", gameChildren[0].GetText())
+	assert.Equal(t, "(No sessions yet)", gameChildren[1].GetText())
 
 	t.Run("select a session", func(t *testing.T) {
 		session := createSession(t, app, game.ID, "New Session")

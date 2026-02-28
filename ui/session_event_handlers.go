@@ -25,7 +25,22 @@ func (a *App) handleSessionCancelled(e *SessionCancelledEvent) {
 	a.SetFocus(a.gameView.Tree)
 }
 
+func (a *App) handleGameNotesSelected(e *GameNotesSelectedEvent) {
+	a.sessionView.Autosave() // persist current content before switching modes
+	g, err := a.sessionView.gameService.GetByID(e.GameID)
+	if err != nil {
+		a.notification.ShowError(fmt.Sprintf("Error loading notes: %v", err))
+		return
+	}
+	a.sessionView.currentSessionID = nil
+	a.sessionView.currentSession = nil
+	a.sessionView.currentGame = g
+	a.sessionView.Refresh()
+}
+
 func (a *App) handleSessionSelected(e *SessionSelectedEvent) {
+	a.sessionView.Autosave() // persist notes or session content before switching
+	a.sessionView.currentGame = nil
 	a.sessionView.currentSessionID = &e.SessionID
 	a.sessionView.Refresh()
 }
@@ -97,7 +112,7 @@ func (a *App) handleSessionDeleteFailed(e *SessionDeleteFailedEvent) {
 }
 
 func (a *App) handleSessionShowImport(_ *SessionShowImportEvent) {
-	if a.sessionView.currentSessionID == nil {
+	if a.sessionView.currentSessionID == nil && !a.sessionView.IsNotesMode() {
 		return
 	}
 	a.sessionView.isImporting = true
@@ -111,7 +126,7 @@ func (a *App) handleSessionShowImport(_ *SessionShowImportEvent) {
 }
 
 func (a *App) handleSessionShowExport(_ *SessionShowExportEvent) {
-	if a.sessionView.currentSessionID == nil {
+	if a.sessionView.currentSessionID == nil && !a.sessionView.IsNotesMode() {
 		return
 	}
 	a.sessionView.isImporting = false
@@ -148,23 +163,17 @@ func (a *App) handleSessionImport(_ *SessionImportEvent) {
 	content := string(data)
 	switch sv.FileForm.GetImportPosition() {
 	case ImportBefore:
-		sv.isLoading = true
-		sv.TextArea.SetText(content+sv.TextArea.GetText(), false)
-		sv.isLoading = false
+		sv.SetText(content+sv.TextArea.GetText(), false)
 		sv.isDirty = true
 		sv.updateTitle()
 	case ImportAfter:
-		sv.isLoading = true
-		sv.TextArea.SetText(sv.TextArea.GetText()+content, false)
-		sv.isLoading = false
+		sv.SetText(sv.TextArea.GetText()+content, false)
 		sv.isDirty = true
 		sv.updateTitle()
 	case ImportAtCursor:
 		sv.InsertAtCursor(content) // ChangedFunc handles isDirty + updateTitle
 	default: // ImportReplace
-		sv.isLoading = true
-		sv.TextArea.SetText(content, false)
-		sv.isLoading = false
+		sv.SetText(content, false)
 		sv.isDirty = true
 		sv.updateTitle()
 	}

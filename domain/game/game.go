@@ -19,6 +19,7 @@ type Game struct {
 	ID          int64     `db:"id"`
 	Name        string    `db:"name"`
 	Description *string   `db:"description"` // May be nil
+	Notes       string    `db:"notes"`
 	CreatedAt   time.Time `db:"created_at"`
 	UpdatedAt   time.Time `db:"updated_at"`
 }

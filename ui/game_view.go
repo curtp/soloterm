@@ -25,6 +25,7 @@ type GameView struct {
 type GameState struct {
 	GameID    *int64
 	SessionID *int64
+	IsNotes   bool
 }
 
 // NewGameView creates a new game view helper
@@ -75,6 +76,15 @@ func (gv *GameView) setupTreeView() {
 		// If node has children (it's a game), expand/collapse it
 		if len(node.GetChildren()) > 0 {
 			node.SetExpanded(!node.IsExpanded())
+			return
+		}
+
+		// Selected the Notes node
+		if currentSelection.IsNotes {
+			gv.app.HandleEvent(&GameNotesSelectedEvent{
+				BaseEvent: BaseEvent{action: GAME_NOTES_SELECTED},
+				GameID:    *currentSelection.GameID,
+			})
 			return
 		}
 
@@ -210,6 +220,15 @@ func (gv *GameView) Refresh() {
 			gameNode.SetExpanded(true)
 		}
 
+		// Add the notes node
+		reference = &GameState{GameID: &g.Game.ID, IsNotes: true}
+		notesNode := tview.NewTreeNode("Notes").
+			SetReference(reference).
+			SetColor(Style.ChildTreeNodeColor).
+			SetSelectable(true).
+			SetExpanded(false)
+		gameNode.AddChild(notesNode)
+
 		// Load sessions for this game
 		if len(g.Sessions) == 0 {
 			sessionPlaceholder := tview.NewTreeNode("(No sessions yet)").
@@ -278,6 +297,31 @@ func (gv *GameView) SelectGame(gameID *int64) {
 	if foundNode != nil {
 		gv.Tree.SetCurrentNode(foundNode)
 		foundNode.SetExpanded(true)
+	}
+}
+
+func (gv *GameView) SelectNotes(gameID int64) {
+	if gv.Tree.GetRoot() == nil {
+		return
+	}
+
+	var foundNode *tview.TreeNode
+	gv.Tree.GetRoot().Walk(func(node, parent *tview.TreeNode) bool {
+		ref := node.GetReference()
+		if ref != nil {
+			if state, ok := ref.(*GameState); ok && state.IsNotes && state.GameID != nil && *state.GameID == gameID {
+				foundNode = node
+				if parent != nil {
+					parent.SetExpanded(true)
+				}
+				return false
+			}
+		}
+		return true
+	})
+
+	if foundNode != nil {
+		gv.Tree.SetCurrentNode(foundNode)
 	}
 }
 

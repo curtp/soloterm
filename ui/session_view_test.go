@@ -99,6 +99,7 @@ func TestSessionView_EditSession(t *testing.T) {
 func TestSessionView_DeleteSession(t *testing.T) {
 	app := setupTestApp(t)
 	g := createGame(t, app, "Test Game")
+	addNotesToGame(t, app, g.ID, "these are some notes")
 	s := createSession(t, app, g.ID, "Session To Delete")
 
 	// Navigate to and select the session via the game tree, then open edit modal
@@ -121,6 +122,11 @@ func TestSessionView_DeleteSession(t *testing.T) {
 	sessions, err := app.sessionView.sessionService.GetAllForGame(g.ID)
 	require.NoError(t, err)
 	assert.Empty(t, sessions)
+
+	// Verify the game still has notes
+	g, err = app.gameView.gameService.GetByID(g.ID)
+	assert.Nil(t, err, "Expected err to be nil")
+	assert.NotEqual(t, "", g.Notes, "Expected notes to not be empty")
 
 	// Verify the current session is cleared
 	assert.Nil(t, app.sessionView.currentSessionID, "Expected current session to be nil after deletion")
@@ -214,14 +220,15 @@ func TestSessionView_SessionAppearsInGameTree(t *testing.T) {
 	s := createSession(t, app, g.ID, "New Session")
 	app.gameView.Refresh()
 
-	// The game node should have the session as a child
+	// The game node should have Notes first, then the session
 	root := app.gameView.Tree.GetRoot()
 	gameNode := root.GetChildren()[0]
-	sessionNodes := gameNode.GetChildren()
+	children := gameNode.GetChildren()
 
-	require.Len(t, sessionNodes, 1)
+	require.Len(t, children, 2)
+	assert.Equal(t, "Notes", children[0].GetText())
 	expectedLabel := "New Session (" + s.CreatedAt.Format("2006-01-02") + ")"
-	assert.Equal(t, expectedLabel, sessionNodes[0].GetText())
+	assert.Equal(t, expectedLabel, children[1].GetText())
 }
 
 func TestSessionView_ShowHelpModal(t *testing.T) {
@@ -254,12 +261,12 @@ func TestSessionView_InsertMainTemplates(t *testing.T) {
 	assert.Equal(t, "@ \nd: ->\n=> ", app.sessionView.TextArea.GetText())
 
 	// Reset the text, then insert the next template
-	app.sessionView.TextArea.SetText("", true)
+	app.sessionView.SetText("", true)
 	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyF3)
 	assert.Equal(t, "? \nd: ->\n=> ", app.sessionView.TextArea.GetText())
 
 	// Reset the text, then insert the next template
-	app.sessionView.TextArea.SetText("", true)
+	app.sessionView.SetText("", true)
 	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyF4)
 	assert.Equal(t, "d: ->\n=> ", app.sessionView.TextArea.GetText())
 

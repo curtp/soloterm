@@ -21,6 +21,7 @@ const (
 	GAME_SHOW_NEW               UserAction = "game_show_new"
 	GAME_SHOW_EDIT              UserAction = "game_show_edit"
 	GAME_SELECTED               UserAction = "game_selected"
+	GAME_NOTES_SELECTED         UserAction = "game_notes_selected"
 	CHARACTER_SAVED             UserAction = "character_saved"
 	CHARACTER_DELETED           UserAction = "character_deleted"
 	CHARACTER_DELETE_CONFIRM    UserAction = "character_delete_confirm"
@@ -123,6 +124,11 @@ type GameShowNewEvent struct {
 
 type GameSelectedEvent struct {
 	BaseEvent
+}
+
+type GameNotesSelectedEvent struct {
+	BaseEvent
+	GameID int64
 }
 
 // ====== CHARACTER SPECIFIC EVENTS ======

@@ -16,6 +16,10 @@ func Migrate(dbStore *database.DBStore) error {
 		return err
 	}
 
+	if err := addNotesToGamesTable(dbStore); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -26,6 +30,7 @@ func createGamesTable(dbStore *database.DBStore) error {
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			name STRING NOT NULL,
 			description TEXT,
+			notes TEXT default '',
 			created_at DATETIME NOT NULL,
 			updated_at DATETIME NOT NULL
 		);
@@ -34,4 +39,9 @@ func createGamesTable(dbStore *database.DBStore) error {
 	`
 	_, err := dbStore.Connection.Exec(schema)
 	return err
+}
+
+func addNotesToGamesTable(dbStore *database.DBStore) error {
+	defaultValue := "''"
+	return database.AddColumn(dbStore.Connection, "games", "notes", "text", false, &defaultValue)
 }

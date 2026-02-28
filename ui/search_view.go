@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"soloterm/domain/game"
 	"soloterm/domain/session"
 	"strings"
 
@@ -14,12 +15,14 @@ const searchContextLen = 40
 type searchMatch struct {
 	sessionID   int64
 	sessionName string
-	offset      int // byte offset into session content
+	offset      int  // byte offset into content
+	isNotes     bool // true = match is in game notes, not a session
 }
 
 type SearchView struct {
 	app                *App
 	sessionService     *session.Service
+	gameService        *game.Service
 	Modal              *tview.Flex
 	searchModalContent *tview.Flex
 	searchFrame        *tview.Frame
@@ -32,8 +35,8 @@ type SearchView struct {
 }
 
 // NewSearchView creates a new search view
-func NewSearchView(app *App, sessionService *session.Service) *SearchView {
-	searchView := &SearchView{app: app, sessionService: sessionService}
+func NewSearchView(app *App, sessionService *session.Service, gameService *game.Service) *SearchView {
+	searchView := &SearchView{app: app, sessionService: sessionService, gameService: gameService}
 	searchView.setup()
 	return searchView
 }
@@ -225,73 +228,83 @@ func (sv *SearchView) performSearch(key tcell.Key) {
 	sv.lastTerm = term
 	sv.currentMatchIdx = 0
 
-	if len(sessions) == 0 {
+	var b strings.Builder
+
+	// Search game notes first
+	if g, err := sv.gameService.GetByID(*gameState.GameID); err == nil && g.Notes != "" {
+		sv.searchContent(&b, g.Notes, "Notes", term, 0, true)
+	}
+
+	// Then search sessions
+	for _, s := range sessions {
+		sv.searchContent(&b, s.Content, s.Name, term, s.ID, false)
+	}
+
+	if len(sv.matches) == 0 {
 		sv.searchTextView.SetText("No results found.")
 		sv.searchTextView.Highlight()
 		sv.updateMatchCount()
 		return
 	}
 
+	sv.searchTextView.SetText(b.String())
+	// Highlight the first match but don't scroll — let all results show
+	// from the top. ScrollToHighlight is only used during Up/Down navigation.
+	sv.searchTextView.Highlight("m0")
+	sv.updateMatchCount()
+	sv.app.SetFocus(sv.searchTextView)
+}
+
+// searchContent scans content for all occurrences of term, appending a match
+// entry and writing a formatted result block to b for each one found.
+func (sv *SearchView) searchContent(b *strings.Builder, content, sessionName, term string, sessionID int64, isNotes bool) {
 	termLower := strings.ToLower(term)
-	var b strings.Builder
+	contentLower := strings.ToLower(content)
+	searchFrom := 0
 
-	for _, s := range sessions {
-		contentLower := strings.ToLower(s.Content)
-		searchFrom := 0
+	for {
+		rel := strings.Index(contentLower[searchFrom:], termLower)
+		if rel < 0 {
+			break
+		}
+		absOffset := searchFrom + rel
+		matchIdx := len(sv.matches)
 
-		for {
-			rel := strings.Index(contentLower[searchFrom:], termLower)
-			if rel < 0 {
-				break
-			}
-			absOffset := searchFrom + rel
-			matchIdx := len(sv.matches)
+		sv.matches = append(sv.matches, searchMatch{
+			sessionID:   sessionID,
+			sessionName: sessionName,
+			offset:      absOffset,
+			isNotes:     isNotes,
+		})
 
-			sv.matches = append(sv.matches, searchMatch{
-				sessionID:   s.ID,
-				sessionName: s.Name,
-				offset:      absOffset,
-			})
+		startCtx := max(0, absOffset-searchContextLen)
+		endCtx := min(len(content), absOffset+len(term)+searchContextLen)
 
-			// Build context window around the match
-			startCtx := max(0, absOffset-searchContextLen)
-			endCtx := min(len(s.Content), absOffset+len(term)+searchContextLen)
+		prefix := ""
+		if startCtx > 0 {
+			prefix = "..."
+		}
+		suffix := ""
+		if endCtx < len(content) {
+			suffix = "..."
+		}
 
-			prefix := ""
-			if startCtx > 0 {
-				prefix = "..."
-			}
-			suffix := ""
-			if endCtx < len(s.Content) {
-				suffix = "..."
-			}
+		before := tview.Escape(normalizeWhitespace(content[startCtx:absOffset]))
+		matchText := tview.Escape(content[absOffset : absOffset+len(term)])
+		after := tview.Escape(normalizeWhitespace(content[absOffset+len(term) : endCtx]))
 
-			before := tview.Escape(normalizeWhitespace(s.Content[startCtx:absOffset]))
-			matchText := tview.Escape(s.Content[absOffset : absOffset+len(term)])
-			after := tview.Escape(normalizeWhitespace(s.Content[absOffset+len(term) : endCtx]))
+		regionID := fmt.Sprintf("m%d", matchIdx)
+		fmt.Fprintf(b, "[\"%s\"][aqua::b]%s[-:-:-][\"\"]\n%s%s[yellow::b]%s[-:-:-]%s%s\n\n",
+			regionID,
+			tview.Escape(sessionName),
+			prefix, before,
+			matchText,
+			after, suffix,
+		)
 
-			regionID := fmt.Sprintf("m%d", matchIdx)
-			fmt.Fprintf(&b, "[\"%s\"][aqua::b]%s[-:-:-][\"\"]\n%s%s[yellow::b]%s[-:-:-]%s%s\n\n",
-				regionID,
-				tview.Escape(s.Name),
-				prefix, before,
-				matchText,
-				after, suffix,
-			)
-
-			searchFrom = absOffset + len(termLower)
-			if searchFrom >= len(contentLower) {
-				break
-			}
+		searchFrom = absOffset + len(termLower)
+		if searchFrom >= len(contentLower) {
+			break
 		}
 	}
-
-	sv.searchTextView.SetText(b.String())
-	if len(sv.matches) > 0 {
-		// Highlight the first match but don't scroll — let all results show
-		// from the top. ScrollToHighlight is only used during Up/Down navigation.
-		sv.searchTextView.Highlight("m0")
-		sv.updateMatchCount()
-	}
-	sv.app.SetFocus(sv.searchTextView)
 }
