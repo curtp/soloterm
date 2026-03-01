@@ -74,7 +74,6 @@ func (ff *FileForm) SetImportMode(isImport bool) {
 	ff.Clear(false) // clear items, keep buttons
 	ff.AddFormItem(ff.pathField)
 	if isImport {
-		ff.positionField.SetCurrentOption(0)
 		ff.AddFormItem(ff.positionField)
 	}
 }
@@ -85,9 +84,12 @@ func (ff *FileForm) GetImportPosition() ImportPosition {
 	return ImportPosition(idx)
 }
 
-// Reset clears the form fields and error, setting the path to defaultPath
+// Reset clears errors and refocuses the form. Only sets the path to defaultPath
+// if the path field is currently empty, so previous selections are retained.
 func (ff *FileForm) Reset(defaultPath string) {
-	ff.pathField.SetText(defaultPath)
+	if ff.pathField.GetText() == "" {
+		ff.pathField.SetText(defaultPath)
+	}
 	ff.pathField.Autocomplete() // dismiss any lingering autocomplete list
 	ff.ClearError()
 	ff.SetFocus(0)
