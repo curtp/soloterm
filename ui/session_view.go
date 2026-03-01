@@ -184,9 +184,9 @@ func (sv *SessionView) setupFileModal() {
 			tview.NewFlex().
 				SetDirection(tview.FlexRow).
 				AddItem(nil, 0, 1, false).
-				AddItem(sv.fileFormContainer, 12, 1, true).
+				AddItem(sv.fileFormContainer, 12, 0, true).
 				AddItem(nil, 0, 1, false),
-			60, 1, true,
+			0, 2, true,
 		).
 		AddItem(nil, 0, 1, false)
 	// sv.FileModal.SetBackgroundColor(tcell.ColorBlack)
