@@ -22,7 +22,6 @@ func NewRepository(db *database.DBStore) *Repository {
 // Automatically manages created_at, and updated_at
 // The game pointer is updated with the current values after save
 func (r *Repository) Save(game *Game) error {
-	log.Printf("Saving game: %+v", game)
 	if game.ID == 0 {
 		// INSERT - new game
 		return r.insert(game)
