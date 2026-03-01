@@ -324,7 +324,7 @@ func TestSessionView_ImportPosition_AtCursor(t *testing.T) {
 	assert.Equal(t, "BEFORE AFTER", app.sessionView.TextArea.GetText())
 }
 
-func TestSessionView_ImportPosition_ResetsToReplaceOnReopen(t *testing.T) {
+func TestSessionView_ImportPosition_RetainedOnReopen(t *testing.T) {
 	app := setupTestApp(t)
 	g := createGame(t, app, "Test Game")
 	s := createSession(t, app, g.ID, "Session")
@@ -339,9 +339,9 @@ func TestSessionView_ImportPosition_ResetsToReplaceOnReopen(t *testing.T) {
 	idx, _ := app.sessionView.FileForm.positionField.GetCurrentOption()
 	assert.Equal(t, int(ImportAfter), idx)
 
-	// Cancel and reopen — position should reset to Replace
+	// Cancel and reopen — position should be retained
 	testHelper.SimulateKey(app.sessionView.FileForm, app.Application, tcell.KeyEscape)
 	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlO)
 	idx, _ = app.sessionView.FileForm.positionField.GetCurrentOption()
-	assert.Equal(t, int(ImportReplace), idx, "Expected position to reset to Replace on reopen")
+	assert.Equal(t, int(ImportAfter), idx, "Expected position to be retained on reopen")
 }
