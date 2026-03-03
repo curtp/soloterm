@@ -24,6 +24,7 @@ type GameView struct {
 
 type GameState struct {
 	GameID    *int64
+	GameName  string
 	SessionID *int64
 	IsNotes   bool
 }
@@ -203,7 +204,7 @@ func (gv *GameView) Refresh() {
 
 	// Add each game to the tree
 	for _, g := range games {
-		reference := &GameState{GameID: &g.Game.ID}
+		reference := &GameState{GameID: &g.Game.ID, GameName: g.Game.Name}
 		gameNode := tview.NewTreeNode(tview.Escape(g.Game.Name)).
 			SetReference(reference).
 			SetColor(Style.ParentTreeNodeColor).
@@ -218,7 +219,7 @@ func (gv *GameView) Refresh() {
 		}
 
 		// Add the notes node
-		reference = &GameState{GameID: &g.Game.ID, IsNotes: true}
+		reference = &GameState{GameID: &g.Game.ID, GameName: g.Game.Name, IsNotes: true}
 		notesNode := tview.NewTreeNode("Notes").
 			SetReference(reference).
 			SetColor(Style.ChildTreeNodeColor).
@@ -234,7 +235,7 @@ func (gv *GameView) Refresh() {
 			gameNode.AddChild(sessionPlaceholder)
 		} else {
 			for _, s := range g.Sessions {
-				reference = &GameState{GameID: &g.Game.ID, SessionID: &s.ID}
+				reference = &GameState{GameID: &g.Game.ID, GameName: g.Game.Name, SessionID: &s.ID}
 				sessionNode := tview.NewTreeNode(tview.Escape(s.Name) + " (" + s.CreatedAt.Format("2006-01-02") + ")").
 					SetReference(reference).
 					SetColor(Style.ChildTreeNodeColor).

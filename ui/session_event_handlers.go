@@ -9,13 +9,23 @@ import (
 )
 
 func (a *App) handleSessionShowNew(e *SessionShowNewEvent) {
-	a.sessionView.Modal.SetTitle(" New Session ")
-	selectedGameState := a.gameView.GetCurrentSelection()
-	if selectedGameState == nil {
-		a.notification.ShowWarning("Select a game before adding a session.")
-		return
+	var gameID int64
+	var gameName string
+	if a.sessionView.currentSession != nil {
+		gameID = a.sessionView.currentSession.GameID
+		gameName = a.sessionView.currentSession.GameName
+	} else {
+		selectedGameState := a.gameView.GetCurrentSelection()
+		if selectedGameState == nil {
+			a.notification.ShowWarning("Select a game before adding a session.")
+			return
+		}
+		gameID = *selectedGameState.GameID
+		gameName = selectedGameState.GameName
 	}
-	a.sessionView.Form.Reset(*selectedGameState.GameID)
+
+	a.sessionView.Form.Reset(gameID)
+	a.sessionView.Form.SetTitle(" New Session — " + gameName + " ")
 	a.pages.ShowPage(SESSION_MODAL_ID)
 	a.SetFocus(a.sessionView.Form)
 }
