@@ -38,8 +38,7 @@ func (dv *DiceView) Setup() {
 // setupModal configures the dice modal
 func (dv *DiceView) setupModal() {
 	// Create the text area for capturing the rolls
-	dv.TextArea = tview.NewTextArea().
-		SetSize(4, 0)
+	dv.TextArea = tview.NewTextArea()
 	dv.TextArea.SetBorder(true).
 		SetTitle(" Rolls ").
 		SetTitleAlign(tview.AlignLeft)
@@ -70,7 +69,7 @@ func (dv *DiceView) setupModal() {
 			tview.NewFlex().
 				SetDirection(tview.FlexRow).
 				AddItem(nil, 0, 1, false).
-				AddItem(dv.diceFrame, 18, 0, true).
+				AddItem(dv.diceFrame, 0, 3, true).
 				AddItem(nil, 0, 1, false),
 			60, 1, true, // Width of the modal in columns
 		).
