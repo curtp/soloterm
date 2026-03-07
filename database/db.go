@@ -5,7 +5,6 @@ package database
 import (
 	"os"
 	"path/filepath"
-	"soloterm/shared/dirs"
 
 	"github.com/jmoiron/sqlx"
 	_ "modernc.org/sqlite"
@@ -26,28 +25,14 @@ func RegisterMigration(fn MigrationFunc) {
 	migrations = append(migrations, fn)
 }
 
-// Setup connects to the database and runs all migrations
-// Use ":memory:" for in-memory databases (useful for testing)
-// Provide a path to the file to connect to.
-// Leave path nil to use the DB_PATH environment variable
-// If DB_PATH isn't found, it will use the default directory.
+// Setup connects to the database and runs all migrations.
+// Use ":memory:" for in-memory databases (useful for testing).
 // Returns a ready-to-use DBStore.
 // * Use dbStore.Connection to interact with the database
 // * Use dbStore.Path to see what path is being used
-func Setup(path *string) (*DBStore, error) {
-
-	// If path isn't provided, try to get the path from either the
-	// environment or the default location
-	if path == nil {
-		dbPath, err := getDBPath()
-		if err != nil {
-			return nil, err
-		}
-		path = &dbPath
-	}
-
+func Setup(path string) (*DBStore, error) {
 	// Connect to database
-	dbStore, err := connectWithPath(*path)
+	dbStore, err := connectWithPath(path)
 	if err != nil {
 		return nil, err
 	}
@@ -96,17 +81,14 @@ func connectWithPath(dbPath string) (*DBStore, error) {
 	return &dbStore, nil
 }
 
-// getDBPath returns the path to the database file
-// Checks DB_PATH environment variable first, then falls back to the data directory
-func getDBPath() (string, error) {
-	if dbPath := os.Getenv("DB_PATH"); dbPath != "" {
-		return dbPath, nil
+// ResolveDBPath returns the database file path using the following precedence:
+// DB_PATH env var → configuredDir (database_dir in config.yaml) → defaultDir (platform data dir)
+func ResolveDBPath(configuredDir, defaultDir string) string {
+	if p := os.Getenv("DB_PATH"); p != "" {
+		return p
 	}
-
-	dataDir, err := dirs.DataDir()
-	if err != nil {
-		return "", err
+	if configuredDir != "" {
+		return filepath.Join(configuredDir, "soloterm.db")
 	}
-
-	return filepath.Join(dataDir, "soloterm.db"), nil
+	return filepath.Join(defaultDir, "soloterm.db")
 }

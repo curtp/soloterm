@@ -25,6 +25,7 @@ func setupTestApp(t *testing.T) *App {
 	t.Cleanup(func() { testHelper.TeardownTestDB(t, db) })
 
 	cfg := &config.Config{
+		CoreTags:        tag.DefaultCoreTags(),
 		TagTypes:        tag.DefaultTagTypes(),
 		TagExcludeWords: []string{"closed", "abandoned"},
 	}

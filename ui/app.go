@@ -33,10 +33,10 @@ const (
 )
 
 type AppInfo struct {
-	Version   string
-	ConfigDir string
-	DataDir   string
-	LogFile   string
+	Version      string
+	ConfigFile   string
+	LogFile      string
+	DatabasePath string
 }
 
 type App struct {
@@ -131,8 +131,8 @@ func (a *App) setupUI() {
 			"By Squidhead Games\n" +
 			"https://squidhead-games.itch.io\n\n" +
 			"Version " + a.info.Version + "\n\n" +
-			"Config: " + a.info.ConfigDir + "\n" +
-			"Data: " + a.info.DataDir + "\n" +
+			"Config: " + a.info.ConfigFile + "\n" +
+			"Database: " + a.info.DatabasePath + "\n" +
 			"Log: " + a.info.LogFile + "\n\n" +
 			"Lonelog by Loreseed Workshop\n" +
 			"https://zeruhur.itch.io/lonelog").

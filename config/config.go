@@ -18,6 +18,7 @@ const (
 // Config represents the application configuration
 type Config struct {
 	FullFilePath    string        `yaml:"-"`
+	DatabaseDir     string        `yaml:"database_dir,omitempty"`
 	CoreTags        tag.CoreTags  `yaml:"core_tags"`
 	TagTypes        []tag.TagType `yaml:"tag_types"`
 	TagExcludeWords []string      `yaml:"tag_exclude_words"`
@@ -102,6 +103,11 @@ func (c *Config) save() error {
 	}
 
 	yamlWithComments := `# Soloterm Configuration
+#
+# database_dir sets the directory where soloterm.db is stored.
+# Leave unset to use the default platform data directory.
+# The DB_PATH environment variable takes precedence over this setting if both are set.
+# Example: database_dir: /home/user/Dropbox/soloterm
 #
 # core_tags define the templates inserted by the built-in Lonelog keys (F2-F4).
 # Edit the template values to customise what is inserted. These entries are

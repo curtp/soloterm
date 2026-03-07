@@ -43,13 +43,16 @@ func main() {
 	defer logFile.Close()
 	log.Printf("Logs are written to: %s", logFile.Name())
 
+	// Resolve database path: DB_PATH env → config database_dir → default data dir
+	dbPath := database.ResolveDBPath(loadedCfg.DatabaseDir, dataDir)
+
 	// Setup database (connect + migrate)
-	db, err := database.Setup(nil)
+	db, err := database.Setup(dbPath)
 	if err != nil {
 		log.SetOutput(os.Stdout)
 		log.Fatal("Database setup failed: ", err)
 	}
-	log.Printf("Database is stored in: %s", dataDir)
+	log.Printf("Database is stored in: %s", dbPath)
 	defer db.Connection.Close()
 
 	log.Print("Starting...")
@@ -57,10 +60,10 @@ func main() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 
 	info := ui.AppInfo{
-		Version:   version,
-		ConfigDir: configDir,
-		DataDir:   dataDir,
-		LogFile:   logPath,
+		Version:      version,
+		ConfigFile:   loadedCfg.FullFilePath,
+		LogFile:      logPath,
+		DatabasePath: dbPath,
 	}
 
 	// Create and run the TUI application

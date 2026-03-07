@@ -43,7 +43,9 @@ The Notes Tags section includes tags that are in the Notes seciton of the game.
 Picking one of those tags will insert it into the log where you can fill out the details.
 
 ### Configuring Tags
-When the application starts, it creates a config.yaml file which you can edit to change the tags which are available. See the log written to the terminal when the application starts to see where the config.yaml file is located.
+When the application starts for the first time it creates a `config.yaml` file with sensible defaults. You can edit this file to change the available tags. Press **F1** in the app to see the exact path to your config file.
+
+See the [Configuration](#configuration) section for full details.
 
 ## Notes
 ![Screenshot](docs/notes_screen.png)
@@ -72,6 +74,68 @@ Depending on the game you're playing, the entire character sheet may fit in this
 You can roll dice from anywhere in the app. It follows the typical dice notation and allows tagging rolls with a label.
 
 When lauching the roller from within the session log, you can insert the roll result where the cursor is in the text area.
+
+# Configuration
+
+When the app starts for the first time it creates a `config.yaml` file with sensible defaults. You can edit this file to change how the app behaves. Press **F1** to see where the file is on your machine. The default locations are:
+
+| Platform | Path |
+|----------|------|
+| macOS    | `~/Library/Application Support/soloterm/config.yaml` |
+| Linux    | `~/.config/soloterm/config.yaml` |
+| Windows  | `%AppData%\soloterm\config.yaml` |
+
+## Core Tag Templates (`core_tags`)
+
+These are the templates inserted when you press **F2** (Character Action), **F3** (Oracle), and **F4** (Dice). You can change the `template` value under each entry to whatever works for your game system.
+
+```yaml
+core_tags:
+  action:
+    template: "@ \nd: ->\n=> "
+  oracle:
+    template: "? \nd: ->\n=> "
+  dice:
+    template: "d: ->\n=> "
+```
+
+If you leave a template blank or remove the entry entirely, the app will put the default back on the next startup.
+
+## Tag Types (`tag_types`)
+
+This is the list of tags shown in the tag selector (**Ctrl+T**). Each one has a `label` shown in the UI and a `template` that gets inserted when you pick it.
+
+```yaml
+tag_types:
+  - label: Location
+    template: "[L: | ]"
+  - label: NPC
+    template: "[N: | ]"
+```
+
+Add, remove, or change these to suit your game.
+
+## Tag Exclude Words (`tag_exclude_words`)
+
+Any tag whose data section contains one of these words won't show up in the Active Tags list. The matching is case-insensitive. It's handy for hiding tags you've already resolved or closed out.
+
+```yaml
+tag_exclude_words:
+  - closed
+  - abandoned
+```
+
+## Database Location (`database_dir`)
+
+By default the database is stored alongside the log file in the platform data directory. If you want to keep it somewhere else, like a Dropbox folder so your sessions sync across machines, just set this to the directory you want.
+
+```yaml
+database_dir: /home/user/Dropbox/soloterm
+```
+
+The database file is always named `soloterm.db`, so just point this at the folder.
+
+If you set the `DB_PATH` environment variable to a full file path, that takes priority over this setting.
 
 # Contributing/Reporting Issues
 This is a little side project that I used to learn Go. I don't intend this to be an application I plan on building a support structure around.
