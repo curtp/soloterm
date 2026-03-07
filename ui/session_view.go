@@ -3,7 +3,6 @@ package ui
 import (
 	"fmt"
 	"soloterm/domain/session"
-	"soloterm/domain/tag"
 	sharedui "soloterm/shared/ui"
 	"strings"
 	"time"
@@ -201,17 +200,17 @@ func (sv *SessionView) setupKeyBindings() {
 			return nil
 		case tcell.KeyF2:
 			if sv.currentSessionID != nil {
-				sv.InsertAtCursor(tag.CHARACTER_ACTION_TAG)
+				sv.InsertAtCursor(sv.app.cfg.CoreTags.Action.Template)
 			}
 			return nil
 		case tcell.KeyF3:
 			if sv.currentSessionID != nil {
-				sv.InsertAtCursor(tag.ORACLE_TAG)
+				sv.InsertAtCursor(sv.app.cfg.CoreTags.Oracle.Template)
 			}
 			return nil
 		case tcell.KeyF4:
 			if sv.currentSessionID != nil {
-				sv.InsertAtCursor(tag.DICE_TAG)
+				sv.InsertAtCursor(sv.app.cfg.CoreTags.Dice.Template)
 			}
 			return nil
 		case tcell.KeyF5:

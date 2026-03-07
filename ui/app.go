@@ -42,6 +42,8 @@ type AppInfo struct {
 type App struct {
 	*tview.Application
 
+	cfg *config.Config
+
 	// View helpers
 	gameView      *GameView
 	tagView       *TagView
@@ -81,6 +83,7 @@ func NewApp(db *database.DBStore, cfg *config.Config, info AppInfo) *App {
 
 	app := &App{
 		Application: tview.NewApplication(),
+		cfg:         cfg,
 		info:        info,
 	}
 

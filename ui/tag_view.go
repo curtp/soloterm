@@ -241,7 +241,11 @@ To close a tag so it no longer appears in the active list, add %s to its data se
 
 You can add, remove, or modify the available tags and close words by editing the configuration file:
 
-[aqua]%s[white]`, closeWords, tv.cfg.FullFilePath)
+[aqua]%s[white]
+
+[green]Core Tag Templates (F2–F4)[white]
+
+The templates inserted by [yellow]F2[white] (Action), [yellow]F3[white] (Oracle), and [yellow]F4[white] (Dice) can be customised in the [yellow]core_tags[white] section of the same config file. If a template is left blank or the entry is removed, the app will restore the default on next startup.`, closeWords, tv.cfg.FullFilePath)
 	return strings.NewReplacer(
 		"[yellow]", "["+Style.HelpKeyTextColor+"]",
 		"[white]", "["+Style.NormalTextColor+"]",

@@ -8,6 +8,24 @@ const (
 	DICE_TAG             = "d: ->\n=> "
 )
 
+type CoreTag struct {
+	Template string `yaml:"template"`
+}
+
+type CoreTags struct {
+	Action CoreTag `yaml:"action"`
+	Oracle CoreTag `yaml:"oracle"`
+	Dice   CoreTag `yaml:"dice"`
+}
+
+func DefaultCoreTags() CoreTags {
+	return CoreTags{
+		Action: CoreTag{Template: CHARACTER_ACTION_TAG},
+		Oracle: CoreTag{Template: ORACLE_TAG},
+		Dice:   CoreTag{Template: DICE_TAG},
+	}
+}
+
 // TagType is the type of tags which are available to the app
 type TagType struct {
 	Label    string `yaml:"label"`
