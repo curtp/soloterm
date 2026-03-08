@@ -596,6 +596,9 @@ func (sv *SessionView) SelectNotes() {
 
 func (sv *SessionView) InsertAtCursor(template string) {
 	_, start, _ := sv.TextArea.GetSelection()
+	// When inserting the string would push the cursor below the
+	// viewable area, scroll up just enough so the cursor remains
+	// visible after inserting the content.
 	sv.TextArea.SetMovedFunc(func() {
 		sv.TextArea.SetMovedFunc(nil)
 		row, _, _, _ := sv.TextArea.GetCursor()
