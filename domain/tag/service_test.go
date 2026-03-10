@@ -20,23 +20,19 @@ func TestExtractRecentTags_DiceBreakdownsIgnored(t *testing.T) {
 	}{
 		{
 			name:     "single number in brackets",
-			contents: []string{"Rolled 1d6: [4]"},
+			contents: []string{"Rolled 1d6: 1d6 -> 4"},
 		},
 		{
 			name:     "multiple numbers in brackets",
-			contents: []string{"Rolled 3d6: [3 3 3]"},
+			contents: []string{"Rolled 3d6: 3d6 -> {3 3 3}"},
 		},
 		{
 			name:     "dice breakdown with kept and dropped",
-			contents: []string{"Rolled 4d6kh3: 9 [3 4 6] ([1])"},
+			contents: []string{"Rolled 4d6kh3: 4d6kh3 -> 13 {(1) 3 4 6}"},
 		},
 		{
 			name:     "multi-roll result inserted into log",
-			contents: []string{"Attack: 1d20+5 = 18 [13]\nDamage: 2d6 = 7 [3 4]"},
-		},
-		{
-			name:     "numbers with extra whitespace",
-			contents: []string{"Result: [ 12 ]"},
+			contents: []string{"Attack: 1d20+5 -> 18\nDamage: 2d6 -> 7 {3 4}"},
 		},
 	}
 
