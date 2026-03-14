@@ -30,3 +30,6 @@ tmp
 
 # Compiled files
 bin
+
+# Local notes
+docs/IDEAS.md
