@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"soloterm/database"
 )
 
@@ -88,7 +87,6 @@ func (r *Repository) GetAll() ([]*Game, error) {
 }
 
 func (r *Repository) SaveNotes(gameID int64, notes string) error {
-	log.Printf("Setting notes on game %d", gameID)
 	query := `UPDATE games SET notes = ? WHERE id = ?`
 
 	result, err := r.db.Connection.Exec(query, notes, gameID)

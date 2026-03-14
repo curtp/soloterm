@@ -17,9 +17,10 @@ type GameView struct {
 	helper      *GameViewHelper
 	currentGame *game.Game // the explicitly loaded active game
 
-	Tree  *tview.TreeView
-	Form  *GameForm
-	Modal *tview.Flex
+	Tree      *tview.TreeView
+	Form      *GameForm
+	Modal     *tview.Flex
+	formModal *sharedui.FormModal
 }
 
 type GameState struct {
@@ -107,27 +108,16 @@ func (gv *GameView) setupModal() {
 		gv.HandleDelete,
 	)
 
-	// Center the modal on screen
-	gv.Modal = tview.NewFlex().
-		AddItem(nil, 0, 1, false).
-		AddItem(
-			tview.NewFlex().
-				SetDirection(tview.FlexRow).
-				AddItem(nil, 0, 1, false).
-				AddItem(gv.Form, 11, 1, true). // Dynamic height: expands to fit content
-				AddItem(nil, 0, 1, false),
-			60, 1, true, // Dynamic width: expands to fit content (up to screen width)
-		).
-		AddItem(nil, 0, 1, false)
-	//gv.Modal.SetBackgroundColor(tcell.ColorBlack)
+	gv.formModal = sharedui.NewFormModal(gv.Form, 11)
+	gv.Modal = gv.formModal.Modal
 
 	gv.Form.SetFocusFunc(func() {
 		gv.app.SetModalHelpMessage(*gv.Form.DataForm)
-		gv.Form.SetBorderColor(Style.BorderFocusColor)
+		gv.formModal.SetBorderColor(Style.BorderFocusColor)
 	})
 
 	gv.Form.SetBlurFunc(func() {
-		gv.Form.SetBorderColor(Style.BorderColor)
+		gv.formModal.SetBorderColor(Style.BorderColor)
 	})
 
 }

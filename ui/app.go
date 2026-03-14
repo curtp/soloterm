@@ -9,6 +9,7 @@ import (
 	"soloterm/database"
 	"soloterm/domain/character"
 	"soloterm/domain/game"
+	"soloterm/domain/oracle"
 	"soloterm/domain/session"
 	"soloterm/domain/tag"
 	sharedui "soloterm/shared/ui"
@@ -18,18 +19,20 @@ import (
 )
 
 const (
-	GAME_MODAL_ID      string = "gameModal"
-	TAG_MODAL_ID       string = "tagModal"
-	CHARACTER_MODAL_ID string = "characterModal"
-	ATTRIBUTE_MODAL_ID string = "attributeModal"
-	FILE_MODAL_ID      string = "fileModal"
-	CONFIRM_MODAL_ID   string = "confirm"
-	MAIN_PAGE_ID       string = "main"
-	ABOUT_MODAL_ID     string = "about"
-	SESSION_MODAL_ID   string = "sessionModal"
-	HELP_MODAL_ID      string = "helpModal"
-	DICE_MODAL_ID      string = "diceModal"
-	SEARCH_MODAL_ID    string = "searchModal"
+	GAME_MODAL_ID        string = "gameModal"
+	TAG_MODAL_ID         string = "tagModal"
+	CHARACTER_MODAL_ID   string = "characterModal"
+	ATTRIBUTE_MODAL_ID   string = "attributeModal"
+	FILE_MODAL_ID        string = "fileModal"
+	CONFIRM_MODAL_ID     string = "confirm"
+	MAIN_PAGE_ID         string = "main"
+	ABOUT_MODAL_ID       string = "about"
+	SESSION_MODAL_ID     string = "sessionModal"
+	HELP_MODAL_ID        string = "helpModal"
+	DICE_MODAL_ID        string = "diceModal"
+	SEARCH_MODAL_ID      string = "searchModal"
+	ORACLE_MODAL_ID      string = "oracleModal"
+	ORACLE_FORM_MODAL_ID string = "oracleFormModal"
 )
 
 type AppInfo struct {
@@ -52,6 +55,8 @@ type App struct {
 	attributeView *AttributeView
 	diceView      *DiceView
 	searchView    *SearchView
+	oracleView    *OracleView
+	fileView      *FileView
 
 	// Layout containers
 	mainFlex         *tview.Flex
@@ -78,6 +83,7 @@ func NewApp(db *database.DBStore, cfg *config.Config, info AppInfo) *App {
 	sessionRepo := session.NewRepository(db)
 	tagService := tag.NewService(sessionRepo)
 	sessionService := session.NewService(sessionRepo)
+	oracleService := oracle.NewService(oracle.NewRepository(db))
 
 	Style.Apply()
 
@@ -93,8 +99,10 @@ func NewApp(db *database.DBStore, cfg *config.Config, info AppInfo) *App {
 	app.tagView = NewTagView(app, cfg, tagService)
 	app.attributeView = NewAttributeView(app, attrService)
 	app.characterView = NewCharacterView(app, charService)
-	app.diceView = NewDiceView(app)
+	app.diceView = NewDiceView(app, oracleService)
 	app.searchView = NewSearchView(app, sessionService)
+	app.oracleView = NewOracleView(app, oracleService)
+	app.fileView = NewFileView(app)
 
 	app.setupUI()
 	return app
@@ -156,9 +164,11 @@ func (a *App) setupUI() {
 		AddPage(ATTRIBUTE_MODAL_ID, a.attributeView.Modal, true, false).
 		AddPage(SESSION_MODAL_ID, a.sessionView.Modal, true, false).
 		AddPage(TAG_MODAL_ID, a.tagView.Modal, true, false).
-		AddPage(FILE_MODAL_ID, a.sessionView.FileModal, true, false).
 		AddPage(DICE_MODAL_ID, a.diceView.Modal, true, false).
 		AddPage(SEARCH_MODAL_ID, a.searchView.Modal, true, false).
+		AddPage(ORACLE_MODAL_ID, a.oracleView.Modal, true, false).
+		AddPage(ORACLE_FORM_MODAL_ID, a.oracleView.FormModal, true, false).
+		AddPage(FILE_MODAL_ID, a.fileView.Modal, true, false).
 		AddPage(HELP_MODAL_ID, a.helpModal, true, false).
 		AddPage(CONFIRM_MODAL_ID, a.confirmModal, true, false) // Confirm always on top
 	// a.pages.SetBackgroundColor(tcell.ColorDefault)
@@ -189,6 +199,7 @@ func (a *App) updateFooterHelp(helpText string) {
 		{"F1", "About"},
 		{"Tab", "Navigate"},
 		{"Ctrl+R", "Dice"},
+		{"Ctrl+P", "Tables"},
 		{"Ctrl+Q", "Quit"},
 	}) + " | "
 	a.footer.SetText(globalHelp + helpText)
@@ -214,6 +225,13 @@ func (a *App) setupKeyBindings() {
 	a.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switchable := []tview.Primitive{a.gameView.Tree, a.sessionView.TextArea, a.characterView.CharTree, a.attributeView.Table}
 		switch event.Key() {
+		case tcell.KeyCtrlP:
+			if !a.isPageVisible(ORACLE_MODAL_ID) {
+				a.HandleEvent(&OracleShowEvent{
+					BaseEvent: BaseEvent{action: ORACLE_SHOW},
+				})
+				return nil
+			}
 		case tcell.KeyCtrlR:
 			if !a.isPageVisible(DICE_MODAL_ID) {
 				a.HandleEvent(&DiceShowEvent{
@@ -223,6 +241,7 @@ func (a *App) setupKeyBindings() {
 			}
 		case tcell.KeyCtrlQ:
 			a.Autosave()
+			a.oracleView.AutosaveContent()
 			a.Stop()
 			return nil
 		case tcell.KeyCtrlG:
@@ -442,14 +461,14 @@ func (a *App) HandleEvent(event Event) {
 		dispatch(event, a.handleSessionShowImport)
 	case SESSION_SHOW_EXPORT:
 		dispatch(event, a.handleSessionShowExport)
-	case SESSION_IMPORT:
-		dispatch(event, a.handleSessionImport)
-	case SESSION_EXPORT:
-		dispatch(event, a.handleSessionExport)
-	case SESSION_IMPORT_DONE:
-		dispatch(event, a.handleSessionImportDone)
-	case SESSION_EXPORT_DONE:
-		dispatch(event, a.handleSessionExportDone)
+	case FILE_IMPORT:
+		dispatch(event, a.handleFileImport)
+	case FILE_EXPORT:
+		dispatch(event, a.handleFileExport)
+	case FILE_IMPORT_DONE:
+		dispatch(event, a.handleFileImportDone)
+	case FILE_EXPORT_DONE:
+		dispatch(event, a.handleFileExportDone)
 	case FILE_FORM_CANCEL:
 		dispatch(event, a.handleFileFormCancelled)
 	case DICE_SHOW:
@@ -464,5 +483,27 @@ func (a *App) HandleEvent(event Event) {
 		dispatch(event, a.handleSearchCancelled)
 	case SEARCH_SELECT_RESULT:
 		dispatch(event, a.handleSearchSelectResult)
+	case ORACLE_SHOW:
+		dispatch(event, a.handleOracleShow)
+	case ORACLE_CANCEL:
+		dispatch(event, a.handleOracleCancel)
+	case ORACLE_SHOW_NEW:
+		dispatch(event, a.handleOracleShowNew)
+	case ORACLE_SHOW_EDIT:
+		dispatch(event, a.handleOracleShowEdit)
+	case ORACLE_SAVED:
+		dispatch(event, a.handleOracleSaved)
+	case ORACLE_DELETE_CONFIRM:
+		dispatch(event, a.handleOracleDeleteConfirm)
+	case ORACLE_DELETED:
+		dispatch(event, a.handleOracleDeleted)
+	case ORACLE_DELETE_FAILED:
+		dispatch(event, a.handleOracleDeleteFailed)
+	case ORACLE_SHOW_IMPORT:
+		dispatch(event, a.handleOracleShowImport)
+	case ORACLE_SHOW_EXPORT:
+		dispatch(event, a.handleOracleShowExport)
+	case ORACLE_REORDER:
+		dispatch(event, a.handleOracleReorder)
 	}
 }

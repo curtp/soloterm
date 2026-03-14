@@ -12,13 +12,13 @@ import (
 
 // AttributeView provides attribute UI operations
 type AttributeView struct {
-	app          *App
-	attrService  *character.AttributeService
-	attrOrder    []int64
-	Table        *tview.Table
-	Form         *AttributeForm
-	Modal        *tview.Flex
-	ModalContent *tview.Flex
+	app         *App
+	attrService *character.AttributeService
+	attrOrder   []int64
+	Table       *tview.Table
+	Form        *AttributeForm
+	Modal       *tview.Flex
+	formModal   *sharedui.FormModal
 }
 
 // NewAttributeView creates a new attribute view
@@ -101,26 +101,6 @@ func (av *AttributeView) setupTable() {
 
 // setupModal configures the attribute form modal
 func (av *AttributeView) setupModal() {
-	// Create help text view at modal level (no border, will be inside form container)
-	helpTextView := tview.NewTextView()
-	helpTextView.SetDynamicColors(true).
-		SetTextAlign(tview.AlignLeft).
-		SetWrap(true).
-		SetBorder(false)
-
-	// Create container with border that holds both form and help
-	av.ModalContent = tview.NewFlex().
-		SetDirection(tview.FlexRow).
-		AddItem(av.Form, 0, 1, true).
-		AddItem(helpTextView, 3, 0, false) // Fixed 3-line height for help
-	av.ModalContent.SetBorder(true).
-		SetTitleAlign(tview.AlignLeft)
-
-	// Subscribe to form's help text changes
-	av.Form.SetHelpTextChangeHandler(func(text string) {
-		helpTextView.SetText(text)
-	})
-
 	// Set up handlers
 	av.Form.SetupHandlers(
 		av.HandleSave,
@@ -128,26 +108,16 @@ func (av *AttributeView) setupModal() {
 		av.HandleDelete,
 	)
 
-	// Center the modal on screen
-	av.Modal = tview.NewFlex().
-		AddItem(nil, 0, 1, false).
-		AddItem(
-			tview.NewFlex().
-				SetDirection(tview.FlexRow).
-				AddItem(nil, 0, 1, false).
-				AddItem(av.ModalContent, 14, 1, true). // Increased height for help text
-				AddItem(nil, 0, 1, false),
-			60, 1, true, // Fixed width
-		).
-		AddItem(nil, 0, 1, false)
+	av.formModal = sharedui.NewFormModal(av.Form, 11).SetHelpRows(3)
+	av.Modal = av.formModal.Modal
 
 	av.Form.SetFocusFunc(func() {
 		av.app.SetModalHelpMessage(*av.Form.DataForm)
-		av.ModalContent.SetBorderColor(Style.BorderFocusColor)
+		av.formModal.SetBorderColor(Style.BorderFocusColor)
 	})
 
 	av.Form.SetBlurFunc(func() {
-		av.ModalContent.SetBorderColor(Style.BorderColor)
+		av.formModal.SetBorderColor(Style.BorderColor)
 	})
 }
 

@@ -58,7 +58,6 @@ func (gf *GameForm) PopulateForEdit(game *game.Game) {
 	gf.AddDeleteButton()
 
 	gf.SetFocus(0)
-	gf.SetTitle(" Edit Game ")
 }
 
 func (gf *GameForm) setupForm() {
@@ -68,9 +67,7 @@ func (gf *GameForm) setupForm() {
 	gf.AddFormItem(gf.descriptionField)
 
 	// Buttons will be set up when handlers are attached
-	gf.SetBorder(true).
-		SetTitle(" New Game ").
-		SetTitleAlign(tview.AlignLeft)
+	gf.SetBorder(false)
 
 	gf.SetButtonsAlign(tview.AlignCenter)
 

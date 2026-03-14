@@ -1,0 +1,7 @@
+Jump
+Swim
+Run
+Walk
+Climb
+Fly
+Saunter

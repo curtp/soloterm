@@ -64,12 +64,14 @@ func (a *App) handleGameShowEdit(e *GameShowEditEvent) {
 	}
 
 	a.gameView.Form.PopulateForEdit(e.Game)
+	a.gameView.formModal.SetTitle(" Edit Game ")
 	a.pages.ShowPage(GAME_MODAL_ID)
 	a.SetFocus(a.gameView.Form)
 }
 
 func (a *App) handleGameShowNew(_ *GameShowNewEvent) {
 	a.gameView.Form.Reset()
+	a.gameView.formModal.SetTitle(" New Game ")
 	a.pages.ShowPage(GAME_MODAL_ID)
 	a.SetFocus(a.gameView.Form)
 }

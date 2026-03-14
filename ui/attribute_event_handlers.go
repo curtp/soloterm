@@ -51,7 +51,7 @@ func (a *App) handleAttributeDeleteFailed(e *AttributeDeleteFailedEvent) {
 }
 
 func (a *App) handleAttributeShowNew(e *AttributeShowNewEvent) {
-	a.attributeView.ModalContent.SetTitle(" New Entry ")
+	a.attributeView.formModal.SetTitle(" New Entry ")
 	attrs, err := a.attributeView.attrService.GetForCharacter(e.CharacterID)
 	if err != nil {
 		log.Printf("Failed to open the New Entry modal: %s", err)
@@ -67,7 +67,7 @@ func (a *App) handleAttributeShowNew(e *AttributeShowNewEvent) {
 }
 
 func (a *App) handleAttributeShowEdit(e *AttributeShowEditEvent) {
-	a.attributeView.ModalContent.SetTitle(" Edit Entry ")
+	a.attributeView.formModal.SetTitle(" Edit Entry ")
 	attrs, err := a.attributeView.attrService.GetForCharacter(e.Attribute.CharacterID)
 	if err != nil {
 		log.Printf("Failed to open the edit entry modal: %s", err)

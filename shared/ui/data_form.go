@@ -13,6 +13,7 @@ type DataForm struct {
 	onCancel         func()
 	onDelete         func()
 	onHelpTextChange func(string)
+	onErrorChange    func(map[string]string)
 }
 
 // NewDataForm creates a new DataForm with initialized fields
@@ -27,17 +28,35 @@ func NewDataForm() *DataForm {
 // This implements the ValidatableForm interface
 func (df *DataForm) SetFieldErrors(errors map[string]string) {
 	df.fieldErrors = errors
+	df.notifyErrorChange(df.fieldErrors)
 }
 
 // ClearFieldErrors removes all error highlights
 func (df *DataForm) ClearFieldErrors() {
 	df.fieldErrors = make(map[string]string)
+	df.notifyErrorChange(df.fieldErrors)
+}
+
+// SetErrorChangeHandler sets a callback invoked when validation errors change.
+func (df *DataForm) SetErrorChangeHandler(handler func(map[string]string)) {
+	df.onErrorChange = handler
+}
+
+func (df *DataForm) notifyErrorChange(errors map[string]string) {
+	if df.onErrorChange != nil {
+		df.onErrorChange(errors)
+	}
 }
 
 // HasFieldError checks if a specific field has an error
 func (df *DataForm) HasFieldError(fieldName string) bool {
 	_, exists := df.fieldErrors[fieldName]
 	return exists
+}
+
+// GetFieldError returns the error message for the given field, or empty string if none.
+func (df *DataForm) GetFieldError(fieldName string) string {
+	return df.fieldErrors[fieldName]
 }
 
 // HasFieldErrors checks to see if there are any errors on the form

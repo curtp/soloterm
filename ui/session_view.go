@@ -13,23 +13,20 @@ import (
 
 // SessionView provides session-specific UI operations
 type SessionView struct {
-	TextArea          *tview.TextArea
-	textAreaFrame     *tview.Frame
-	Form              *SessionForm
-	Modal             *tview.Flex
-	FileForm          *FileForm
-	FileModal         *tview.Flex
-	fileFormContainer *tview.Flex
-	app               *App
-	sessionService    *session.Service
-	currentSessionID  *int64
-	currentSession    *session.Session
-	isNotes           bool
-	isLoading         bool
-	isDirty           bool
-	isImporting       bool
-	autosaveTicker    *time.Ticker
-	autosaveStop      chan struct{}
+	TextArea      *tview.TextArea
+	textAreaFrame *tview.Frame
+	Form          *SessionForm
+	Modal         *tview.Flex
+	formModal     *sharedui.FormModal
+	app           *App
+	sessionService   *session.Service
+	currentSessionID *int64
+	currentSession   *session.Session
+	isNotes          bool
+	isLoading        bool
+	isDirty          bool
+	autosaveTicker   *time.Ticker
+	autosaveStop     chan struct{}
 }
 
 // IsNotesMode reports whether the pane is displaying game notes rather than a session.
@@ -58,7 +55,6 @@ func NewSessionView(app *App, service *session.Service) *SessionView {
 func (sv *SessionView) Setup() {
 	sv.setupTextArea()
 	sv.setupModal()
-	sv.setupFileModal()
 	sv.setupKeyBindings()
 	sv.setupFocusHandlers()
 }
@@ -103,89 +99,17 @@ func (sv *SessionView) setupModal() {
 		sv.HandleDelete,
 	)
 
-	// Center the modal on screen
-	sv.Modal = tview.NewFlex().
-		AddItem(nil, 0, 1, false).
-		AddItem(
-			tview.NewFlex().
-				SetDirection(tview.FlexRow).
-				AddItem(nil, 0, 1, false).
-				AddItem(sv.Form, 7, 1, true). // Dynamic height: expands to fit content
-				AddItem(nil, 0, 1, false),
-			60, 1, true, // Dynamic width: expands to fit content (up to screen width)
-		).
-		AddItem(nil, 0, 1, false)
-	// sv.Modal.SetBackgroundColor(tcell.ColorBlack)
+	sv.formModal = sharedui.NewFormModal(sv.Form, 7)
+	sv.Modal = sv.formModal.Modal
 
 	sv.Form.SetFocusFunc(func() {
 		sv.app.SetModalHelpMessage(*sv.Form.DataForm)
-		sv.Form.SetBorderColor(Style.BorderFocusColor)
+		sv.formModal.SetBorderColor(Style.BorderFocusColor)
 	})
 
 	sv.Form.SetBlurFunc(func() {
-		sv.Form.SetBorderColor(Style.BorderColor)
+		sv.formModal.SetBorderColor(Style.BorderColor)
 	})
-}
-
-// setupFileModal configures the file import/export form modal
-func (sv *SessionView) setupFileModal() {
-	sv.FileForm = NewFileForm()
-
-	sv.FileForm.SetupHandlers(
-		func() {
-			if sv.isImporting {
-				sv.app.HandleEvent(&SessionImportEvent{
-					BaseEvent: BaseEvent{action: SESSION_IMPORT},
-				})
-			} else {
-				sv.app.HandleEvent(&SessionExportEvent{
-					BaseEvent: BaseEvent{action: SESSION_EXPORT},
-				})
-			}
-		},
-		func() {
-			sv.app.HandleEvent(&FileFormCancelledEvent{
-				BaseEvent: BaseEvent{action: FILE_FORM_CANCEL},
-			})
-		},
-		nil,
-	)
-
-	helpTextView := tview.NewTextView().
-		SetDynamicColors(true).
-		SetWordWrap(true)
-
-	sv.FileForm.SetHelpTextChangeHandler(func(text string) {
-		helpTextView.SetText(text)
-	})
-
-	sv.fileFormContainer = tview.NewFlex().
-		SetDirection(tview.FlexRow).
-		AddItem(sv.FileForm, 0, 1, true).
-		AddItem(helpTextView, 3, 0, false)
-	sv.fileFormContainer.SetBorder(true).
-		SetTitleAlign(tview.AlignLeft)
-
-	sv.FileForm.SetFocusFunc(func() {
-		sv.fileFormContainer.SetBorderColor(Style.BorderFocusColor)
-	})
-
-	sv.FileForm.SetBlurFunc(func() {
-		sv.fileFormContainer.SetBorderColor(Style.BorderColor)
-	})
-
-	sv.FileModal = tview.NewFlex().
-		AddItem(nil, 0, 1, false).
-		AddItem(
-			tview.NewFlex().
-				SetDirection(tview.FlexRow).
-				AddItem(nil, 0, 1, false).
-				AddItem(sv.fileFormContainer, 12, 0, true).
-				AddItem(nil, 0, 1, false),
-			0, 2, true,
-		).
-		AddItem(nil, 0, 1, false)
-	// sv.FileModal.SetBackgroundColor(tcell.ColorBlack)
 }
 
 // setupKeyBindings configures keyboard shortcuts for the session tree
@@ -286,7 +210,6 @@ func (sv *SessionView) Reset() {
 	sv.isNotes = false
 	sv.isLoading = false
 	sv.isDirty = false
-	sv.isImporting = false
 	sv.stopAutosave()
 }
 
@@ -609,4 +532,33 @@ func (sv *SessionView) InsertAtCursor(template string) {
 		}
 	})
 	sv.TextArea.Replace(start, start, template)
+}
+
+// ====== FileTarget implementation ======
+
+func (sv *SessionView) GetFileContent() string {
+	return sv.TextArea.GetText()
+}
+
+func (sv *SessionView) SetFileContent(data string, position ImportPosition) {
+	switch position {
+	case ImportBefore:
+		sv.SetText(data+sv.TextArea.GetText(), false)
+	case ImportAfter:
+		sv.SetText(sv.TextArea.GetText()+data, true)
+	case ImportAtCursor:
+		sv.InsertAtCursor(data)
+	default: // ImportReplace
+		sv.SetText(data, false)
+	}
+	sv.isDirty = true
+	sv.updateTitle()
+}
+
+func (sv *SessionView) UsePositionField() bool { return true }
+
+func (sv *SessionView) FileDir() string { return "" } // unused; FileView uses dirs.ExportDir()
+
+func (sv *SessionView) OnFileDone() {
+	sv.app.Autosave()
 }

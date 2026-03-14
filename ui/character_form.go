@@ -64,7 +64,6 @@ func (cf *CharacterForm) PopulateForEdit(char *character.Character) {
 	cf.AddDeleteButton()
 
 	cf.SetFocus(0)
-	cf.SetTitle(" Edit Character ")
 }
 
 func (cf *CharacterForm) setupForm() {
@@ -76,9 +75,7 @@ func (cf *CharacterForm) setupForm() {
 	cf.AddFormItem(cf.speciesField)
 
 	// Buttons will be set up when handlers are attached
-	cf.SetBorder(true).
-		SetTitle(" New Character ").
-		SetTitleAlign(tview.AlignLeft)
+	cf.SetBorder(false)
 
 	cf.SetButtonsAlign(tview.AlignCenter)
 

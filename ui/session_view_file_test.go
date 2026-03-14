@@ -32,8 +32,8 @@ func TestSessionView_ImportFile(t *testing.T) {
 	assert.True(t, app.isPageVisible(FILE_MODAL_ID), "Expected file modal to be visible")
 
 	// Enter the file path and submit
-	app.sessionView.FileForm.pathField.SetText(importPath)
-	testHelper.SimulateKey(app.sessionView.FileForm, app.Application, tcell.KeyCtrlS)
+	app.fileView.Form.pathField.SetText(importPath)
+	testHelper.SimulateKey(app.fileView.Form, app.Application, tcell.KeyCtrlS)
 
 	// Modal should close after successful import
 	assert.False(t, app.isPageVisible(FILE_MODAL_ID), "Expected file modal to be hidden after import")
@@ -56,14 +56,14 @@ func TestSessionView_ImportFileNotFound(t *testing.T) {
 	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlO)
 
 	// Enter a non-existent path and submit
-	app.sessionView.FileForm.pathField.SetText("/nonexistent/path/file.md")
-	testHelper.SimulateKey(app.sessionView.FileForm, app.Application, tcell.KeyCtrlS)
+	app.fileView.Form.pathField.SetText("/nonexistent/path/file.md")
+	testHelper.SimulateKey(app.fileView.Form, app.Application, tcell.KeyCtrlS)
 
 	// Modal should stay open on error
 	assert.True(t, app.isPageVisible(FILE_MODAL_ID), "Expected file modal to remain visible on error")
 
 	// Error message should be displayed
-	assert.Contains(t, app.sessionView.FileForm.GetErrorText(), "Cannot read file")
+	assert.Contains(t, app.fileView.Form.GetFieldError("path"), "Cannot read file")
 }
 
 func TestSessionView_ImportBinaryFileRejected(t *testing.T) {
@@ -84,12 +84,12 @@ func TestSessionView_ImportBinaryFileRejected(t *testing.T) {
 	// Open import modal and try to import the binary file
 	app.SetFocus(app.sessionView.TextArea)
 	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlO)
-	app.sessionView.FileForm.pathField.SetText(binPath)
-	testHelper.SimulateKey(app.sessionView.FileForm, app.Application, tcell.KeyCtrlS)
+	app.fileView.Form.pathField.SetText(binPath)
+	testHelper.SimulateKey(app.fileView.Form, app.Application, tcell.KeyCtrlS)
 
 	// Modal should stay open
 	assert.True(t, app.isPageVisible(FILE_MODAL_ID), "Expected file modal to remain visible for binary file")
-	assert.Contains(t, app.sessionView.FileForm.GetErrorText(), "binary")
+	assert.Contains(t, app.fileView.Form.GetFieldError("path"), "binary")
 }
 
 func TestSessionView_ImportEmptyPath(t *testing.T) {
@@ -104,12 +104,12 @@ func TestSessionView_ImportEmptyPath(t *testing.T) {
 	// Open import modal, clear the default path, and submit
 	app.SetFocus(app.sessionView.TextArea)
 	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlO)
-	app.sessionView.FileForm.pathField.SetText("")
-	testHelper.SimulateKey(app.sessionView.FileForm, app.Application, tcell.KeyCtrlS)
+	app.fileView.Form.pathField.SetText("")
+	testHelper.SimulateKey(app.fileView.Form, app.Application, tcell.KeyCtrlS)
 
 	// Modal should stay open with error
 	assert.True(t, app.isPageVisible(FILE_MODAL_ID), "Expected file modal to remain visible")
-	assert.Contains(t, app.sessionView.FileForm.GetErrorText(), "File path is required")
+	assert.Contains(t, app.fileView.Form.GetFieldError("path"), "File path is required")
 }
 
 func TestSessionView_ExportFile(t *testing.T) {
@@ -131,8 +131,8 @@ func TestSessionView_ExportFile(t *testing.T) {
 	assert.True(t, app.isPageVisible(FILE_MODAL_ID), "Expected file modal to be visible")
 
 	// Enter the file path and submit
-	app.sessionView.FileForm.pathField.SetText(exportPath)
-	testHelper.SimulateKey(app.sessionView.FileForm, app.Application, tcell.KeyCtrlS)
+	app.fileView.Form.pathField.SetText(exportPath)
+	testHelper.SimulateKey(app.fileView.Form, app.Application, tcell.KeyCtrlS)
 
 	// Modal should close after successful export
 	assert.False(t, app.isPageVisible(FILE_MODAL_ID), "Expected file modal to be hidden after export")
@@ -155,12 +155,12 @@ func TestSessionView_ExportToInvalidPath(t *testing.T) {
 	// Open export modal and try to export to invalid path
 	app.SetFocus(app.sessionView.TextArea)
 	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlX)
-	app.sessionView.FileForm.pathField.SetText("/nonexistent/dir/export.md")
-	testHelper.SimulateKey(app.sessionView.FileForm, app.Application, tcell.KeyCtrlS)
+	app.fileView.Form.pathField.SetText("/nonexistent/dir/export.md")
+	testHelper.SimulateKey(app.fileView.Form, app.Application, tcell.KeyCtrlS)
 
 	// Modal should stay open on error
 	assert.True(t, app.isPageVisible(FILE_MODAL_ID), "Expected file modal to remain visible on error")
-	assert.Contains(t, app.sessionView.FileForm.GetErrorText(), "Cannot write file")
+	assert.Contains(t, app.fileView.Form.GetFieldError("path"), "Cannot write file")
 }
 
 func TestSessionView_ImportCancelDoesNothing(t *testing.T) {
@@ -178,7 +178,7 @@ func TestSessionView_ImportCancelDoesNothing(t *testing.T) {
 	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlO)
 	assert.True(t, app.isPageVisible(FILE_MODAL_ID))
 
-	testHelper.SimulateKey(app.sessionView.FileForm, app.Application, tcell.KeyEscape)
+	testHelper.SimulateKey(app.fileView.Form, app.Application, tcell.KeyEscape)
 	assert.False(t, app.isPageVisible(FILE_MODAL_ID), "Expected file modal to be hidden after cancel")
 
 	// Content should be unchanged
@@ -222,8 +222,8 @@ func TestSessionView_ImportReplacesExistingContent(t *testing.T) {
 	// Import the file
 	app.SetFocus(app.sessionView.TextArea)
 	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlO)
-	app.sessionView.FileForm.pathField.SetText(importPath)
-	testHelper.SimulateKey(app.sessionView.FileForm, app.Application, tcell.KeyCtrlS)
+	app.fileView.Form.pathField.SetText(importPath)
+	testHelper.SimulateKey(app.fileView.Form, app.Application, tcell.KeyCtrlS)
 
 	// Verify content was replaced
 	assert.Equal(t, "Brand new content", app.sessionView.TextArea.GetText())
@@ -240,7 +240,7 @@ func TestSessionView_ImportPosition_ShowsDropdownForImport(t *testing.T) {
 	app.SetFocus(app.sessionView.TextArea)
 	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlO)
 	assert.True(t, app.isPageVisible(FILE_MODAL_ID))
-	assert.Equal(t, 2, app.sessionView.FileForm.GetFormItemCount(), "Expected path and position fields for import")
+	assert.Equal(t, 2, app.fileView.Form.GetFormItemCount(), "Expected path and position fields for import")
 }
 
 func TestSessionView_ImportPosition_HidesDropdownForExport(t *testing.T) {
@@ -254,7 +254,7 @@ func TestSessionView_ImportPosition_HidesDropdownForExport(t *testing.T) {
 	app.SetFocus(app.sessionView.TextArea)
 	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlX)
 	assert.True(t, app.isPageVisible(FILE_MODAL_ID))
-	assert.Equal(t, 1, app.sessionView.FileForm.GetFormItemCount(), "Expected only path field for export")
+	assert.Equal(t, 1, app.fileView.Form.GetFormItemCount(), "Expected only path field for export")
 }
 
 func TestSessionView_ImportPosition_Before(t *testing.T) {
@@ -272,9 +272,9 @@ func TestSessionView_ImportPosition_Before(t *testing.T) {
 
 	app.SetFocus(app.sessionView.TextArea)
 	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlO)
-	app.sessionView.FileForm.positionField.SetCurrentOption(int(ImportBefore))
-	app.sessionView.FileForm.pathField.SetText(importPath)
-	testHelper.SimulateKey(app.sessionView.FileForm, app.Application, tcell.KeyCtrlS)
+	app.fileView.Form.positionField.SetCurrentOption(int(ImportBefore))
+	app.fileView.Form.pathField.SetText(importPath)
+	testHelper.SimulateKey(app.fileView.Form, app.Application, tcell.KeyCtrlS)
 
 	assert.Equal(t, "prefix\nexisting\n", app.sessionView.TextArea.GetText())
 }
@@ -294,9 +294,9 @@ func TestSessionView_ImportPosition_After(t *testing.T) {
 
 	app.SetFocus(app.sessionView.TextArea)
 	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlO)
-	app.sessionView.FileForm.positionField.SetCurrentOption(int(ImportAfter))
-	app.sessionView.FileForm.pathField.SetText(importPath)
-	testHelper.SimulateKey(app.sessionView.FileForm, app.Application, tcell.KeyCtrlS)
+	app.fileView.Form.positionField.SetCurrentOption(int(ImportAfter))
+	app.fileView.Form.pathField.SetText(importPath)
+	testHelper.SimulateKey(app.fileView.Form, app.Application, tcell.KeyCtrlS)
 
 	assert.Equal(t, "existing\nappended\n", app.sessionView.TextArea.GetText())
 }
@@ -317,9 +317,9 @@ func TestSessionView_ImportPosition_AtCursor(t *testing.T) {
 
 	app.SetFocus(app.sessionView.TextArea)
 	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlO)
-	app.sessionView.FileForm.positionField.SetCurrentOption(int(ImportAtCursor))
-	app.sessionView.FileForm.pathField.SetText(importPath)
-	testHelper.SimulateKey(app.sessionView.FileForm, app.Application, tcell.KeyCtrlS)
+	app.fileView.Form.positionField.SetCurrentOption(int(ImportAtCursor))
+	app.fileView.Form.pathField.SetText(importPath)
+	testHelper.SimulateKey(app.fileView.Form, app.Application, tcell.KeyCtrlS)
 
 	assert.Equal(t, "BEFORE AFTER", app.sessionView.TextArea.GetText())
 }
@@ -335,13 +335,13 @@ func TestSessionView_ImportPosition_RetainedOnReopen(t *testing.T) {
 
 	// Open import modal and change position to After
 	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlO)
-	app.sessionView.FileForm.positionField.SetCurrentOption(int(ImportAfter))
-	idx, _ := app.sessionView.FileForm.positionField.GetCurrentOption()
+	app.fileView.Form.positionField.SetCurrentOption(int(ImportAfter))
+	idx, _ := app.fileView.Form.positionField.GetCurrentOption()
 	assert.Equal(t, int(ImportAfter), idx)
 
 	// Cancel and reopen — position should be retained
-	testHelper.SimulateKey(app.sessionView.FileForm, app.Application, tcell.KeyEscape)
+	testHelper.SimulateKey(app.fileView.Form, app.Application, tcell.KeyEscape)
 	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlO)
-	idx, _ = app.sessionView.FileForm.positionField.GetCurrentOption()
+	idx, _ = app.fileView.Form.positionField.GetCurrentOption()
 	assert.Equal(t, int(ImportAfter), idx, "Expected position to be retained on reopen")
 }

@@ -84,13 +84,13 @@ func (a *App) handleCharacterDuplicateFailed(e *CharacterDuplicateFailedEvent) {
 func (a *App) handleCharacterShowNew(_ *CharacterShowNewEvent) {
 	a.characterView.Form.Reset()
 	a.pages.ShowPage(CHARACTER_MODAL_ID)
-	a.characterView.Form.SetTitle(" New Character ")
+	a.characterView.formModal.SetTitle(" New Character ")
 	a.SetFocus(a.characterView.Form)
 }
 
 func (a *App) handleCharacterShowEdit(e *CharacterShowEditEvent) {
 	a.characterView.Form.PopulateForEdit(e.Character)
 	a.pages.ShowPage(CHARACTER_MODAL_ID)
-	a.characterView.Form.SetTitle(" Edit Character ")
+	a.characterView.formModal.SetTitle(" Edit Character ")
 	a.SetFocus(a.characterView.Form)
 }

@@ -49,7 +49,6 @@ func (sf *SessionForm) PopulateForEdit(session *session.Session) {
 	sf.AddDeleteButton()
 
 	sf.SetFocus(0)
-	sf.SetTitle(" Edit Session ")
 }
 
 func (sf *SessionForm) setupForm() {
@@ -58,9 +57,7 @@ func (sf *SessionForm) setupForm() {
 	sf.AddFormItem(sf.nameField)
 
 	// Buttons will be set up when handlers are attached
-	sf.SetBorder(true).
-		SetTitle(" New Session ").
-		SetTitleAlign(tview.AlignLeft)
+	sf.SetBorder(false)
 
 	sf.SetButtonsAlign(tview.AlignCenter)
 
@@ -75,7 +72,6 @@ func (sf *SessionForm) Reset(gameID int64) {
 	sf.content = ""
 	sf.nameField.SetText("")
 	sf.ClearFieldErrors()
-	sf.SetTitle(" New Session ")
 	sf.RemoveDeleteButton()
 	sf.SetFocus(0)
 }

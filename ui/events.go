@@ -3,6 +3,7 @@ package ui
 import (
 	"soloterm/domain/character"
 	"soloterm/domain/game"
+	"soloterm/domain/oracle"
 	"soloterm/domain/session"
 	"soloterm/domain/tag"
 
@@ -52,10 +53,10 @@ const (
 	SESSION_DELETED             UserAction = "session_deleted"
 	SESSION_SHOW_IMPORT         UserAction = "session_show_import"
 	SESSION_SHOW_EXPORT         UserAction = "session_show_export"
-	SESSION_IMPORT              UserAction = "session_import"
-	SESSION_EXPORT              UserAction = "session_export"
-	SESSION_IMPORT_DONE         UserAction = "session_import_done"
-	SESSION_EXPORT_DONE         UserAction = "session_export_done"
+	FILE_IMPORT                 UserAction = "file_import"
+	FILE_EXPORT                 UserAction = "file_export"
+	FILE_IMPORT_DONE            UserAction = "file_import_done"
+	FILE_EXPORT_DONE            UserAction = "file_export_done"
 	FILE_FORM_CANCEL            UserAction = "file_form_cancel"
 	SHOW_HELP                   UserAction = "show_help"
 	CLOSE_HELP                  UserAction = "close_help"
@@ -65,6 +66,17 @@ const (
 	SEARCH_SHOW                 UserAction = "search_show"
 	SEARCH_CANCEL               UserAction = "search_cancel"
 	SEARCH_SELECT_RESULT        UserAction = "search_select_result"
+	ORACLE_SHOW                 UserAction = "oracle_show"
+	ORACLE_CANCEL               UserAction = "oracle_cancel"
+	ORACLE_SHOW_NEW             UserAction = "oracle_show_new"
+	ORACLE_SHOW_EDIT            UserAction = "oracle_show_edit"
+	ORACLE_SAVED                UserAction = "oracle_saved"
+	ORACLE_DELETE_CONFIRM       UserAction = "oracle_delete_confirm"
+	ORACLE_DELETE_FAILED        UserAction = "oracle_delete_failed"
+	ORACLE_DELETED              UserAction = "oracle_deleted"
+	ORACLE_SHOW_IMPORT          UserAction = "oracle_show_import"
+	ORACLE_SHOW_EXPORT          UserAction = "oracle_show_export"
+	ORACLE_REORDER              UserAction = "oracle_reorder"
 )
 
 // Base event interface
@@ -290,19 +302,19 @@ type SessionShowExportEvent struct {
 	BaseEvent
 }
 
-type SessionImportEvent struct {
+type FileImportEvent struct {
 	BaseEvent
 }
 
-type SessionExportEvent struct {
+type FileExportEvent struct {
 	BaseEvent
 }
 
-type SessionImportDoneEvent struct {
+type FileImportDoneEvent struct {
 	BaseEvent
 }
 
-type SessionExportDoneEvent struct {
+type FileExportDoneEvent struct {
 	BaseEvent
 }
 
@@ -334,4 +346,60 @@ type SearchShowEvent struct {
 
 type SearchSelectResultEvent struct {
 	BaseEvent
+}
+
+// ====== ORACLE SPECIFIC EVENTS ======
+type OracleShowEvent struct {
+	BaseEvent
+}
+
+type OracleCancelEvent struct {
+	BaseEvent
+}
+
+type OracleShowNewEvent struct {
+	BaseEvent
+}
+
+type OracleShowEditEvent struct {
+	BaseEvent
+	Oracle *oracle.Oracle
+}
+
+type OracleSavedEvent struct {
+	BaseEvent
+	Oracle *oracle.Oracle
+	IsNew  bool
+}
+
+type OracleDeleteConfirmEvent struct {
+	BaseEvent
+	Oracle *oracle.Oracle
+}
+
+type OracleDeleteFailedEvent struct {
+	BaseEvent
+	Error error
+}
+
+type OracleDeletedEvent struct {
+	BaseEvent
+	Oracle *oracle.Oracle
+}
+
+type OracleShowImportEvent struct {
+	BaseEvent
+}
+
+type OracleShowExportEvent struct {
+	BaseEvent
+}
+
+// OracleReorderEvent moves a category (OracleID==0) or an oracle within its category.
+// direction: -1 = up, +1 = down.
+type OracleReorderEvent struct {
+	BaseEvent
+	Category  string // set when moving a whole category
+	OracleID  int64  // set when moving a single oracle
+	Direction int
 }

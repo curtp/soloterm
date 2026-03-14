@@ -11,6 +11,15 @@ import (
 // ImportPosition controls where imported content is placed in the text area.
 type ImportPosition int
 
+// FileTarget is implemented by views that support file import/export.
+type FileTarget interface {
+	GetFileContent() string
+	SetFileContent(data string, position ImportPosition)
+	UsePositionField() bool
+	FileDir() string
+	OnFileDone()
+}
+
 const (
 	ImportReplace  ImportPosition = iota // Replace all current content (default)
 	ImportBefore                         // Insert before current content
@@ -23,7 +32,6 @@ type FileForm struct {
 	*sharedui.DataForm
 	pathField     *filechooser.PathInputField
 	positionField *tview.DropDown
-	lastErrorText string
 }
 
 // NewFileForm creates a new file form
@@ -102,17 +110,10 @@ func (ff *FileForm) GetPath() string {
 
 // ShowError displays an error message on the form
 func (ff *FileForm) ShowError(msg string) {
-	ff.lastErrorText = "[" + Style.ErrorTextColor + "]" + msg
-	ff.NotifyHelpTextChange(ff.lastErrorText)
+	ff.SetFieldErrors(map[string]string{"path": msg})
 }
 
 // ClearError clears the error message
 func (ff *FileForm) ClearError() {
-	ff.lastErrorText = ""
-	ff.NotifyHelpTextChange("")
-}
-
-// GetErrorText returns the current error text for testing
-func (ff *FileForm) GetErrorText() string {
-	return ff.lastErrorText
+	ff.ClearFieldErrors()
 }

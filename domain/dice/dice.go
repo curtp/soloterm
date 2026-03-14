@@ -8,7 +8,8 @@ type RollGroup struct {
 type RollResult struct {
 	Notation string
 	Total    int
-	Rolls    []int // kept dice values (or all dice if no keep/drop)
-	Dropped  []int // dropped dice values (nil if no keep/drop)
-	Err      error // per-roll error, not fatal to the group
+	Rolls    []int  // kept dice values (or all dice if no keep/drop)
+	Dropped  []int  // dropped dice values (nil if no keep/drop)
+	Picked   string // selected item when rolling on a list (empty for dice rolls)
+	Err      error  // per-roll error, not fatal to the group
 }

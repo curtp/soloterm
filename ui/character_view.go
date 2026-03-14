@@ -28,11 +28,12 @@ type CharacterView struct {
 	selectedCharacterID *int64
 
 	// UI Components
-	CharTree *tview.TreeView
-	InfoView *tview.TextView
-	Form     *CharacterForm
-	Modal    *tview.Flex
-	CharPane *tview.Frame
+	CharTree  *tview.TreeView
+	InfoView  *tview.TextView
+	Form      *CharacterForm
+	Modal     *tview.Flex
+	formModal *sharedui.FormModal
+	CharPane  *tview.Frame
 }
 
 // NewCharacterView creates a new character view helper
@@ -153,26 +154,16 @@ func (cv *CharacterView) setupCharacterModal() {
 		cv.HandleDelete,
 	)
 
-	// Center the modal on screen
-	cv.Modal = tview.NewFlex().
-		AddItem(nil, 0, 1, false).
-		AddItem(
-			tview.NewFlex().
-				SetDirection(tview.FlexRow).
-				AddItem(nil, 0, 1, false).
-				AddItem(cv.Form, 13, 1, true). // Fixed height for form
-				AddItem(nil, 0, 1, false),
-			60, 1, true, // Fixed width
-		).
-		AddItem(nil, 0, 1, false)
+	cv.formModal = sharedui.NewFormModal(cv.Form, 13)
+	cv.Modal = cv.formModal.Modal
 
 	cv.Form.SetFocusFunc(func() {
 		cv.app.SetModalHelpMessage(*cv.Form.DataForm)
-		cv.Form.SetBorderColor(Style.BorderFocusColor)
+		cv.formModal.SetBorderColor(Style.BorderFocusColor)
 	})
 
 	cv.Form.SetBlurFunc(func() {
-		cv.Form.SetBorderColor(Style.BorderColor)
+		cv.formModal.SetBorderColor(Style.BorderColor)
 	})
 }
 

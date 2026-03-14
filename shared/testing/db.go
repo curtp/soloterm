@@ -52,6 +52,22 @@ func CreateTestGame(t *testing.T, db *database.DBStore, name string) int64 {
 	return id
 }
 
+// CreateTestOracle inserts an oracle row and returns its ID.
+// Requires the oracles table to exist (blank-import soloterm/domain/oracle in your test file).
+func CreateTestOracle(t *testing.T, db *database.DBStore, name string, content string) int64 {
+	t.Helper()
+	var id int64
+	err := db.Connection.QueryRow(
+		`INSERT INTO oracles (name, category, content, category_position, position_in_category, created_at, updated_at)
+		 VALUES (?, 'General', ?, 0, 0, datetime('now'), datetime('now')) RETURNING id`,
+		name, content,
+	).Scan(&id)
+	if err != nil {
+		t.Fatalf("CreateTestOracle: failed to create oracle %q: %v", name, err)
+	}
+	return id
+}
+
 // CreateTestSession inserts a session row and returns its ID.
 // Requires the sessions table to exist (blank-import soloterm/domain/session in your test file).
 func CreateTestSession(t *testing.T, db *database.DBStore, gameID int64, name string, content string) int64 {

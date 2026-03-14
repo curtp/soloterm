@@ -268,8 +268,8 @@ func TestNotes_ImportFile(t *testing.T) {
 	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlO)
 	require.True(t, app.isPageVisible(FILE_MODAL_ID))
 
-	app.sessionView.FileForm.pathField.SetText(importPath)
-	testHelper.SimulateKey(app.sessionView.FileForm, app.Application, tcell.KeyCtrlS)
+	app.fileView.Form.pathField.SetText(importPath)
+	testHelper.SimulateKey(app.fileView.Form, app.Application, tcell.KeyCtrlS)
 
 	assert.False(t, app.isPageVisible(FILE_MODAL_ID), "Expected file modal to close after import")
 	assert.Equal(t, "Imported notes content", app.sessionView.TextArea.GetText())
@@ -298,8 +298,8 @@ func TestNotes_ExportFile(t *testing.T) {
 	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlX)
 	require.True(t, app.isPageVisible(FILE_MODAL_ID))
 
-	app.sessionView.FileForm.pathField.SetText(exportPath)
-	testHelper.SimulateKey(app.sessionView.FileForm, app.Application, tcell.KeyCtrlS)
+	app.fileView.Form.pathField.SetText(exportPath)
+	testHelper.SimulateKey(app.fileView.Form, app.Application, tcell.KeyCtrlS)
 
 	assert.False(t, app.isPageVisible(FILE_MODAL_ID), "Expected file modal to close after export")
 

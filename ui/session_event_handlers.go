@@ -1,11 +1,7 @@
 package ui
 
 import (
-	"bytes"
 	"fmt"
-	"os"
-	"soloterm/shared/dirs"
-	"strings"
 )
 
 func (a *App) handleSessionShowNew(e *SessionShowNewEvent) {
@@ -25,7 +21,7 @@ func (a *App) handleSessionShowNew(e *SessionShowNewEvent) {
 	}
 
 	a.sessionView.Form.Reset(gameID)
-	a.sessionView.Form.SetTitle(" New Session — " + gameName + " ")
+	a.sessionView.formModal.SetTitle(" New Session — " + gameName + " ")
 	a.pages.ShowPage(SESSION_MODAL_ID)
 	a.SetFocus(a.sessionView.Form)
 }
@@ -81,6 +77,7 @@ func (a *App) handleSessionShowEdit(e *SessionShowEditEvent) {
 	a.sessionView.currentSessionID = &s.ID
 	a.sessionView.currentSession = s
 	a.sessionView.Form.PopulateForEdit(s)
+	a.sessionView.formModal.SetTitle(" Edit Session ")
 	a.pages.ShowPage(SESSION_MODAL_ID)
 	a.SetFocus(a.sessionView.Form)
 }
@@ -122,110 +119,12 @@ func (a *App) handleSessionShowImport(_ *SessionShowImportEvent) {
 	if a.sessionView.currentSessionID == nil && !a.sessionView.IsNotesMode() {
 		return
 	}
-	a.sessionView.isImporting = true
-	a.sessionView.FileForm.SetImportMode(true)
-	a.sessionView.FileForm.Reset(dirs.ExportDir())
-	a.sessionView.fileFormContainer.SetTitle(" Import File ")
-	a.sessionView.FileForm.GetButton(0).SetLabel("Import")
-	a.pages.ShowPage(FILE_MODAL_ID)
-	a.SetFocus(a.sessionView.FileForm)
-	a.updateFooterHelp(helpBar("Import", []helpEntry{{"Ctrl+S", "Import"}, {"Esc", "Cancel"}}))
+	a.fileView.ShowImport(a.sessionView, a.sessionView.TextArea)
 }
 
 func (a *App) handleSessionShowExport(_ *SessionShowExportEvent) {
 	if a.sessionView.currentSessionID == nil && !a.sessionView.IsNotesMode() {
 		return
 	}
-	a.sessionView.isImporting = false
-	a.sessionView.FileForm.SetImportMode(false)
-	a.sessionView.FileForm.Reset(dirs.ExportDir())
-	a.sessionView.fileFormContainer.SetTitle(" Export File ")
-	a.sessionView.FileForm.GetButton(0).SetLabel("Export")
-	a.pages.ShowPage(FILE_MODAL_ID)
-	a.SetFocus(a.sessionView.FileForm)
-	a.updateFooterHelp(helpBar("Export", []helpEntry{{"Ctrl+S", "Export"}, {"Esc", "Cancel"}}))
-}
-
-func (a *App) handleSessionImport(_ *SessionImportEvent) {
-	sv := a.sessionView
-	path := strings.TrimSpace(sv.FileForm.GetPath())
-	if path == "" {
-		sv.FileForm.ShowError("File path is required")
-		return
-	}
-
-	a.Autosave()
-
-	data, err := os.ReadFile(path)
-	if err != nil {
-		sv.FileForm.ShowError(fmt.Sprintf("Cannot read file: %v", err))
-		return
-	}
-
-	if bytes.ContainsRune(data, 0) {
-		sv.FileForm.ShowError("File appears to be binary, not a text file")
-		return
-	}
-
-	content := string(data)
-	switch sv.FileForm.GetImportPosition() {
-	case ImportBefore:
-		sv.SetText(content+sv.TextArea.GetText(), false)
-		sv.isDirty = true
-		sv.updateTitle()
-	case ImportAfter:
-		combined := sv.TextArea.GetText() + content
-		sv.SetText(combined, true)
-		sv.isDirty = true
-		sv.updateTitle()
-	case ImportAtCursor:
-		sv.InsertAtCursor(content) // ChangedFunc handles isDirty + updateTitle
-	default: // ImportReplace
-		sv.SetText(content, false)
-		sv.isDirty = true
-		sv.updateTitle()
-	}
-	a.Autosave()
-
-	a.HandleEvent(&SessionImportDoneEvent{
-		BaseEvent: BaseEvent{action: SESSION_IMPORT_DONE},
-	})
-}
-
-func (a *App) handleSessionExport(_ *SessionExportEvent) {
-	sv := a.sessionView
-	path := strings.TrimSpace(sv.FileForm.GetPath())
-	if path == "" {
-		sv.FileForm.ShowError("File path is required")
-		return
-	}
-
-	content := sv.TextArea.GetText()
-	err := os.WriteFile(path, []byte(content), 0644)
-	if err != nil {
-		sv.FileForm.ShowError(fmt.Sprintf("Cannot write file: %v", err))
-		return
-	}
-
-	a.HandleEvent(&SessionExportDoneEvent{
-		BaseEvent: BaseEvent{action: SESSION_EXPORT_DONE},
-	})
-}
-
-func (a *App) handleSessionImportDone(_ *SessionImportDoneEvent) {
-	a.pages.HidePage(FILE_MODAL_ID)
-	a.sessionView.Refresh()
-	a.SetFocus(a.sessionView.TextArea)
-	a.notification.ShowSuccess("File imported successfully")
-}
-
-func (a *App) handleSessionExportDone(_ *SessionExportDoneEvent) {
-	a.pages.HidePage(FILE_MODAL_ID)
-	a.SetFocus(a.sessionView.TextArea)
-	a.notification.ShowSuccess("File exported successfully")
-}
-
-func (a *App) handleFileFormCancelled(_ *FileFormCancelledEvent) {
-	a.pages.HidePage(FILE_MODAL_ID)
-	a.SetFocus(a.sessionView.TextArea)
+	a.fileView.ShowExport(a.sessionView, a.sessionView.TextArea)
 }

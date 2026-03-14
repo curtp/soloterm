@@ -2,6 +2,7 @@ package ui
 
 import (
 	"soloterm/domain/dice"
+	"soloterm/domain/oracle"
 	"strconv"
 	"strings"
 
@@ -12,17 +13,20 @@ import (
 // DiceView provides dice roller specific UI operations
 type DiceView struct {
 	app              *App
+	oracleService    *oracle.Service
 	Modal            *tview.Flex
 	TextArea         *tview.TextArea
 	resultView       *tview.TextView
+	tableHintView    *tview.TextView
 	diceModalContent *tview.Flex
 	diceFrame        *tview.Frame
 	returnFocus      tview.Primitive // Field to restore focus to after dice selection
+	hintsActive      bool            // true when the table hint view is showing results
 }
 
 // NewDiceView creates a new dice view
-func NewDiceView(app *App) *DiceView {
-	diceView := &DiceView{app: app}
+func NewDiceView(app *App, oracleService *oracle.Service) *DiceView {
+	diceView := &DiceView{app: app, oracleService: oracleService}
 
 	diceView.Setup()
 
@@ -49,11 +53,23 @@ func (dv *DiceView) setupModal() {
 		SetTitle(" Results ").
 		SetTitleAlign(tview.AlignLeft)
 
-	// Create container that holds the dice input, view, and buttons
-	dv.diceModalContent = tview.NewFlex().
+	dv.tableHintView = tview.NewTextView().
+		SetDynamicColors(true).
+		SetWrap(false)
+	dv.tableHintView.SetBorder(true).
+		SetTitle(" Tables ([" + Style.HelpKeyTextColor + "]Tab[" + Style.NormalTextColor + "] Select) ").
+		SetTitleAlign(tview.AlignLeft)
+
+	// Left side: rolls input + results stacked vertically
+	leftContent := tview.NewFlex().
 		SetDirection(tview.FlexRow).
 		AddItem(dv.TextArea, 0, 1, true).
 		AddItem(dv.resultView, 0, 1, false)
+
+	// Horizontal split: left content + table hint panel (hidden until user types @)
+	dv.diceModalContent = tview.NewFlex().
+		AddItem(leftContent, 0, 1, true).
+		AddItem(dv.tableHintView, 0, 0, false)
 
 	// Wrap in a frame for padding between border and content
 	dv.diceFrame = tview.NewFrame(dv.diceModalContent).
@@ -71,7 +87,7 @@ func (dv *DiceView) setupModal() {
 				AddItem(nil, 0, 1, false).
 				AddItem(dv.diceFrame, 0, 3, true).
 				AddItem(nil, 0, 1, false),
-			60, 1, true, // Width of the modal in columns
+			90, 1, true, // Width of the modal in columns
 		).
 		AddItem(nil, 0, 1, false)
 
@@ -88,17 +104,109 @@ func (dv *DiceView) setupModal() {
 	dv.TextArea.SetBlurFunc(func() {
 		dv.diceFrame.SetBorderColor(Style.BorderColor)
 	})
+
+	dv.TextArea.SetChangedFunc(func() {
+		dv.updateTableHints()
+	})
+}
+
+// updateTableHints scans the current text for the last active @prefix and
+// refreshes the hint view. Hides the hint view when no @ is being typed.
+func (dv *DiceView) updateTableHints() {
+	prefix, active := currentOraclePrefix(dv.TextArea.GetText())
+	if !active {
+		dv.hintsActive = false
+		dv.diceModalContent.ResizeItem(dv.tableHintView, 0, 0)
+		dv.tableHintView.Clear()
+		return
+	}
+
+	hints := dv.oracleService.GetTableHints(prefix)
+	if len(hints) == 0 {
+		dv.hintsActive = false
+		dv.diceModalContent.ResizeItem(dv.tableHintView, 35, 0)
+		dv.tableHintView.SetText("[" + Style.ErrorTextColor + "]no matching tables[" + Style.NormalTextColor + "]")
+		return
+	}
+
+	const maxDisplay = 20
+	truncated := len(hints) > maxDisplay
+	if truncated {
+		hints = hints[:maxDisplay]
+	}
+
+	var b strings.Builder
+	b.WriteString("[::b]" + tview.Escape(hints[0]) + "[::-]") // first entry bold — Tab selects it
+	for _, h := range hints[1:] {
+		b.WriteString("\n")
+		b.WriteString(tview.Escape(h))
+	}
+	if truncated {
+		b.WriteString("\n[" + Style.HelpKeyTextColor + "]+more[" + Style.NormalTextColor + "]")
+	}
+
+	dv.hintsActive = true
+	dv.tableHintView.SetText(b.String())
+	dv.diceModalContent.ResizeItem(dv.tableHintView, 35, 0)
+}
+
+// acceptFirstHint completes the current @prefix with the first matching table name.
+// Returns true if a completion was applied.
+func (dv *DiceView) acceptFirstHint() bool {
+	if !dv.hintsActive {
+		return false
+	}
+	text := dv.TextArea.GetText()
+	prefix, active := currentOraclePrefix(text)
+	if !active {
+		return false
+	}
+	hints := dv.oracleService.GetTableHints(prefix)
+	if len(hints) == 0 {
+		return false
+	}
+	idx := strings.LastIndex(text, "@")
+	newText := text[:idx] + "@" + hints[0] + " "
+	dv.TextArea.SetText(newText, true)
+	return true
+}
+
+// currentOraclePrefix returns the prefix the user is currently typing after
+// the last "@" token, and whether an active @ reference exists.
+// A completed token (followed by whitespace) is not considered active.
+func currentOraclePrefix(text string) (prefix string, active bool) {
+	idx := strings.LastIndex(text, "@")
+	if idx == -1 {
+		return "", false
+	}
+	after := text[idx+1:]
+	// If followed immediately by whitespace or end-of-token, it's a completed reference
+	for i, ch := range after {
+		if ch == ' ' || ch == '\t' || ch == '\n' || ch == ',' {
+			if i == 0 {
+				return "", false // "@" immediately followed by whitespace — not a reference
+			}
+			return "", false // completed token
+		}
+		_ = i
+	}
+	return after, true
 }
 
 func (dv *DiceView) Refresh() {
 	dv.TextArea.SetText("", true)
 	dv.resultView.SetText("")
+	dv.tableHintView.Clear()
+	dv.hintsActive = false
 }
 
 func (dv *DiceView) setupKeyBindings() {
 	dv.Modal.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-
 		switch event.Key() {
+		case tcell.KeyTab:
+			if dv.acceptFirstHint() {
+				return nil
+			}
 		case tcell.KeyCtrlR:
 			dv.roll()
 			return nil
@@ -126,7 +234,7 @@ func (dv *DiceView) setupKeyBindings() {
 }
 
 func (dv *DiceView) roll() {
-	resultGroups := dice.Roll(dv.TextArea.GetText())
+	resultGroups := dice.Roll(dv.TextArea.GetText(), dv.oracleService)
 
 	var output strings.Builder
 	for _, group := range resultGroups {
@@ -137,6 +245,12 @@ func (dv *DiceView) roll() {
 		for i, result := range group.Results {
 			if result.Err != nil {
 				output.WriteString("[" + Style.ErrorTextColor + "]" + tview.Escape(result.Err.Error()) + "[" + Style.NormalTextColor + "]")
+			} else if result.Picked != "" {
+				label := result.Notation
+				if strings.HasPrefix(label, "@") {
+					label = label[1:]
+				}
+				output.WriteString("[" + Style.SuccessTextColor + "]" + tview.Escape(label) + "[" + Style.NormalTextColor + "] -> " + dv.formatDiceResult(result))
 			} else {
 				output.WriteString("[" + Style.SuccessTextColor + "]" + tview.Escape(result.Notation) + "[" + Style.NormalTextColor + "] -> " + dv.formatDiceResult(result))
 			}
@@ -152,9 +266,12 @@ func (dv *DiceView) roll() {
 	dv.resultView.SetText(output.String())
 }
 
-// formatDiceResult renders a roll result as "total [d1 d2 d3]" where dropped
-// dice are shown in grey. All dice are merged into a single sorted bracket.
+// formatDiceResult renders a roll result. For list picks it shows the chosen
+// item; for dice rolls it shows "total {d1 d2 d3}" with dropped dice in grey.
 func (dv *DiceView) formatDiceResult(result dice.RollResult) string {
+	if result.Picked != "" {
+		return "[" + Style.SuccessTextColor + "]" + tview.Escape(result.Picked) + "[" + Style.NormalTextColor + "]"
+	}
 	var b strings.Builder
 	b.WriteString(strconv.Itoa(result.Total))
 
@@ -255,5 +372,26 @@ One roll per line. Labels are optional. Multiple dice expressions on one line ar
 
   [yellow]NdF[white]      Roll N Fate/Fudge dice (-1, 0, +1)
   [yellow]4dF[white]      Standard Fate roll
-  [yellow]4dF+2[white]    Fate roll with +2 bonus`)
+  [yellow]4dF+2[white]    Fate roll with +2 bonus
+
+[green]Lists[white]
+
+  [yellow]{A; B; C}[white]       Pick randomly from a list
+  [yellow]{A; B (3); C}[white]   B is 3x more likely than A or C
+
+  [yellow]Who's Attacked: {Frank; Bill; Joe}[white]
+  [yellow]Yes/No: {No, and; No; No, but; Yes, but; Yes; Yes, and}[white]
+  [yellow]Attack: 1d20, {Hit; Miss}[white]
+  
+[green]Tables[white]
+You can roll on any tables you've created by using the name or category/name.
+
+The pattern is @<table name> or @<category>/<table name>
+
+Typing an @ will open up a list of available tables. Keep typing and hit tab to select the first item in the list.
+
+  [yellow]@descriptors[white]        Pick a random descriptor from all tables named 'descriptors'
+  [yellow]@Fantasy/descriptors[white]Pick a random descriptor from the fantasy descriptors table
+  [yellow]Action/Theme: @actions, @themes[white]
+  `)
 }
