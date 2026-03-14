@@ -32,4 +32,4 @@ tmp
 bin
 
 # Local notes
-docs/IDEAS.md
+docs/*.md
