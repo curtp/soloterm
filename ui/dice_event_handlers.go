@@ -12,6 +12,7 @@ func (a *App) handleDiceCancelled(e *DiceCancelledEvent) {
 func (a *App) handleDiceShow(e *DiceShowEvent) {
 	// Store current focus so we can restore it after tag selection
 	a.diceView.returnFocus = a.GetFocus()
+	a.diceView.rebuildButtons()
 	a.pages.ShowPage(DICE_MODAL_ID)
 	a.SetFocus(a.diceView.TextArea)
 }

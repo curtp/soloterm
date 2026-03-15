@@ -19,6 +19,8 @@ type DiceView struct {
 	resultView       *tview.TextView
 	tableHintView    *tview.TextView
 	diceModalContent *tview.Flex
+	buttonRow        *tview.Flex
+	buttons          []*tview.Button
 	diceFrame        *tview.Frame
 	returnFocus      tview.Primitive // Field to restore focus to after dice selection
 	hintsActive      bool            // true when the table hint view is showing results
@@ -71,8 +73,16 @@ func (dv *DiceView) setupModal() {
 		AddItem(leftContent, 0, 1, true).
 		AddItem(dv.tableHintView, 0, 0, false)
 
+	dv.buttonRow = tview.NewFlex()
+
+	// Stack content and button row vertically inside the frame
+	innerContent := tview.NewFlex().
+		SetDirection(tview.FlexRow).
+		AddItem(dv.diceModalContent, 0, 1, true).
+		AddItem(dv.buttonRow, 1, 0, false)
+
 	// Wrap in a frame for padding between border and content
-	dv.diceFrame = tview.NewFrame(dv.diceModalContent).
+	dv.diceFrame = tview.NewFrame(innerContent).
 		SetBorders(1, 0, 0, 0, 1, 1)
 	dv.diceFrame.SetBorder(true).
 		SetTitleAlign(tview.AlignLeft).
@@ -98,10 +108,12 @@ func (dv *DiceView) setupModal() {
 		}
 		entries = append(entries, helpEntry{"F12", "Help"}, helpEntry{"Esc", "Close"})
 		dv.app.updateFooterHelp(helpBar("Roll Dice", entries))
+		dv.TextArea.SetBorderColor(Style.BorderFocusColor)
 		dv.diceFrame.SetBorderColor(Style.BorderFocusColor)
 	})
 
 	dv.TextArea.SetBlurFunc(func() {
+		dv.TextArea.SetBorderColor(Style.BorderColor)
 		dv.diceFrame.SetBorderColor(Style.BorderColor)
 	})
 
@@ -193,6 +205,43 @@ func currentOraclePrefix(text string) (prefix string, active bool) {
 	return after, true
 }
 
+// rebuildButtons refreshes the button row based on current state.
+// Called on modal open and after each roll.
+func (dv *DiceView) addButton(label string, width int, selected func()) {
+	btn := tview.NewButton(label).SetSelectedFunc(selected)
+	btn.SetFocusFunc(func() { dv.diceFrame.SetBorderColor(Style.BorderFocusColor) })
+	btn.SetBlurFunc(func() { dv.diceFrame.SetBorderColor(Style.BorderColor) })
+	dv.buttons = append(dv.buttons, btn)
+	dv.buttonRow.AddItem(btn, width, 0, false)
+}
+
+// rebuildButtons refreshes the button row based on current state.
+// Called on modal open and after each roll.
+func (dv *DiceView) rebuildButtons() {
+	dv.buttonRow.Clear()
+	dv.buttons = nil
+	dv.buttonRow.AddItem(nil, 0, 1, false)
+
+	dv.addButton("Roll", 8, func() {
+		dv.roll()
+		dv.app.SetFocus(dv.buttons[0])
+	})
+	dv.buttonRow.AddItem(nil, 1, 0, false)
+
+	// dv.addButton("Saved Rolls", 14, func() { /* TODO: open saved rolls modal */ })
+
+	if dv.CanInsert() && dv.resultView.GetText(false) != "" {
+		dv.buttonRow.AddItem(nil, 1, 0, false)
+		dv.addButton("Insert", 7, func() {
+			dv.app.HandleEvent(&DiceInsertResultEvent{
+				BaseEvent: BaseEvent{action: DICE_INSERT_RESULT},
+			})
+		})
+	}
+
+	dv.buttonRow.AddItem(nil, 0, 1, false)
+}
+
 func (dv *DiceView) Refresh() {
 	dv.TextArea.SetText("", true)
 	dv.resultView.SetText("")
@@ -207,8 +256,28 @@ func (dv *DiceView) setupKeyBindings() {
 			if dv.acceptFirstHint() {
 				return nil
 			}
+			focused := dv.app.GetFocus()
+			if focused == dv.TextArea {
+				if len(dv.buttons) > 0 {
+					dv.app.SetFocus(dv.buttons[0])
+				}
+			} else {
+				for i, btn := range dv.buttons {
+					if focused == btn {
+						if i+1 < len(dv.buttons) {
+							dv.app.SetFocus(dv.buttons[i+1])
+						} else {
+							dv.app.SetFocus(dv.TextArea)
+						}
+						return nil
+					}
+				}
+				dv.app.SetFocus(dv.TextArea)
+			}
+			return nil
 		case tcell.KeyCtrlR:
 			dv.roll()
+			dv.app.SetFocus(dv.TextArea)
 			return nil
 		case tcell.KeyCtrlO:
 			if dv.CanInsert() {
@@ -246,10 +315,7 @@ func (dv *DiceView) roll() {
 			if result.Err != nil {
 				output.WriteString("[" + Style.ErrorTextColor + "]" + tview.Escape(result.Err.Error()) + "[" + Style.NormalTextColor + "]")
 			} else if result.Picked != "" {
-				label := result.Notation
-				if strings.HasPrefix(label, "@") {
-					label = label[1:]
-				}
+				label := strings.TrimPrefix(result.Notation, "@")
 				output.WriteString("[" + Style.SuccessTextColor + "]" + tview.Escape(label) + "[" + Style.NormalTextColor + "] -> " + dv.formatDiceResult(result))
 			} else {
 				output.WriteString("[" + Style.SuccessTextColor + "]" + tview.Escape(result.Notation) + "[" + Style.NormalTextColor + "] -> " + dv.formatDiceResult(result))
@@ -264,6 +330,7 @@ func (dv *DiceView) roll() {
 	}
 
 	dv.resultView.SetText(output.String())
+	dv.rebuildButtons()
 }
 
 // formatDiceResult renders a roll result. For list picks it shows the chosen
@@ -320,7 +387,10 @@ func (dv *DiceView) formatDiceResult(result dice.RollResult) string {
 }
 
 func (dv *DiceView) CanInsert() bool {
-	return dv.returnFocus == dv.app.sessionView.TextArea
+	if dv.returnFocus != dv.app.sessionView.TextArea {
+		return false
+	}
+	return dv.app.sessionView.currentSession != nil || dv.app.sessionView.IsNotesMode()
 }
 
 func (dv *DiceView) buildHelpText() string {
