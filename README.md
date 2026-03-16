@@ -207,8 +207,9 @@ The database file is always named `soloterm.db`, so just point this at the folde
 If you set the `DB_PATH` environment variable to a full file path, that takes priority over this setting.
 
 # Contributing/Reporting Issues
-This is a little side project that I used to learn Go. I don't intend this to be an application I plan on building a support structure around.
+This is a little side project that I used to learn Go which expanded into what it is today. While I
+didn't intend for this to turn into full on open source project, I'm happy to provide the source here.
 
 * If you want to fork the code and alter it, go for it. The license is MIT, so do what you want.
 * PRs welcome! But please file bugs and or enhancements and refer to them.
-* If you find a problem with the app, I'm not surprised. I've tested it and used Claude to help me write tests, so there shouldn't be anything huge. Feel free to open an issue here and if I get time I'll check it out. Or, if you like, fix it and submit a PR.
+* If you find a problem with the app, feel free to open an issue here and if I get time I'll check it out. Or, if you like, fix it and submit a PR.
