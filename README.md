@@ -96,7 +96,7 @@ The roller will then pick an entry from the table.
 You can include a table with other dice or lists and the roller will select an entry from it.
 
 ### Roll Snippets
-You can save frequently used rolls as a snippet, then easily select and use it in the roller. It speeds up rolling, especially on multiple tables.
+You can save frequently used rolls as a snippet, then easily select and use it in the roller. It speeds up rolling, especially on multiple tables. You can get to the Snippets from the Roll modal.
 
 # Installing
 
