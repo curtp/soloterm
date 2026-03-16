@@ -122,7 +122,7 @@ Not sure which Mac you have? Apple menu → About This Mac. If it says Apple M1/
 Open a terminal in the folder where you downloaded the file and run:
 
 ```bash
-chmod +x soloterm-*
+chmod +x soloterm_*
 ```
 
 If macOS blocks the app, go to **System Settings → Privacy & Security** and click **Open Anyway**.
@@ -130,13 +130,13 @@ If macOS blocks the app, go to **System Settings → Privacy & Security** and cl
 ## 3. Run it
 
 ```bash
-./soloterm-darwin-arm64   # macOS Apple Silicon — adjust filename as needed
+./soloterm_Darwin_arm64   # macOS Apple Silicon — adjust filename as needed
 ```
 
 **Optional:** move the binary somewhere on your PATH so you can launch it from anywhere:
 
 ```bash
-mv soloterm-darwin-arm64 /usr/local/bin/soloterm
+mv soloterm_Darwin_arm64 /usr/local/bin/soloterm
 soloterm
 ```
 
