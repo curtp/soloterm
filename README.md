@@ -6,7 +6,7 @@ This started out as a project to learn the Go programming language and turned in
 
 People expressed interest in it, so I thought I'd put it up here on Github.
 
-To install, download the latest executable from [Releases](https://github.com/curtp/soloterm/releases).
+To install, see the [Installing](#installing) section below.
 
 To see where the data and logs are written, press F1.
 
@@ -18,6 +18,7 @@ To see where the data and logs are written, press F1.
 * Searching game sessions
 * Random Tables
 * Rolling on lists and random tables
+* Save frequently used rolls for quick re-rolling
 * Mouse free navigation
 * Import/Export session logs
 
@@ -95,6 +96,53 @@ When you've added random tables to the application, you can easily roll on them 
 The roller will then pick an entry from the table.
 
 You can include a table with other dice or lists and the roller will select an entry from it.
+
+### Roll Snippets
+You can save frequently used rolls as a snippet, then easily select and use in the roller. It speeds up rolling, especially on tables.
+
+# Installing
+
+SoloTerm is a single binary with no dependencies. Download it, make it executable, and run it.
+
+## 1. Download the binary
+
+Go to the [Releases](https://github.com/curtp/soloterm/releases) page and download the file that matches your system:
+
+| OS      | Architecture              | File to download              |
+|---------|---------------------------|-------------------------------|
+| macOS   | Apple Silicon (M1/M2/M3)  | `soloterm_Darwin_arm64`       |
+| macOS   | Intel                     | `soloterm_Darwin_x86_64`      |
+| Linux   | ARM (Raspberry Pi, etc.)  | `soloterm_Linux_arm64`        |
+| Linux   | 64-bit (most desktops)    | `soloterm_Linux_x86_64`       |
+| Windows | ARM                       | `soloterm_Windows_arm64.exe`  |
+| Windows | 64-bit (most desktops).   | `soloterm_Windows_x86_64.exe` |
+
+Not sure which Mac you have? Apple menu → About This Mac. If it says Apple M1/M2/M3, download the ARM build. If it says Intel Core, download the x86_64 build.
+
+## 2. Make it executable (macOS / Linux only)
+
+Open a terminal in the folder where you downloaded the file and run:
+
+```bash
+chmod +x soloterm-*
+```
+
+If macOS blocks the app, go to **System Settings → Privacy & Security** and click **Open Anyway**.
+
+## 3. Run it
+
+```bash
+./soloterm-darwin-arm64   # macOS Apple Silicon — adjust filename as needed
+```
+
+**Optional:** move the binary somewhere on your PATH so you can launch it from anywhere:
+
+```bash
+mv soloterm-darwin-arm64 /usr/local/bin/soloterm
+soloterm
+```
+
+On Windows, double-clicking the `.exe` will open a Command Prompt window and launch the app. You can also run it directly from PowerShell or Windows Terminal.
 
 # Configuration
 
