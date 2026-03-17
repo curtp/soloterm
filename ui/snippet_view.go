@@ -146,10 +146,14 @@ func (sv *SnippetView) setupKeyBindings() {
 	sv.table.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyCtrlU:
-			sv.handleReorder(-1)
+			if !sv.isFiltered() {
+				sv.handleReorder(-1)
+			}
 			return nil
 		case tcell.KeyCtrlD:
-			sv.handleReorder(1)
+			if !sv.isFiltered() {
+				sv.handleReorder(1)
+			}
 			return nil
 		case tcell.KeyCtrlE:
 			sv.showEditModal()
@@ -370,6 +374,10 @@ func (sv *SnippetView) addSectionDivider(row int, label string) {
 	sv.table.SetCell(row, 1, tview.NewTableCell("").
 		SetSelectable(false).
 		SetExpansion(2))
+}
+
+func (sv *SnippetView) isFiltered() bool {
+	return sv.filterField.GetText() != ""
 }
 
 func (sv *SnippetView) activeGameID() *int64 {

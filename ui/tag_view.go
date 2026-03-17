@@ -189,6 +189,10 @@ func (tv *TagView) renderFiltered(tags []tag.TagType) {
 	tv.TagTable.Select(1, 0)
 }
 
+func (tv *TagView) isFiltered() bool {
+	return tv.filterField.GetText() != ""
+}
+
 func (tv *TagView) addTableHeader() {
 	tv.TagTable.SetCell(0, 0, tview.NewTableCell("Tag").
 		SetTextColor(tcell.ColorYellow).
