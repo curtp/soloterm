@@ -362,8 +362,8 @@ func (sv *SnippetView) renderTable(scoped []*snippet.Snippet, global []*snippet.
 }
 
 func (sv *SnippetView) addSnippetRow(row int, s *snippet.Snippet) {
-	sv.table.SetCell(row, 0, tview.NewTableCell(s.Name).SetReference(s.ID).SetExpansion(1))
-	sv.table.SetCell(row, 1, tview.NewTableCell(s.Content).SetExpansion(2))
+	sv.table.SetCell(row, 0, tview.NewTableCell(tview.Escape(s.Name)).SetReference(s.ID).SetExpansion(1))
+	sv.table.SetCell(row, 1, tview.NewTableCell(tview.Escape(s.Content)).SetExpansion(2))
 }
 
 func (sv *SnippetView) addSectionDivider(row int, label string) {
