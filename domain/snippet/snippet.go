@@ -9,7 +9,7 @@ const (
 	MinNameLength    = 1
 	MaxNameLength    = 50
 	MinContentLength = 1
-	MaxContentLength = 150
+	MaxContentLength = 1000
 )
 
 // Snippet represents a snippet in the system
