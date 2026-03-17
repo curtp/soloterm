@@ -401,6 +401,23 @@ func TestSnippetView_Filter_HidesDivider(t *testing.T) {
 	assert.Equal(t, 2, app.snippetView.table.GetRowCount(), "divider should not appear when filter is active")
 }
 
+// TestSnippetView_Reorder_NoopWhenFiltered verifies that Ctrl+U and Ctrl+D have
+// no effect on snippet positions when a filter is active.
+func TestSnippetView_Reorder_NoopWhenFiltered(t *testing.T) {
+	app := setupTestApp(t)
+	s1 := createSnippet(t, app, "Alpha", "a", nil)
+	s2 := createSnippet(t, app, "Beta", "b", nil)
+	openSnippetModal(t, app)
+
+	app.snippetView.filterField.SetText("a") // only Alpha visible
+	testHelper.SimulateKey(app.snippetView.table, app.Application, tcell.KeyCtrlD)
+
+	globals, err := app.snippetView.snippetService.GetGlobal()
+	require.NoError(t, err)
+	assert.Equal(t, s1.ID, globals[0].ID, "Alpha should remain first — reorder is a noop when filtered")
+	assert.Equal(t, s2.ID, globals[1].ID)
+}
+
 // TestSnippetView_EditSnippet_NoDeleteButtonOnNew verifies that Ctrl+N shows
 // no delete button, and Ctrl+E does show one.
 func TestSnippetView_EditSnippet_DeleteButtonVisibility(t *testing.T) {
