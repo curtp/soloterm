@@ -32,7 +32,7 @@ func TestTagView_OpenAndClose(t *testing.T) {
 	assert.True(t, app.isPageVisible(TAG_MODAL_ID), "Expected tag modal to be visible")
 
 	// Close via Escape
-	testHelper.SimulateKey(app.tagView.TagTable, app.Application, tcell.KeyEsc)
+	testHelper.SimulateKey(app.tagView.Modal, app.Application, tcell.KeyEsc)
 	assert.False(t, app.isPageVisible(TAG_MODAL_ID), "Expected tag modal to be hidden after Escape")
 }
 

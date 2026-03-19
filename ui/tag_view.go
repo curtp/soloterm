@@ -250,12 +250,18 @@ func (tv *TagView) selectTag() {
 
 func (tv *TagView) setupKeyBindings() {
 	tv.Modal.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyTab {
+		switch event.Key() {
+		case tcell.KeyTab:
 			if tv.filterField.HasFocus() {
 				tv.app.SetFocus(tv.TagTable)
 			} else {
 				tv.app.SetFocus(tv.filterField)
 			}
+			return nil
+		case tcell.KeyEsc:
+			tv.app.HandleEvent(&TagCancelledEvent{
+				BaseEvent: BaseEvent{action: TAG_CANCEL},
+			})
 			return nil
 		}
 		return event
@@ -267,10 +273,6 @@ func (tv *TagView) setupKeyBindings() {
 		case tcell.KeyEnter:
 			tv.selectTag()
 			return nil
-		case tcell.KeyEsc:
-			tv.app.HandleEvent(&TagCancelledEvent{
-				BaseEvent: BaseEvent{action: TAG_CANCEL},
-			})
 		case tcell.KeyF12:
 			tv.app.HandleEvent(&ShowHelpEvent{
 				BaseEvent:   BaseEvent{action: SHOW_HELP},
@@ -278,6 +280,7 @@ func (tv *TagView) setupKeyBindings() {
 				ReturnFocus: tv.Modal,
 				Text:        tv.buildHelpText(),
 			})
+			return nil
 		}
 
 		return event
