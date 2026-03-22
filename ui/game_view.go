@@ -143,7 +143,14 @@ func (gv *GameView) setupKeyBindings() {
 				}
 			}
 		case tcell.KeyCtrlN:
-			gv.ShowNewModal()
+			selection := gv.GetCurrentSelection()
+			if selection != nil && (selection.SessionID != nil || selection.IsNotes) {
+				gv.app.HandleEvent(&SessionShowNewEvent{
+					BaseEvent: BaseEvent{action: SESSION_SHOW_NEW},
+				})
+			} else {
+				gv.ShowNewModal()
+			}
 			return nil
 		}
 		return event
