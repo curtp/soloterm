@@ -62,8 +62,8 @@ func createSession(t *testing.T, app *App, gameID int64, name string) *session.S
 func TestGameView_AddGame(t *testing.T) {
 	app := setupTestApp(t)
 
-	// Open the new modal via Ctrl+N on the tree
-	testHelper.SimulateKey(app.gameView.Tree, app.Application, tcell.KeyCtrlN)
+	// Open the new modal via n on the tree
+	testHelper.SimulateRune(app.gameView.Tree, app.Application, 'n')
 	assert.True(t, app.isPageVisible(GAME_MODAL_ID), "Expected game modal to be visible")
 
 	// Fill in the form and save via Ctrl+S
@@ -82,8 +82,8 @@ func TestGameView_AddGame(t *testing.T) {
 func TestGameView_AddGameWithDescription(t *testing.T) {
 	app := setupTestApp(t)
 
-	// Open the new modal via Ctrl+N
-	testHelper.SimulateKey(app.gameView.Tree, app.Application, tcell.KeyCtrlN)
+	// Open the new modal via n
+	testHelper.SimulateRune(app.gameView.Tree, app.Application, 'n')
 	assert.True(t, app.isPageVisible(GAME_MODAL_ID))
 
 	// Fill in both fields and save via Ctrl+S
@@ -102,8 +102,8 @@ func TestGameView_AddGameWithDescription(t *testing.T) {
 func TestGameView_AddGameValidationError(t *testing.T) {
 	app := setupTestApp(t)
 
-	// Open the new modal via Ctrl+N
-	testHelper.SimulateKey(app.gameView.Tree, app.Application, tcell.KeyCtrlN)
+	// Open the new modal via n
+	testHelper.SimulateRune(app.gameView.Tree, app.Application, 'n')
 
 	// Leave name empty and attempt save via Ctrl+S
 	app.gameView.Form.nameField.SetText("")
@@ -125,8 +125,8 @@ func TestGameView_EditGame(t *testing.T) {
 	app := setupTestApp(t)
 	g := createGame(t, app, "Original Name")
 
-	// Open edit modal via Ctrl+E on the tree
-	testHelper.SimulateKey(app.gameView.Tree, app.Application, tcell.KeyCtrlE)
+	// Open edit modal via e on the tree
+	testHelper.SimulateRune(app.gameView.Tree, app.Application, 'e')
 	assert.True(t, app.isPageVisible(GAME_MODAL_ID), "Expected game modal to be visible")
 
 	// Change the name and save via Ctrl+S
@@ -145,8 +145,8 @@ func TestGameView_EditGameAddDescription(t *testing.T) {
 	app := setupTestApp(t)
 	g := createGame(t, app, "My Game")
 
-	// Open edit modal via Ctrl+E
-	testHelper.SimulateKey(app.gameView.Tree, app.Application, tcell.KeyCtrlE)
+	// Open edit modal via e
+	testHelper.SimulateRune(app.gameView.Tree, app.Application, 'e')
 
 	// Add a description and save via Ctrl+S
 	app.gameView.Form.descriptionField.SetText("Now with a description", false)
@@ -162,11 +162,11 @@ func TestGameView_DeleteGame(t *testing.T) {
 	app := setupTestApp(t)
 	g := createGame(t, app, "Game To Delete")
 
-	// Open edit modal via Ctrl+E, then delete via Ctrl+D
-	testHelper.SimulateKey(app.gameView.Tree, app.Application, tcell.KeyCtrlE)
+	// Open edit modal via e, then delete via Ctrl+D (form action)
+	testHelper.SimulateRune(app.gameView.Tree, app.Application, 'e')
 	assert.True(t, app.isPageVisible(GAME_MODAL_ID))
 
-	testHelper.SimulateKey(app.gameView.Form, app.Application, tcell.KeyCtrlD)
+	testHelper.SimulateKey(app.gameView.Form.GetButton(2), app.Application, tcell.KeyEnter)
 	assert.True(t, app.isPageVisible(CONFIRM_MODAL_ID), "Expected confirmation modal to be visible")
 
 	// Confirm the deletion
@@ -214,14 +214,14 @@ func TestGameView_EmptyTreeShowsPlaceholder(t *testing.T) {
 	root := app.gameView.Tree.GetRoot()
 	children := root.GetChildren()
 	require.Len(t, children, 1)
-	assert.Equal(t, "(No Games Yet - Press Ctrl+N to Add)", children[0].GetText())
+	assert.Equal(t, "(No Games Yet - Press n to Add)", children[0].GetText())
 }
 
 func TestGameView_CancelDoesNotSave(t *testing.T) {
 	app := setupTestApp(t)
 
-	// Open new game modal via Ctrl+N and fill in data
-	testHelper.SimulateKey(app.gameView.Tree, app.Application, tcell.KeyCtrlN)
+	// Open new game modal via n and fill in data
+	testHelper.SimulateRune(app.gameView.Tree, app.Application, 'n')
 	app.gameView.Form.nameField.SetText("Should Not Save")
 
 	// Cancel via Escape
@@ -240,12 +240,12 @@ func TestGameView_FormResetOnNew(t *testing.T) {
 	createGame(t, app, "Existing Game")
 
 	// Open edit modal to populate the form
-	testHelper.SimulateKey(app.gameView.Tree, app.Application, tcell.KeyCtrlE)
+	testHelper.SimulateRune(app.gameView.Tree, app.Application, 'e')
 	assert.Equal(t, "Existing Game", app.gameView.Form.nameField.GetText())
 
 	// Cancel then open new game form
 	testHelper.SimulateKey(app.gameView.Form, app.Application, tcell.KeyEscape)
-	testHelper.SimulateKey(app.gameView.Tree, app.Application, tcell.KeyCtrlN)
+	testHelper.SimulateRune(app.gameView.Tree, app.Application, 'n')
 
 	// Verify the form fields are cleared
 	assert.Empty(t, app.gameView.Form.nameField.GetText(), "Expected empty name field after reset")

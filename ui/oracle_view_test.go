@@ -87,7 +87,7 @@ func TestOracleView_NewOracle_SavedAndSelectedInTree(t *testing.T) {
 	openOracleModal(t, app)
 	app.SetFocus(app.oracleView.OracleTree)
 
-	testHelper.SimulateKey(app.oracleView.Modal, app.Application, tcell.KeyCtrlN)
+	testHelper.SimulateRune(app.oracleView.Modal, app.Application, 'n')
 	require.True(t, app.isPageVisible(ORACLE_FORM_MODAL_ID), "form modal should open on Ctrl+N")
 
 	app.oracleView.Form.categoryField.SetText("Monsters")
@@ -106,7 +106,7 @@ func TestOracleView_NewOracle_ValidationError_EmptyName(t *testing.T) {
 	app := setupTestApp(t)
 	openOracleModal(t, app)
 
-	testHelper.SimulateKey(app.oracleView.Modal, app.Application, tcell.KeyCtrlN)
+	testHelper.SimulateRune(app.oracleView.Modal, app.Application, 'n')
 	require.True(t, app.isPageVisible(ORACLE_FORM_MODAL_ID))
 
 	app.oracleView.Form.categoryField.SetText("Monsters")
@@ -123,7 +123,7 @@ func TestOracleView_NewOracle_CancelClosesForm(t *testing.T) {
 	app := setupTestApp(t)
 	openOracleModal(t, app)
 
-	testHelper.SimulateKey(app.oracleView.Modal, app.Application, tcell.KeyCtrlN)
+	testHelper.SimulateRune(app.oracleView.Modal, app.Application, 'n')
 	require.True(t, app.isPageVisible(ORACLE_FORM_MODAL_ID))
 
 	testHelper.SimulateEscape(app.oracleView.Form, app.Application)
@@ -139,7 +139,7 @@ func TestOracleView_EditOracle_UpdatesName(t *testing.T) {
 	openOracleModal(t, app)
 	require.NotNil(t, app.oracleView.currentOracle)
 
-	testHelper.SimulateKey(app.oracleView.Modal, app.Application, tcell.KeyCtrlE)
+	testHelper.SimulateRune(app.oracleView.Modal, app.Application, 'e')
 	require.True(t, app.isPageVisible(ORACLE_FORM_MODAL_ID))
 	assert.Equal(t, "encounters", app.oracleView.Form.nameField.GetText(), "form should be pre-populated")
 
@@ -159,9 +159,9 @@ func TestOracleView_DeleteOracle_RemovesFromDB(t *testing.T) {
 	openOracleModal(t, app)
 	require.NotNil(t, app.oracleView.currentOracle)
 
-	testHelper.SimulateKey(app.oracleView.Modal, app.Application, tcell.KeyCtrlE)
+	testHelper.SimulateRune(app.oracleView.Modal, app.Application, 'e')
 	require.True(t, app.isPageVisible(ORACLE_FORM_MODAL_ID))
-	testHelper.SimulateKey(app.oracleView.Form, app.Application, tcell.KeyCtrlD)
+	testHelper.SimulateKey(app.oracleView.Form.GetButton(2), app.Application, tcell.KeyEnter)
 
 	require.True(t, app.isPageVisible(CONFIRM_MODAL_ID))
 	app.confirmModal.onConfirm()
@@ -184,9 +184,9 @@ func TestOracleView_DeleteOracle_StaysInSameCategory(t *testing.T) {
 
 	// Select and delete the first oracle in Monsters
 	app.oracleView.SelectOracle(o1.ID)
-	testHelper.SimulateKey(app.oracleView.Modal, app.Application, tcell.KeyCtrlE)
+	testHelper.SimulateRune(app.oracleView.Modal, app.Application, 'e')
 	require.True(t, app.isPageVisible(ORACLE_FORM_MODAL_ID))
-	testHelper.SimulateKey(app.oracleView.Form, app.Application, tcell.KeyCtrlD)
+	testHelper.SimulateKey(app.oracleView.Form.GetButton(2), app.Application, tcell.KeyEnter)
 	require.True(t, app.isPageVisible(CONFIRM_MODAL_ID))
 	app.confirmModal.onConfirm()
 
@@ -251,7 +251,7 @@ func TestOracleView_ReorderDown_MovesOracleDown(t *testing.T) {
 
 	app.oracleView.SelectOracle(o1.ID)
 	app.SetFocus(app.oracleView.OracleTree)
-	testHelper.SimulateKey(app.oracleView.Modal, app.Application, tcell.KeyCtrlD)
+	testHelper.SimulateRune(app.oracleView.Modal, app.Application, 'd')
 
 	oracles, err := app.oracleView.oracleService.GetAll()
 	require.NoError(t, err)
@@ -270,7 +270,7 @@ func TestOracleView_ReorderUp_MovesOracleUp(t *testing.T) {
 
 	app.oracleView.SelectOracle(o2.ID)
 	app.SetFocus(app.oracleView.OracleTree)
-	testHelper.SimulateKey(app.oracleView.Modal, app.Application, tcell.KeyCtrlU)
+	testHelper.SimulateRune(app.oracleView.Modal, app.Application, 'u')
 
 	oracles, err := app.oracleView.oracleService.GetAll()
 	require.NoError(t, err)
@@ -289,7 +289,7 @@ func TestOracleView_ReorderDoesNotFireFromContentArea(t *testing.T) {
 
 	app.oracleView.SelectOracle(o1.ID)
 	app.SetFocus(app.oracleView.ContentArea) // focus is on content, not tree
-	testHelper.SimulateKey(app.oracleView.Modal, app.Application, tcell.KeyCtrlD)
+	testHelper.SimulateRune(app.oracleView.Modal, app.Application, 'd')
 
 	oracles, err := app.oracleView.oracleService.GetAll()
 	require.NoError(t, err)

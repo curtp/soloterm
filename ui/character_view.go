@@ -117,21 +117,24 @@ func (cv *CharacterView) setupCharacterTree() {
 	// Set up input capture for character tree - Ctrl+N to add character
 	cv.CharTree.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
-		case tcell.KeyCtrlE:
-			if cv.GetSelectedCharacterID() != nil {
-				cv.RefreshDisplay()
-				cv.ShowEditCharacterModal()
+		case tcell.KeyRune:
+			switch event.Rune() {
+			case 'e':
+				if cv.GetSelectedCharacterID() != nil {
+					cv.RefreshDisplay()
+					cv.ShowEditCharacterModal()
+					return nil
+				}
+			case 'd':
+				if cv.GetSelectedCharacterID() != nil {
+					cv.RefreshDisplay()
+					cv.HandleDuplicate()
+					return nil
+				}
+			case 'n':
+				cv.ShowModal()
 				return nil
 			}
-		case tcell.KeyCtrlD:
-			if cv.GetSelectedCharacterID() != nil {
-				cv.RefreshDisplay()
-				cv.HandleDuplicate()
-				return nil
-			}
-		case tcell.KeyCtrlN:
-			cv.ShowModal()
-			return nil
 		}
 		return event
 	})
@@ -174,9 +177,9 @@ func (cv *CharacterView) setupFocusHandlers() {
 		cv.app.updateFooterHelp(helpBar("Characters", []helpEntry{
 			{"↑/↓", "Navigate"},
 			{"Space/Enter", "Select/Expand"},
-			{"Ctrl+N", "New"},
-			{"Ctrl+E", "Edit"},
-			{"Ctrl+D", "Duplicate"},
+			{"n", "New"},
+			{"e", "Edit"},
+			{"d", "Duplicate"},
 		}))
 		cv.CharTree.SetBorderColor(Style.BorderFocusColor)
 	})
@@ -189,9 +192,9 @@ func (cv *CharacterView) setupFocusHandlers() {
 		cv.app.updateFooterHelp(helpBar("Sheet", []helpEntry{
 			{"↑/↓/←/→", "Scroll"},
 			{"F12", "Help"},
-			{"Ctrl+E", "Edit"},
-			{"Ctrl+N", "New"},
-			{"Ctrl+U/D", "Move Entry or Section Up/Down"},
+			{"e", "Edit"},
+			{"n", "New"},
+			{"u/d", "Move Entry or Section Up/Down"},
 		}))
 		cv.CharPane.SetBorderColor(Style.BorderFocusColor)
 	})
@@ -234,7 +237,7 @@ func (cv *CharacterView) RefreshTree() {
 
 	if len(charsBySystem) == 0 {
 		// No characters yet
-		placeholder := tview.NewTreeNode("(No Characters Yet - Press Ctrl+N to Add)").
+		placeholder := tview.NewTreeNode("(No Characters Yet - Press n to Add)").
 			SetColor(Style.EmptyStateMessageColor)
 		root.AddChild(placeholder)
 		return

@@ -61,38 +61,39 @@ func (av *AttributeView) setupTable() {
 		}
 
 		switch event.Key() {
-		// Handle Ctrl+N to add a new attribute
-		case tcell.KeyCtrlN:
-			av.ShowNewModal()
-			return nil
-		// Handle Ctrl+E to edit selected attribute
-		case tcell.KeyCtrlE:
-			attr := av.GetSelected()
-			if attr != nil {
-				av.ShowEditModal(attr)
+		case tcell.KeyRune:
+			switch event.Rune() {
+			case 'n':
+				av.ShowNewModal()
+				return nil
+			case 'e':
+				attr := av.GetSelected()
+				if attr != nil {
+					av.ShowEditModal(attr)
+				}
+				return nil
+			// u: move up, d: move down.
+			// Headers/standalones (position 0) move their entire group.
+			// Children (position > 0) move within their group only.
+			case 'u':
+				attr := av.GetSelected()
+				if attr != nil {
+					av.app.HandleEvent(&AttributeReorderEvent{
+						BaseEvent:   BaseEvent{action: ATTRIBUTE_REORDER},
+						AttributeID: attr.ID, CharacterID: attr.CharacterID, Direction: -1,
+					})
+				}
+				return nil
+			case 'd':
+				attr := av.GetSelected()
+				if attr != nil {
+					av.app.HandleEvent(&AttributeReorderEvent{
+						BaseEvent:   BaseEvent{action: ATTRIBUTE_REORDER},
+						AttributeID: attr.ID, CharacterID: attr.CharacterID, Direction: 1,
+					})
+				}
+				return nil
 			}
-			return nil
-		// Ctrl+U: move up. Ctrl+D: move down.
-		// Headers/standalones (position 0) move their entire group.
-		// Children (position > 0) move within their group only.
-		case tcell.KeyCtrlU:
-			attr := av.GetSelected()
-			if attr != nil {
-				av.app.HandleEvent(&AttributeReorderEvent{
-					BaseEvent:   BaseEvent{action: ATTRIBUTE_REORDER},
-					AttributeID: attr.ID, CharacterID: attr.CharacterID, Direction: -1,
-				})
-			}
-			return nil
-		case tcell.KeyCtrlD:
-			attr := av.GetSelected()
-			if attr != nil {
-				av.app.HandleEvent(&AttributeReorderEvent{
-					BaseEvent:   BaseEvent{action: ATTRIBUTE_REORDER},
-					AttributeID: attr.ID, CharacterID: attr.CharacterID, Direction: 1,
-				})
-			}
-			return nil
 		}
 
 		return event
@@ -172,7 +173,7 @@ func (av *AttributeView) LoadAndDisplay(characterID int64) {
 
 	// Show message if no attributes
 	if len(attrs) == 0 {
-		av.Table.SetCell(2, 0, tview.NewTableCell("(No Entries - Ctrl+N to Add)").
+		av.Table.SetCell(2, 0, tview.NewTableCell("(No Entries - n to Add)").
 			SetTextColor(tcell.ColorGray).
 			SetAlign(tview.AlignCenter).
 			SetExpansion(2))
@@ -324,15 +325,18 @@ It's recommended to only track the bare essentials like health, or key pieces of
 [yellow]Value[white]: Value to assign to the entry (10/10, 2, +2). It may be blank.
 [yellow]Section[white]: Pick "- New -" to create a new section or pick an existing section to add the entry too.
 
+[yellow]n[white]  Add a new entry
+[yellow]e[white]  Edit the selected entry
+
 [green]Moving Entries[white]
 
-[yellow]Ctrl+U / Ctrl+D[white]  Move entry up or down.
+[yellow]u / d[white]  Move entry up or down.
 
 Underlined entries (section headers) move with all their entries as a group.
 
 Indented entries move within their section only.
 
-To move an entry to a different section, edit it ([yellow]Ctrl+E[white]) and choose a new section.
+To move an entry to a different section, edit it ([yellow]e[white]) and choose a new section.
 `),
 	})
 }

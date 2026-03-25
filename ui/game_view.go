@@ -126,32 +126,36 @@ func (gv *GameView) setupModal() {
 func (gv *GameView) setupKeyBindings() {
 	gv.Tree.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
-		case tcell.KeyCtrlE:
-			selection := gv.GetCurrentSelection()
-			if selection == nil {
-				break
-			}
-			if selection.SessionID != nil {
-				gv.app.HandleEvent(&SessionShowEditEvent{
-					BaseEvent: BaseEvent{action: SESSION_SHOW_EDIT},
-					SessionID: selection.SessionID,
-				})
-			} else {
-				game := gv.getSelectedGame()
-				if game != nil {
-					gv.ShowEditModal(game)
+		case tcell.KeyRune:
+			switch event.Rune() {
+			case 'e':
+				selection := gv.GetCurrentSelection()
+				if selection == nil {
+					break
 				}
+				if selection.SessionID != nil {
+					gv.app.HandleEvent(&SessionShowEditEvent{
+						BaseEvent: BaseEvent{action: SESSION_SHOW_EDIT},
+						SessionID: selection.SessionID,
+					})
+				} else {
+					game := gv.getSelectedGame()
+					if game != nil {
+						gv.ShowEditModal(game)
+					}
+				}
+				return nil
+			case 'n':
+				selection := gv.GetCurrentSelection()
+				if selection != nil && (selection.SessionID != nil || selection.IsNotes) {
+					gv.app.HandleEvent(&SessionShowNewEvent{
+						BaseEvent: BaseEvent{action: SESSION_SHOW_NEW},
+					})
+				} else {
+					gv.ShowNewModal()
+				}
+				return nil
 			}
-		case tcell.KeyCtrlN:
-			selection := gv.GetCurrentSelection()
-			if selection != nil && (selection.SessionID != nil || selection.IsNotes) {
-				gv.app.HandleEvent(&SessionShowNewEvent{
-					BaseEvent: BaseEvent{action: SESSION_SHOW_NEW},
-				})
-			} else {
-				gv.ShowNewModal()
-			}
-			return nil
 		}
 		return event
 	})
@@ -163,8 +167,8 @@ func (gv *GameView) setupFocusHandlers() {
 		gv.app.updateFooterHelp(helpBar("Games", []helpEntry{
 			{"↑/↓", "Navigate"},
 			{"Space/Enter", "Select/Expand"},
-			{"Ctrl+E", "Edit"},
-			{"Ctrl+N", "New"},
+			{"e", "Edit"},
+			{"n", "New"},
 		}))
 		gv.Tree.SetBorderColor(Style.BorderFocusColor)
 	})
@@ -193,7 +197,7 @@ func (gv *GameView) Refresh() {
 
 	if len(games) == 0 {
 		// No games yet
-		placeholder := tview.NewTreeNode("(No Games Yet - Press Ctrl+N to Add)").
+		placeholder := tview.NewTreeNode("(No Games Yet - Press n to Add)").
 			SetColor(Style.EmptyStateMessageColor)
 		root.AddChild(placeholder)
 		return

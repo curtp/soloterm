@@ -133,9 +133,9 @@ func (ov *OracleView) setupModal() {
 		ov.app.updateFooterHelp(helpBar("Tables", []helpEntry{
 			{"↑/↓", "Navigate"},
 			{"Space/Enter", "Select/Expand"},
-			{"Ctrl+U/D", "Move Up/Down"},
-			{"Ctrl+N", "New"},
-			{"Ctrl+E", "Edit"},
+			{"u/d", "Move Up/Down"},
+			{"n", "New"},
+			{"e", "Edit"},
 			{"Ctrl+O", "Import"},
 			{"Ctrl+X", "Export"},
 			{"Esc", "Close"},
@@ -192,18 +192,31 @@ func (ov *OracleView) setupKeyBindings() {
 				BaseEvent: BaseEvent{action: ORACLE_CANCEL},
 			})
 			return nil
-		case tcell.KeyCtrlN:
-			ov.app.HandleEvent(&OracleShowNewEvent{
-				BaseEvent: BaseEvent{action: ORACLE_SHOW_NEW},
-			})
-			return nil
-		case tcell.KeyCtrlE:
-			if ov.app.GetFocus() != ov.ContentArea && ov.currentOracle != nil {
-				ov.app.HandleEvent(&OracleShowEditEvent{
-					BaseEvent: BaseEvent{action: ORACLE_SHOW_EDIT},
-					Oracle:    ov.currentOracle,
+		case tcell.KeyRune:
+			switch event.Rune() {
+			case 'n':
+				ov.app.HandleEvent(&OracleShowNewEvent{
+					BaseEvent: BaseEvent{action: ORACLE_SHOW_NEW},
 				})
 				return nil
+			case 'e':
+				if ov.app.GetFocus() != ov.ContentArea && ov.currentOracle != nil {
+					ov.app.HandleEvent(&OracleShowEditEvent{
+						BaseEvent: BaseEvent{action: ORACLE_SHOW_EDIT},
+						Oracle:    ov.currentOracle,
+					})
+					return nil
+				}
+			case 'u':
+				if ov.app.GetFocus() != ov.ContentArea {
+					ov.reorder(-1)
+					return nil
+				}
+			case 'd':
+				if ov.app.GetFocus() != ov.ContentArea {
+					ov.reorder(1)
+					return nil
+				}
 			}
 		case tcell.KeyCtrlO:
 			ov.app.HandleEvent(&OracleShowImportEvent{
@@ -215,16 +228,6 @@ func (ov *OracleView) setupKeyBindings() {
 				BaseEvent: BaseEvent{action: ORACLE_SHOW_EXPORT},
 			})
 			return nil
-		case tcell.KeyCtrlU:
-			if ov.app.GetFocus() != ov.ContentArea {
-				ov.reorder(-1)
-				return nil
-			}
-		case tcell.KeyCtrlD:
-			if ov.app.GetFocus() != ov.ContentArea {
-				ov.reorder(1)
-				return nil
-			}
 		case tcell.KeyTab:
 			if ov.app.GetFocus() == ov.OracleTree {
 				if ov.currentOracle != nil {
@@ -298,7 +301,7 @@ func (ov *OracleView) Refresh() {
 	root.ClearChildren()
 
 	if len(oracles) == 0 {
-		placeholder := tview.NewTreeNode("(No tables yet - Press Ctrl+N to add)").
+		placeholder := tview.NewTreeNode("(No tables yet - Press n to add)").
 			SetColor(Style.EmptyStateMessageColor).
 			SetSelectable(false)
 		root.AddChild(placeholder)
@@ -318,7 +321,7 @@ func (ov *OracleView) Refresh() {
 		if o.Category != currentCategory {
 			currentCategory = o.Category
 			categoryNode = tview.NewTreeNode(tview.Escape(o.Category)).
-				SetReference(o.Category). // string — category name, used for Ctrl+U/D
+				SetReference(o.Category). // string — category name, used for u/d reorder
 				SetColor(Style.ParentTreeNodeColor).
 				SetSelectable(true).SetExpanded(false)
 			root.AddChild(categoryNode)

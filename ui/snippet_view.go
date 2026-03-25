@@ -115,9 +115,9 @@ func (sv *SnippetView) setupLayout() {
 		sv.app.updateFooterHelp(helpBar("Snippets", []helpEntry{
 			{"↑/↓/←/→", "Scroll"},
 			{"Enter", "Use"},
-			{"Ctrl+E", "Edit"},
-			{"Ctrl+N", "New"},
-			{"Ctrl+U/D", "Move Up/Down"},
+			{"e", "Edit"},
+			{"n", "New"},
+			{"u/d", "Move Up/Down"},
 			{"F12", "Help"},
 			{"Esc", "Close"},
 		}))
@@ -145,19 +145,22 @@ func (sv *SnippetView) setupFormModal() {
 func (sv *SnippetView) setupKeyBindings() {
 	sv.table.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
-		case tcell.KeyCtrlU:
-			if !sv.isFiltered() {
-				sv.handleReorder(-1)
+		case tcell.KeyRune:
+			switch event.Rune() {
+			case 'u':
+				if !sv.isFiltered() {
+					sv.handleReorder(-1)
+				}
+				return nil
+			case 'd':
+				if !sv.isFiltered() {
+					sv.handleReorder(1)
+				}
+				return nil
+			case 'e':
+				sv.showEditModal()
+				return nil
 			}
-			return nil
-		case tcell.KeyCtrlD:
-			if !sv.isFiltered() {
-				sv.handleReorder(1)
-			}
-			return nil
-		case tcell.KeyCtrlE:
-			sv.showEditModal()
-			return nil
 		}
 		return event
 	})
@@ -171,11 +174,13 @@ func (sv *SnippetView) setupKeyBindings() {
 				sv.app.SetFocus(sv.filterField)
 			}
 			return nil
-		case tcell.KeyCtrlN:
-			sv.app.HandleEvent(&SnippetShowNewEvent{
-				BaseEvent: BaseEvent{action: SNIPPET_SHOW_NEW},
-			})
-			return nil
+		case tcell.KeyRune:
+			if event.Rune() == 'n' {
+				sv.app.HandleEvent(&SnippetShowNewEvent{
+					BaseEvent: BaseEvent{action: SNIPPET_SHOW_NEW},
+				})
+				return nil
+			}
 		case tcell.KeyEsc:
 			sv.app.HandleEvent(&SnippetCancelEvent{
 				BaseEvent: BaseEvent{action: SNIPPET_CANCEL},
@@ -338,7 +343,7 @@ func (sv *SnippetView) renderTable(scoped []*snippet.Snippet, global []*snippet.
 	sv.table.Clear()
 
 	if len(scoped)+len(global) == 0 {
-		sv.table.SetCell(0, 0, tview.NewTableCell("No snippets yet. Press Ctrl+N to add one.").
+		sv.table.SetCell(0, 0, tview.NewTableCell("No snippets yet. Press n to add one.").
 			SetTextColor(Style.EmptyStateMessageColor).
 			SetSelectable(false))
 		return
@@ -414,9 +419,9 @@ Snippets are frequently used text for quick reuse — dice expressions, table re
 [green]Using Snippets[white]
 
   [yellow]Enter[white]       Insert the selected snippet content into the dice input
-  [yellow]Ctrl+E[white]      Open the edit form for the selected snippet
-  [yellow]Ctrl+N[white]      Create a new snippet
-  [yellow]Ctrl+U/D[white]    Move the selected snippet up or down
+  [yellow]e[white]           Open the edit form for the selected snippet
+  [yellow]n[white]           Create a new snippet
+  [yellow]u/d[white]         Move the selected snippet up or down
 
 [green]Content Format[white]
 

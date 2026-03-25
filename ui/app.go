@@ -223,9 +223,6 @@ func (a *App) SetModalHelpMessage(form sharedui.DataForm) {
 		{"Ctrl+S", "Save"},
 		{"Esc", "Cancel"},
 	}
-	if editing {
-		entries = append(entries, helpEntry{"Ctrl+D", "Delete"})
-	}
 	a.updateFooterHelp(helpBar(actionMsg, entries))
 }
 

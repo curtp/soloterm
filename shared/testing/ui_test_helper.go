@@ -108,17 +108,6 @@ func SimulateUpArrow(p tview.Primitive, app *tview.Application) {
 	SimulateKey(p, app, tcell.KeyUp)
 }
 
-func SimulateCtrlE(p tview.Primitive, app *tview.Application) {
-	SimulateKey(p, app, tcell.KeyCtrlE)
-}
-
-func SimulateCtrlN(p tview.Primitive, app *tview.Application) {
-	SimulateKey(p, app, tcell.KeyCtrlN)
-}
-
-func SimulateCtrlD(p tview.Primitive, app *tview.Application) {
-	SimulateKey(p, app, tcell.KeyCtrlD)
-}
 
 func SelectTreeEntry(p tview.Primitive, app *tview.Application, position int) {
 	app.SetFocus(p)

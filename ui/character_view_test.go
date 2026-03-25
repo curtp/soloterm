@@ -14,11 +14,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// openCharacterModal focuses the character tree and opens the New Character modal via Ctrl+N.
+// openCharacterModal focuses the character tree and opens the New Character modal via n.
 func openCharacterModal(t *testing.T, app *App) {
 	t.Helper()
 	app.SetFocus(app.characterView.CharTree)
-	testHelper.SimulateKey(app.characterView.CharTree, app.Application, tcell.KeyCtrlN)
+	testHelper.SimulateRune(app.characterView.CharTree, app.Application, 'n')
 }
 
 func TestCharacterView_OpenAndClose(t *testing.T) {
@@ -109,7 +109,7 @@ func TestCharacterView_EditCharacter(t *testing.T) {
 
 	// Move focus back to the tree and open edit modal
 	app.SetFocus(app.characterView.CharTree)
-	testHelper.SimulateKey(app.characterView.CharTree, app.Application, tcell.KeyCtrlE)
+	testHelper.SimulateRune(app.characterView.CharTree, app.Application, 'e')
 	assert.True(t, app.isPageVisible(CHARACTER_MODAL_ID), "Expected character modal to be visible for edit")
 
 	// The form should be pre-populated
@@ -130,7 +130,7 @@ func TestCharacterView_EditCharacterValidationError(t *testing.T) {
 	createCharacter(t, app, "Valid Name")
 
 	app.SetFocus(app.characterView.CharTree)
-	testHelper.SimulateKey(app.characterView.CharTree, app.Application, tcell.KeyCtrlE)
+	testHelper.SimulateRune(app.characterView.CharTree, app.Application, 'e')
 
 	// Clear the name and try to save
 	app.characterView.Form.nameField.SetText("")
@@ -146,7 +146,7 @@ func TestCharacterView_FormResetOnNew(t *testing.T) {
 
 	// Open edit modal to populate the form
 	app.SetFocus(app.characterView.CharTree)
-	testHelper.SimulateKey(app.characterView.CharTree, app.Application, tcell.KeyCtrlE)
+	testHelper.SimulateRune(app.characterView.CharTree, app.Application, 'e')
 	assert.Equal(t, "Existing", app.characterView.Form.nameField.GetText(), "Expected edit form to be pre-populated")
 
 	// Cancel, then open new character form
@@ -168,10 +168,10 @@ func TestCharacterView_DeleteCharacter(t *testing.T) {
 
 	// Open edit modal, then trigger delete
 	app.SetFocus(app.characterView.CharTree)
-	testHelper.SimulateKey(app.characterView.CharTree, app.Application, tcell.KeyCtrlE)
+	testHelper.SimulateRune(app.characterView.CharTree, app.Application, 'e')
 	assert.True(t, app.isPageVisible(CHARACTER_MODAL_ID))
 
-	testHelper.SimulateKey(app.characterView.Form, app.Application, tcell.KeyCtrlD)
+	testHelper.SimulateKey(app.characterView.Form.GetButton(2), app.Application, tcell.KeyEnter)
 	assert.True(t, app.isPageVisible(CONFIRM_MODAL_ID), "Expected confirmation modal to be visible")
 
 	// Confirm deletion
@@ -206,9 +206,9 @@ func TestCharacterView_DuplicateCharacter(t *testing.T) {
 
 	charID := *app.characterView.GetSelectedCharacterID()
 
-	// Ctrl+D on the tree triggers a duplicate confirmation
+	// d on the tree triggers a duplicate confirmation
 	app.SetFocus(app.characterView.CharTree)
-	testHelper.SimulateKey(app.characterView.CharTree, app.Application, tcell.KeyCtrlD)
+	testHelper.SimulateRune(app.characterView.CharTree, app.Application, 'd')
 	assert.True(t, app.isPageVisible(CONFIRM_MODAL_ID), "Expected confirmation modal for duplicate")
 
 	app.characterView.ConfirmDuplicate(charID)
@@ -226,7 +226,7 @@ func TestCharacterView_EmptyTreeShowsPlaceholder(t *testing.T) {
 	require.NotNil(t, root)
 	children := root.GetChildren()
 	require.Len(t, children, 1)
-	assert.Equal(t, "(No Characters Yet - Press Ctrl+N to Add)", children[0].GetText())
+	assert.Equal(t, "(No Characters Yet - Press n to Add)", children[0].GetText())
 }
 
 func TestCharacterView_TreeGroupsCharactersBySystem(t *testing.T) {

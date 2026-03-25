@@ -130,10 +130,6 @@ func (df *DataForm) SetupHandlers(onSave, onCancel, onDelete func()) {
 				df.onSave()
 			}
 			return nil
-		case tcell.KeyCtrlD:
-			if df.GetButtonCount() == 3 && df.onDelete != nil {
-				df.onDelete()
-			}
 		}
 		return event
 	})

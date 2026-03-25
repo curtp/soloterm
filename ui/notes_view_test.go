@@ -185,9 +185,9 @@ func TestNotes_SwitchToNotesAutosavesSession(t *testing.T) {
 	assert.Nil(t, app.sessionView.currentSessionID)
 }
 
-// TestNotes_CtrlNOpensSessionModal verifies that pressing Ctrl+N while in notes
-// mode opens the new session form scoped to the correct game.
-func TestNotes_CtrlNOpensSessionModal(t *testing.T) {
+// TestNotes_NFromTreeOpensSessionModal verifies that pressing n on the game tree
+// while the Notes node is selected opens the new session form scoped to the correct game.
+func TestNotes_NFromTreeOpensSessionModal(t *testing.T) {
 	app := setupTestApp(t)
 	g := createGame(t, app, "My Campaign")
 
@@ -195,8 +195,8 @@ func TestNotes_CtrlNOpensSessionModal(t *testing.T) {
 	selectNotes(t, app)
 	require.True(t, app.sessionView.IsNotesMode())
 
-	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlN)
-	assert.True(t, app.isPageVisible(SESSION_MODAL_ID), "Ctrl+N must open the session modal")
+	testHelper.SimulateRune(app.gameView.Tree, app.Application, 'n')
+	assert.True(t, app.isPageVisible(SESSION_MODAL_ID), "n on Notes node must open the session modal")
 
 	// Saving the form creates a session for the correct game.
 	app.sessionView.Form.nameField.SetText("New Session")

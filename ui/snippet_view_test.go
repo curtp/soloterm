@@ -57,7 +57,7 @@ func TestSnippetView_CtrlN_OpensFormModal(t *testing.T) {
 	app := setupTestApp(t)
 	openSnippetModal(t, app)
 
-	testHelper.SimulateKey(app.snippetView.Modal, app.Application, tcell.KeyCtrlN)
+	testHelper.SimulateRune(app.snippetView.Modal, app.Application, 'n')
 
 	assert.True(t, app.isPageVisible(SNIPPET_FORM_MODAL_ID), "form modal should open on Ctrl+N")
 }
@@ -68,7 +68,7 @@ func TestSnippetView_NewSnippet_SavedAndAppears(t *testing.T) {
 	app := setupTestApp(t)
 	openSnippetModal(t, app)
 
-	testHelper.SimulateKey(app.snippetView.Modal, app.Application, tcell.KeyCtrlN)
+	testHelper.SimulateRune(app.snippetView.Modal, app.Application, 'n')
 	require.True(t, app.isPageVisible(SNIPPET_FORM_MODAL_ID))
 
 	app.snippetView.Form.nameField.SetText("Attack")
@@ -86,7 +86,7 @@ func TestSnippetView_NewSnippet_ValidationError_KeepsFormOpen(t *testing.T) {
 	app := setupTestApp(t)
 	openSnippetModal(t, app)
 
-	testHelper.SimulateKey(app.snippetView.Modal, app.Application, tcell.KeyCtrlN)
+	testHelper.SimulateRune(app.snippetView.Modal, app.Application, 'n')
 	require.True(t, app.isPageVisible(SNIPPET_FORM_MODAL_ID))
 
 	app.snippetView.Form.contentField.SetText("1d20", false)
@@ -103,7 +103,7 @@ func TestSnippetView_NewSnippet_CancelClosesForm(t *testing.T) {
 	app := setupTestApp(t)
 	openSnippetModal(t, app)
 
-	testHelper.SimulateKey(app.snippetView.Modal, app.Application, tcell.KeyCtrlN)
+	testHelper.SimulateRune(app.snippetView.Modal, app.Application, 'n')
 	require.True(t, app.isPageVisible(SNIPPET_FORM_MODAL_ID))
 
 	testHelper.SimulateEscape(app.snippetView.Form, app.Application)
@@ -118,7 +118,7 @@ func TestSnippetView_CtrlE_OpensEditForm(t *testing.T) {
 	createSnippet(t, app, "Attack", "1d20+5", nil)
 	openSnippetModal(t, app)
 
-	testHelper.SimulateKey(app.snippetView.table, app.Application, tcell.KeyCtrlE)
+	testHelper.SimulateRune(app.snippetView.table, app.Application, 'e')
 
 	require.True(t, app.isPageVisible(SNIPPET_FORM_MODAL_ID))
 	assert.Equal(t, "Attack", app.snippetView.Form.nameField.GetText(), "form should be pre-populated with name")
@@ -131,7 +131,7 @@ func TestSnippetView_EditSnippet_UpdatesName(t *testing.T) {
 	s := createSnippet(t, app, "Attack", "1d20+5", nil)
 	openSnippetModal(t, app)
 
-	testHelper.SimulateKey(app.snippetView.table, app.Application, tcell.KeyCtrlE)
+	testHelper.SimulateRune(app.snippetView.table, app.Application, 'e')
 	require.True(t, app.isPageVisible(SNIPPET_FORM_MODAL_ID))
 
 	app.snippetView.Form.nameField.SetText("Sword Attack")
@@ -150,10 +150,10 @@ func TestSnippetView_DeleteSnippet_RemovesFromDB(t *testing.T) {
 	s := createSnippet(t, app, "Attack", "1d20+5", nil)
 	openSnippetModal(t, app)
 
-	testHelper.SimulateKey(app.snippetView.table, app.Application, tcell.KeyCtrlE)
+	testHelper.SimulateRune(app.snippetView.table, app.Application, 'e')
 	require.True(t, app.isPageVisible(SNIPPET_FORM_MODAL_ID))
 
-	testHelper.SimulateKey(app.snippetView.Form, app.Application, tcell.KeyCtrlD)
+	testHelper.SimulateKey(app.snippetView.Form.GetButton(2), app.Application, tcell.KeyEnter)
 	require.True(t, app.isPageVisible(CONFIRM_MODAL_ID))
 
 	app.confirmModal.onConfirm()
@@ -171,8 +171,8 @@ func TestSnippetView_DeleteSnippet_CancelKeepsSnippet(t *testing.T) {
 	s := createSnippet(t, app, "Attack", "1d20+5", nil)
 	openSnippetModal(t, app)
 
-	testHelper.SimulateKey(app.snippetView.table, app.Application, tcell.KeyCtrlE)
-	testHelper.SimulateKey(app.snippetView.Form, app.Application, tcell.KeyCtrlD)
+	testHelper.SimulateRune(app.snippetView.table, app.Application, 'e')
+	testHelper.SimulateKey(app.snippetView.Form.GetButton(2), app.Application, tcell.KeyEnter)
 	require.True(t, app.isPageVisible(CONFIRM_MODAL_ID))
 
 	app.confirmModal.onCancel()
@@ -215,7 +215,7 @@ func TestSnippetView_ReorderDown_MovesSnippetDown(t *testing.T) {
 	s2 := createSnippet(t, app, "Beta", "b", nil)
 	openSnippetModal(t, app)
 	// s1 is at row 0, selected by default
-	testHelper.SimulateKey(app.snippetView.table, app.Application, tcell.KeyCtrlD)
+	testHelper.SimulateRune(app.snippetView.table, app.Application, 'd')
 
 	globals, err := app.snippetView.snippetService.GetGlobal()
 	require.NoError(t, err)
@@ -232,7 +232,7 @@ func TestSnippetView_ReorderUp_MovesSnippetUp(t *testing.T) {
 	openSnippetModal(t, app)
 	// Move selection to row 1 (Beta)
 	testHelper.SimulateDownArrow(app.snippetView.table, app.Application)
-	testHelper.SimulateKey(app.snippetView.table, app.Application, tcell.KeyCtrlU)
+	testHelper.SimulateRune(app.snippetView.table, app.Application, 'u')
 
 	globals, err := app.snippetView.snippetService.GetGlobal()
 	require.NoError(t, err)
@@ -248,7 +248,7 @@ func TestSnippetView_ReorderAtBoundary_DoesNothing(t *testing.T) {
 	s := createSnippet(t, app, "Only", "one", nil)
 	openSnippetModal(t, app)
 
-	testHelper.SimulateKey(app.snippetView.table, app.Application, tcell.KeyCtrlU)
+	testHelper.SimulateRune(app.snippetView.table, app.Application, 'u')
 
 	globals, err := app.snippetView.snippetService.GetGlobal()
 	require.NoError(t, err)
@@ -286,7 +286,7 @@ func TestSnippetView_GameSnippetReorder_StaysInGameScope(t *testing.T) {
 
 	// Row 0 = GameA, Row 1 = GameB, Row 2 = divider, Row 3 = Global
 	// Move GameA down
-	testHelper.SimulateKey(app.snippetView.table, app.Application, tcell.KeyCtrlD)
+	testHelper.SimulateRune(app.snippetView.table, app.Application, 'd')
 
 	gameSnippets, err := app.snippetView.snippetService.GetByGameID(g.ID)
 	require.NoError(t, err)
@@ -307,7 +307,7 @@ func TestSnippetView_NewSnippet_PreselectsActiveGame(t *testing.T) {
 	require.NoError(t, app.gameView.SetCurrentGame(g.ID))
 	openSnippetModal(t, app)
 
-	testHelper.SimulateKey(app.snippetView.Modal, app.Application, tcell.KeyCtrlN)
+	testHelper.SimulateRune(app.snippetView.Modal, app.Application, 'n')
 
 	_, label := app.snippetView.Form.gameDropdown.GetCurrentOption()
 	assert.Equal(t, "Campaign", label, "active game should be pre-selected in the dropdown")
@@ -410,7 +410,7 @@ func TestSnippetView_Reorder_NoopWhenFiltered(t *testing.T) {
 	openSnippetModal(t, app)
 
 	app.snippetView.filterField.SetText("a") // only Alpha visible
-	testHelper.SimulateKey(app.snippetView.table, app.Application, tcell.KeyCtrlD)
+	testHelper.SimulateRune(app.snippetView.table, app.Application, 'd')
 
 	globals, err := app.snippetView.snippetService.GetGlobal()
 	require.NoError(t, err)
@@ -426,14 +426,14 @@ func TestSnippetView_EditSnippet_DeleteButtonVisibility(t *testing.T) {
 	openSnippetModal(t, app)
 
 	// New mode: no delete button
-	testHelper.SimulateKey(app.snippetView.Modal, app.Application, tcell.KeyCtrlN)
+	testHelper.SimulateRune(app.snippetView.Modal, app.Application, 'n')
 	require.True(t, app.isPageVisible(SNIPPET_FORM_MODAL_ID))
 	assert.Equal(t, 2, app.snippetView.Form.GetButtonCount(), "new mode should have Save and Cancel only")
 
 	testHelper.SimulateEscape(app.snippetView.Form, app.Application)
 
 	// Edit mode: delete button present
-	testHelper.SimulateKey(app.snippetView.table, app.Application, tcell.KeyCtrlE)
+	testHelper.SimulateRune(app.snippetView.table, app.Application, 'e')
 	require.True(t, app.isPageVisible(SNIPPET_FORM_MODAL_ID))
 	assert.Equal(t, 3, app.snippetView.Form.GetButtonCount(), "edit mode should have Save, Cancel, and Delete")
 }

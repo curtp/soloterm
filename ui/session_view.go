@@ -62,7 +62,7 @@ func (sv *SessionView) Setup() {
 // setupTextArea configures the text area for displaying the session
 func (sv *SessionView) setupTextArea() {
 	sv.TextArea = tview.NewTextArea()
-	sv.TextArea.SetPlaceholder("Select a session from the Games view, or select a Game or Session and press Ctrl+N to create a new session.")
+	sv.TextArea.SetPlaceholder("Select a session from the Games view, or select a Game or Session and press n to create a new session.")
 	sv.TextArea.SetPlaceholderStyle(tcell.StyleDefault.
 		Background(Style.PrimitiveBackgroundColor).
 		Foreground(Style.EmptyStateMessageColor))
@@ -119,9 +119,6 @@ func (sv *SessionView) setupKeyBindings() {
 		case tcell.KeyF12:
 			sv.ShowHelpModal()
 			return nil
-		case tcell.KeyCtrlN:
-			sv.ShowNewModal()
-			return nil
 		case tcell.KeyF2:
 			if sv.currentSessionID != nil {
 				sv.InsertAtCursor(sv.app.cfg.CoreTags.Action.Template)
@@ -175,7 +172,6 @@ func (sv *SessionView) setupFocusHandlers() {
 			sv.app.updateFooterHelp(helpBar("Session", []helpEntry{
 				{"PgUp/PgDn/↑/↓", "Scroll"},
 				{"F12", "Help"},
-				{"Ctrl+N", "New"},
 				{"Ctrl+T", "Tag"},
 				{"F2", "Action"},
 				{"F3", "Oracle"},
@@ -186,13 +182,12 @@ func (sv *SessionView) setupFocusHandlers() {
 			sv.app.updateFooterHelp(helpBar("Notes", []helpEntry{
 				{"PgUp/PgDn/↑/↓", "Scroll"},
 				{"F12", "Help"},
-				{"Ctrl+N", "New Session"},
 				{"Ctrl+T", "Tag"},
 				{"F5", "Search"},
 			}))
 		} else {
 			sv.app.updateFooterHelp(helpBar("Session", []helpEntry{
-				{"Ctrl+N", "New"},
+				{"Ctrl+G", "Go to Games"},
 			}))
 		}
 		sv.textAreaFrame.SetBorderColor(Style.BorderFocusColor)

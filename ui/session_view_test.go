@@ -13,9 +13,9 @@ func TestSessionView_AddSession(t *testing.T) {
 	app := setupTestApp(t)
 	g := createGame(t, app, "Test Game")
 
-	// Focus the text area and open the new session modal via Ctrl+N
-	app.SetFocus(app.sessionView.TextArea)
-	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlN)
+	// Navigate to Notes node and open new session modal via n on game tree
+	testHelper.SimulateDownArrow(app.gameView.Tree, app.Application)
+	testHelper.SimulateRune(app.gameView.Tree, app.Application, 'n')
 	assert.True(t, app.isPageVisible(SESSION_MODAL_ID), "Expected session modal to be visible")
 
 	// Fill in the form and save via Ctrl+S
@@ -41,9 +41,9 @@ func TestSessionView_AddSessionValidationError(t *testing.T) {
 	app := setupTestApp(t)
 	g := createGame(t, app, "Test Game")
 
-	// Open the new session modal via Ctrl+N
-	app.SetFocus(app.sessionView.TextArea)
-	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlN)
+	// Navigate to Notes node and open new session modal via n on game tree
+	testHelper.SimulateDownArrow(app.gameView.Tree, app.Application)
+	testHelper.SimulateRune(app.gameView.Tree, app.Application, 'n')
 
 	// Leave name empty and attempt save via Ctrl+S
 	app.sessionView.Form.nameField.SetText("")
@@ -64,9 +64,8 @@ func TestSessionView_AddSessionValidationError(t *testing.T) {
 func TestSessionView_AddSessionRequiresGame(t *testing.T) {
 	app := setupTestApp(t)
 
-	// Try to open new session modal without selecting a game
-	app.SetFocus(app.sessionView.TextArea)
-	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlN)
+	// Try to open new session modal with nothing selected in the game tree (no games exist)
+	testHelper.SimulateRune(app.gameView.Tree, app.Application, 'n')
 
 	// Session modal should not be shown since no game is selected
 	assert.False(t, app.isPageVisible(SESSION_MODAL_ID), "Expected session modal to not be visible without a game selected")
@@ -82,7 +81,7 @@ func TestSessionView_EditSession(t *testing.T) {
 	testHelper.SimulateDownArrow(app.gameView.Tree, app.Application)
 	testHelper.SimulateDownArrow(app.gameView.Tree, app.Application)
 	testHelper.SimulateEnter(app.gameView.Tree, app.Application)
-	testHelper.SimulateKey(app.gameView.Tree, app.Application, tcell.KeyCtrlE)
+	testHelper.SimulateRune(app.gameView.Tree, app.Application, 'e')
 	assert.True(t, app.isPageVisible(SESSION_MODAL_ID), "Expected session modal to be visible")
 
 	// Change the name and save via Ctrl+S
@@ -107,10 +106,10 @@ func TestSessionView_DeleteSession(t *testing.T) {
 	testHelper.SimulateDownArrow(app.gameView.Tree, app.Application)
 	testHelper.SimulateDownArrow(app.gameView.Tree, app.Application)
 	testHelper.SimulateEnter(app.gameView.Tree, app.Application)
-	testHelper.SimulateKey(app.gameView.Tree, app.Application, tcell.KeyCtrlE)
+	testHelper.SimulateRune(app.gameView.Tree, app.Application, 'e')
 	assert.True(t, app.isPageVisible(SESSION_MODAL_ID))
 
-	testHelper.SimulateKey(app.sessionView.Form, app.Application, tcell.KeyCtrlD)
+	testHelper.SimulateKey(app.sessionView.Form.GetButton(2), app.Application, tcell.KeyEnter)
 	assert.True(t, app.isPageVisible(CONFIRM_MODAL_ID), "Expected confirmation modal to be visible")
 
 	// Confirm the deletion
@@ -153,9 +152,9 @@ func TestSessionView_CancelDoesNotSave(t *testing.T) {
 	app := setupTestApp(t)
 	g := createGame(t, app, "Test Game")
 
-	// Open new session modal and fill in data
-	app.SetFocus(app.sessionView.TextArea)
-	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlN)
+	// Navigate to Notes node and open new session modal via n on game tree
+	testHelper.SimulateDownArrow(app.gameView.Tree, app.Application)
+	testHelper.SimulateRune(app.gameView.Tree, app.Application, 'n')
 	app.sessionView.Form.nameField.SetText("Should Not Save")
 
 	// Cancel via Escape
@@ -203,12 +202,12 @@ func TestSessionView_FormResetOnNew(t *testing.T) {
 	testHelper.SimulateDownArrow(app.gameView.Tree, app.Application)
 	testHelper.SimulateDownArrow(app.gameView.Tree, app.Application)
 	testHelper.SimulateEnter(app.gameView.Tree, app.Application)
-	testHelper.SimulateKey(app.gameView.Tree, app.Application, tcell.KeyCtrlE)
+	testHelper.SimulateRune(app.gameView.Tree, app.Application, 'e')
 	assert.Equal(t, "Existing Session", app.sessionView.Form.nameField.GetText())
 
 	// Cancel then open new session form
 	testHelper.SimulateKey(app.sessionView.Form, app.Application, tcell.KeyEscape)
-	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlN)
+	testHelper.SimulateRune(app.gameView.Tree, app.Application, 'n')
 
 	// Verify the form field is cleared
 	assert.Empty(t, app.sessionView.Form.nameField.GetText(), "Expected empty name field after reset")
@@ -300,8 +299,8 @@ func TestSessionView_EditAndDeleteSessionFromGameTree(t *testing.T) {
 	testHelper.SimulateEnter(app.gameView.Tree, app.Application)
 	require.Equal(t, sA.ID, *app.sessionView.currentSessionID, "Expected Session A to be selected")
 
-	// Create Session B via the UI
-	testHelper.SimulateKey(app.sessionView.TextArea, app.Application, tcell.KeyCtrlN)
+	// Create Session B via n on the game tree (Session A is selected)
+	testHelper.SimulateRune(app.gameView.Tree, app.Application, 'n')
 	require.True(t, app.isPageVisible(SESSION_MODAL_ID))
 	app.sessionView.Form.nameField.SetText("Session B")
 	testHelper.SimulateKey(app.sessionView.Form, app.Application, tcell.KeyCtrlS)
@@ -320,12 +319,12 @@ func TestSessionView_EditAndDeleteSessionFromGameTree(t *testing.T) {
 	assert.Equal(t, sA.ID, *app.sessionView.currentSessionID, "Session A should still be selected (Session B not entered)")
 
 	// Ctrl+E on the game tree edits the highlighted Session B (not the selected one)
-	testHelper.SimulateKey(app.gameView.Tree, app.Application, tcell.KeyCtrlE)
+	testHelper.SimulateRune(app.gameView.Tree, app.Application, 'e')
 	assert.True(t, app.isPageVisible(SESSION_MODAL_ID), "Expected session edit modal to open for Session B")
 	assert.Equal(t, "Session B", app.sessionView.Form.nameField.GetText(), "Expected form to show Session B's name")
 
 	// Delete Session B via Ctrl+D, then confirm
-	testHelper.SimulateKey(app.sessionView.Form, app.Application, tcell.KeyCtrlD)
+	testHelper.SimulateKey(app.sessionView.Form.GetButton(2), app.Application, tcell.KeyEnter)
 	assert.True(t, app.isPageVisible(CONFIRM_MODAL_ID), "Expected confirmation modal")
 	app.sessionView.ConfirmDelete(sBID)
 	assert.False(t, app.isPageVisible(CONFIRM_MODAL_ID))

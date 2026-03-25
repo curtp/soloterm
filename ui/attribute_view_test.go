@@ -46,7 +46,7 @@ func createCharacter(t *testing.T, app *App, name string) *character.Character {
 func createAttr(t *testing.T, app *App, charID int64, name string, groupDropdownIdx int) *character.Attribute {
 	t.Helper()
 
-	testHelper.SimulateKey(app.attributeView.Table, app.Application, tcell.KeyCtrlN)
+	testHelper.SimulateRune(app.attributeView.Table, app.Application, 'n')
 	require.True(t, app.isPageVisible(ATTRIBUTE_MODAL_ID), "Expected attribute modal to be visible")
 
 	app.attributeView.Form.nameField.SetText(name)
@@ -86,7 +86,7 @@ func TestAttributeView_CtrlDown_ChildSwapsWithNextItem(t *testing.T) {
 	c := createAttr(t, app, char.ID, "Gamma", 1) // child, pos 2
 
 	app.attributeView.Select(b.ID)
-	testHelper.SimulateKey(app.attributeView.Table, app.Application, tcell.KeyCtrlD)
+	testHelper.SimulateRune(app.attributeView.Table, app.Application, 'd')
 
 	attrs := reloadAttrs(t, app, char.ID)
 	require.Len(t, attrs, 3)
@@ -103,7 +103,7 @@ func TestAttributeView_CtrlDown_ChildAtGroupBoundary_IsNoop(t *testing.T) {
 	createAttr(t, app, char.ID, "Gamma", 0)       // standalone in group 1
 
 	app.attributeView.Select(b.ID)
-	testHelper.SimulateKey(app.attributeView.Table, app.Application, tcell.KeyCtrlD)
+	testHelper.SimulateRune(app.attributeView.Table, app.Application, 'd')
 
 	attrs := reloadAttrs(t, app, char.ID)
 	require.Len(t, attrs, 3)
@@ -121,7 +121,7 @@ func TestAttributeView_CtrlUp_ChildSwapsWithSiblingAbove(t *testing.T) {
 	c := createAttr(t, app, char.ID, "Gamma", 1) // child, pos 2
 
 	app.attributeView.Select(c.ID)
-	testHelper.SimulateKey(app.attributeView.Table, app.Application, tcell.KeyCtrlU)
+	testHelper.SimulateRune(app.attributeView.Table, app.Application, 'u')
 
 	attrs := reloadAttrs(t, app, char.ID)
 	require.Len(t, attrs, 3)
@@ -137,7 +137,7 @@ func TestAttributeView_CtrlUp_ChildAtHeaderBoundary_IsNoop(t *testing.T) {
 	b := createAttr(t, app, char.ID, "Beta", 1)  // child directly below header
 
 	app.attributeView.Select(b.ID)
-	testHelper.SimulateKey(app.attributeView.Table, app.Application, tcell.KeyCtrlU)
+	testHelper.SimulateRune(app.attributeView.Table, app.Application, 'u')
 
 	attrs := reloadAttrs(t, app, char.ID)
 	require.Len(t, attrs, 2)
@@ -155,7 +155,7 @@ func TestAttributeView_CtrlDown_StandaloneMovesGroup(t *testing.T) {
 	b := createAttr(t, app, char.ID, "Beta", 0)  // standalone group 1
 
 	app.attributeView.Select(a.ID)
-	testHelper.SimulateKey(app.attributeView.Table, app.Application, tcell.KeyCtrlD)
+	testHelper.SimulateRune(app.attributeView.Table, app.Application, 'd')
 
 	attrs := reloadAttrs(t, app, char.ID)
 	require.Len(t, attrs, 2)
@@ -172,7 +172,7 @@ func TestAttributeView_CtrlDown_HeaderMovesEntireGroup(t *testing.T) {
 	other := createAttr(t, app, char.ID, "Skills", 0)  // group 1
 
 	app.attributeView.Select(header.ID)
-	testHelper.SimulateKey(app.attributeView.Table, app.Application, tcell.KeyCtrlD)
+	testHelper.SimulateRune(app.attributeView.Table, app.Application, 'd')
 
 	attrs := reloadAttrs(t, app, char.ID)
 	require.Len(t, attrs, 3)
@@ -189,7 +189,7 @@ func TestAttributeView_CtrlDown_HeaderAtBottom_IsNoop(t *testing.T) {
 	b := createAttr(t, app, char.ID, "Skills", 0)
 
 	app.attributeView.Select(b.ID)
-	testHelper.SimulateKey(app.attributeView.Table, app.Application, tcell.KeyCtrlD)
+	testHelper.SimulateRune(app.attributeView.Table, app.Application, 'd')
 
 	attrs := reloadAttrs(t, app, char.ID)
 	require.Len(t, attrs, 2)
@@ -204,7 +204,7 @@ func TestAttributeView_CtrlUp_StandaloneMovesGroup(t *testing.T) {
 	b := createAttr(t, app, char.ID, "Skills", 0)
 
 	app.attributeView.Select(b.ID)
-	testHelper.SimulateKey(app.attributeView.Table, app.Application, tcell.KeyCtrlU)
+	testHelper.SimulateRune(app.attributeView.Table, app.Application, 'u')
 
 	attrs := reloadAttrs(t, app, char.ID)
 	require.Len(t, attrs, 2)
@@ -220,7 +220,7 @@ func TestAttributeView_CtrlUp_HeaderAtTop_IsNoop(t *testing.T) {
 	createAttr(t, app, char.ID, "Skills", 0)
 
 	app.attributeView.Select(a.ID)
-	testHelper.SimulateKey(app.attributeView.Table, app.Application, tcell.KeyCtrlU)
+	testHelper.SimulateRune(app.attributeView.Table, app.Application, 'u')
 
 	attrs := reloadAttrs(t, app, char.ID)
 	require.Len(t, attrs, 2)
@@ -237,7 +237,7 @@ func TestAttributeView_ReorderRestoresFocus(t *testing.T) {
 	createAttr(t, app, char.ID, "Beta", 0)        // standalone group 1
 
 	app.attributeView.Select(a.ID)
-	testHelper.SimulateKey(app.attributeView.Table, app.Application, tcell.KeyCtrlD)
+	testHelper.SimulateRune(app.attributeView.Table, app.Application, 'd')
 
 	assert.Equal(t, app.attributeView.Table, app.GetFocus(), "Table should retain focus after reorder")
 }
@@ -293,7 +293,7 @@ func TestAttributeView_NewAttr_DropdownShowsGroupHeaders(t *testing.T) {
 	createAttr(t, app, char.ID, "Skills", 0) // group 1
 
 	// Open the new entry modal — handler fetches attrs and rebuilds groupHeaders.
-	testHelper.SimulateKey(app.attributeView.Table, app.Application, tcell.KeyCtrlN)
+	testHelper.SimulateRune(app.attributeView.Table, app.Application, 'n')
 	require.True(t, app.isPageVisible(ATTRIBUTE_MODAL_ID))
 
 	headers := app.attributeView.Form.groupHeaders
@@ -314,7 +314,7 @@ func TestAttributeView_EditAttr_PreservesGroupAndPosition(t *testing.T) {
 	beta := createAttr(t, app, char.ID, "Beta", 1) // group 0, pos 1
 
 	app.attributeView.Select(beta.ID)
-	testHelper.SimulateKey(app.attributeView.Table, app.Application, tcell.KeyCtrlE)
+	testHelper.SimulateRune(app.attributeView.Table, app.Application, 'e')
 	require.True(t, app.isPageVisible(ATTRIBUTE_MODAL_ID))
 
 	// Only change the name; leave the group dropdown on its pre-selected value.
@@ -346,7 +346,7 @@ func TestAttributeView_EditAttr_ChangingGroupAppendsToNewGroup(t *testing.T) {
 
 	// Edit Gamma and move it to Beta's group (dropdown index 2).
 	app.attributeView.Select(gamma.ID)
-	testHelper.SimulateKey(app.attributeView.Table, app.Application, tcell.KeyCtrlE)
+	testHelper.SimulateRune(app.attributeView.Table, app.Application, 'e')
 	require.True(t, app.isPageVisible(ATTRIBUTE_MODAL_ID))
 
 	app.attributeView.Form.groupDropDown.SetCurrentOption(2) // dropdown: 0="-New-", 1="Alpha", 2="Beta"
