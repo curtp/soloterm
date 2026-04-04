@@ -185,13 +185,8 @@ func (ov *OracleView) setupFormModal() {
 }
 
 func (ov *OracleView) setupKeyBindings() {
-	ov.Modal.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+	ov.OracleTree.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
-		case tcell.KeyEsc:
-			ov.app.HandleEvent(&OracleCancelEvent{
-				BaseEvent: BaseEvent{action: ORACLE_CANCEL},
-			})
-			return nil
 		case tcell.KeyRune:
 			switch event.Rune() {
 			case 'n':
@@ -200,7 +195,7 @@ func (ov *OracleView) setupKeyBindings() {
 				})
 				return nil
 			case 'e':
-				if ov.app.GetFocus() != ov.ContentArea && ov.currentOracle != nil {
+				if ov.currentOracle != nil {
 					ov.app.HandleEvent(&OracleShowEditEvent{
 						BaseEvent: BaseEvent{action: ORACLE_SHOW_EDIT},
 						Oracle:    ov.currentOracle,
@@ -208,16 +203,23 @@ func (ov *OracleView) setupKeyBindings() {
 					return nil
 				}
 			case 'u':
-				if ov.app.GetFocus() != ov.ContentArea {
-					ov.reorder(-1)
-					return nil
-				}
+				ov.reorder(-1)
+				return nil
 			case 'd':
-				if ov.app.GetFocus() != ov.ContentArea {
-					ov.reorder(1)
-					return nil
-				}
+				ov.reorder(1)
+				return nil
 			}
+		}
+		return event
+	})
+
+	ov.Modal.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyEsc:
+			ov.app.HandleEvent(&OracleCancelEvent{
+				BaseEvent: BaseEvent{action: ORACLE_CANCEL},
+			})
+			return nil
 		case tcell.KeyCtrlO:
 			ov.app.HandleEvent(&OracleShowImportEvent{
 				BaseEvent: BaseEvent{action: ORACLE_SHOW_IMPORT},
