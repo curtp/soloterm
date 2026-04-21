@@ -230,7 +230,7 @@ func (ov *OracleView) setupKeyBindings() {
 				BaseEvent: BaseEvent{action: ORACLE_SHOW_EXPORT},
 			})
 			return nil
-		case tcell.KeyTab:
+		case tcell.KeyTab, tcell.KeyBacktab:
 			if ov.app.GetFocus() == ov.OracleTree {
 				if ov.currentOracle != nil {
 					ov.app.SetFocus(ov.ContentArea)

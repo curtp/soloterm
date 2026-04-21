@@ -282,6 +282,26 @@ func (dv *DiceView) setupKeyBindings() {
 				dv.app.SetFocus(dv.TextArea)
 			}
 			return nil
+		case tcell.KeyBacktab:
+			focused := dv.app.GetFocus()
+			if focused == dv.TextArea {
+				if len(dv.buttons) > 0 {
+					dv.app.SetFocus(dv.buttons[len(dv.buttons)-1])
+				}
+			} else {
+				for i, btn := range dv.buttons {
+					if focused == btn {
+						if i > 0 {
+							dv.app.SetFocus(dv.buttons[i-1])
+						} else {
+							dv.app.SetFocus(dv.TextArea)
+						}
+						return nil
+					}
+				}
+				dv.app.SetFocus(dv.TextArea)
+			}
+			return nil
 		case tcell.KeyCtrlS:
 			dv.app.HandleEvent(&SnippetShowEvent{
 				BaseEvent: BaseEvent{action: SNIPPET_SHOW},
